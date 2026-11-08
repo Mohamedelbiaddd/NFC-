@@ -17,6 +17,7 @@ class QrScreen extends StatefulWidget {
     required this.business,
     required this.slug,
     this.published = true,
+    this.onSaved,
   });
 
   final String url;
@@ -24,6 +25,10 @@ class QrScreen extends StatefulWidget {
   final String business;
   final String slug;
   final bool published;
+
+  /// Called after the label lands in the phone gallery, so the dashboard can
+  /// record a `qr_saved` event in the activity trail.
+  final Future<void> Function()? onSaved;
 
   @override
   State<QrScreen> createState() => _QrScreenState();
@@ -76,6 +81,7 @@ class _QrScreenState extends State<QrScreen> {
             'تم حفظ صورة الـ QR في معرض الهاتف. اطبعها كملصق حراري '
             '58 مم والصقها على البطاقة.',
       );
+      await widget.onSaved?.call();
     } on GalException catch (e) {
       if (mounted) setState(() => message = galleryMessage(e.type));
     } catch (e) {

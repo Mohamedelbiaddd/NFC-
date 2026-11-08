@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/app_config.dart';
+import 'core/theme.dart';
 import 'screens/auth_screen.dart';
 import 'screens/dashboard.dart';
 
@@ -45,24 +46,7 @@ class NfcStudio extends StatelessWidget {
     locale: const Locale('ar'),
     supportedLocales: const [Locale('ar'), Locale('en')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    theme: ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF9D8DFF),
-        brightness: Brightness.dark,
-      ),
-      scaffoldBackgroundColor: const Color(0xFF0D1020),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: const Color(0xFF1A1F35),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-      cardTheme: CardThemeData(
-        color: const Color(0xFF181D32),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-    ),
+    theme: AppTheme.dark(),
     home: StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) =>

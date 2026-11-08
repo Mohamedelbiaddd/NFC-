@@ -23,6 +23,17 @@ class AppConfig {
     'www',
     'new',
   };
+  // Field-worker accounts authenticate with a username; the app maps it to this
+  // synthetic address, which is exactly what supabase/functions/admin-workers
+  // creates. Real e-mail logins keep working unchanged.
+  static const workerDomain = 'workers.nfc-studio.internal';
+  static String? loginEmail(String input) {
+    final value = input.trim();
+    if (value.isEmpty) return null;
+    if (value.contains('@')) return value.toLowerCase();
+    return '${value.toLowerCase()}@$workerDomain';
+  }
+
   static bool validSlug(String s) =>
       s.length >= 3 &&
       s.length <= 63 &&

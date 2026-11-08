@@ -48,6 +48,35 @@ class Repository {
 
   Future<int> count(String table, String tenant) async =>
       await client.from(table).count(CountOption.exact).eq('tenant_id', tenant);
+  Future<bool> amSuperAdmin() async {
+    try {
+      return await client.rpc('nfc_am_super_admin') == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Free-form audit event (login, QR saved, worker management...). The server
+  /// forces the actor to be the signed-in user.
+  Future<void> logEvent(
+    String tenant,
+    String action, {
+    String? subject,
+  }) async {
+    try {
+      await client.rpc(
+        'nfc_log_event',
+        params: {
+          'workspace_id': tenant,
+          'event_action': action,
+          'event_subject': subject,
+        },
+      );
+    } catch (_) {
+      // Auditing must never block the user's action.
+    }
+  }
+
   Future<void> log(String tenant, String profile, String action) async {
     await client.from('nfc_write_events').insert({
       'tenant_id': tenant,
