@@ -2,6 +2,9 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 const Map<String, String> frStrings = {
+  'لا توجد محلات بعد. أنشئ محلاً من تبويب «المحلات» ثم ارجع هنا.': 'Aucun magasin pour l’instant. Créez-en un dans l’onglet « Magasins » puis revenez ici.',
+  'اختر المحل': 'Choisir le magasin',
+  'اختر محلاً من محلاتك (يملأ الرابط تلقائياً)': 'Choisir un de vos magasins (remplit le lien)',
   'اللغة': 'Langue',
   '3–63 حرفاً لاتينياً صغيراً وأرقاماً وشرطات': '3 à 63 lettres latines minuscules, chiffres et tirets',
   '{0} حساب': '{0} comptes',
@@ -457,6 +460,9 @@ const Map<String, String> frStrings = {
 };
 
 const Map<String, String> enStrings = {
+  'لا توجد محلات بعد. أنشئ محلاً من تبويب «المحلات» ثم ارجع هنا.': 'No shops yet. Create one in the “Shops” tab, then come back here.',
+  'اختر المحل': 'Choose the shop',
+  'اختر محلاً من محلاتك (يملأ الرابط تلقائياً)': 'Pick one of your shops (fills the link)',
   'اللغة': 'Language',
   '3–63 حرفاً لاتينياً صغيراً وأرقاماً وشرطات': '3–63 lowercase Latin letters, digits and hyphens',
   '{0} حساب': '{0} accounts',

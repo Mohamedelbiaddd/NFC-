@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/app_config.dart';
+import '../core/network_service.dart';
+import '../core/shops_service.dart';
 import '../core/people.dart';
 import '../core/repository.dart';
 import '../core/storage_service.dart';
@@ -442,7 +444,74 @@ class _PersonFormState extends State<PersonForm> {
     ),
   );
 
-  Widget _kindField(String key, String label) => Padding(
+  /// Lets the operator fill the loyalty link from one of their shops instead
+  /// of typing it: the link is the shop's customer page /c/<slug>.
+  Future<void> _pickShop() async {
+    List<Json> shops;
+    try {
+      shops = (await NetworkService(widget.repo.client).shops())
+          .where((s) => '${s['shop_slug'] ?? ''}'.isNotEmpty && s['suspended'] != true)
+          .toList();
+    } catch (e) {
+      if (mounted) setState(() => error = userError(e));
+      return;
+    }
+    if (!mounted) return;
+    if (shops.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('لا توجد محلات بعد. أنشئ محلاً من تبويب «المحلات» ثم ارجع هنا.'))),
+      );
+      return;
+    }
+    final slug = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text(tr('اختر المحل'), style: const TextStyle(fontWeight: FontWeight.w800)),
+            ),
+            for (final shop in shops)
+              ListTile(
+                leading: const Icon(Icons.storefront_rounded),
+                title: Text('${shop['name']}'),
+                subtitle: Text(
+                  ShopsService.customerLink('${shop['shop_slug']}'),
+                  textDirection: TextDirection.ltr,
+                  style: const TextStyle(fontSize: 11),
+                ),
+                onTap: () => Navigator.pop(context, '${shop['shop_slug']}'),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (slug == null || !mounted) return;
+    setState(() {
+      extra.putIfAbsent('loyalty_url', TextEditingController.new).text =
+          ShopsService.customerLink(slug);
+    });
+  }
+
+  Widget _kindField(String key, String label) => key == 'loyalty_url'
+      ? Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _plainKindField(key, label),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: busy ? null : _pickShop,
+              icon: const Icon(Icons.storefront_rounded, size: 18),
+              label: Text(tr('اختر محلاً من محلاتك (يملأ الرابط تلقائياً)')),
+            ),
+          ],
+        )
+      : _plainKindField(key, label);
+
+  Widget _plainKindField(String key, String label) => Padding(
     padding: const EdgeInsets.only(top: 14),
     child: TextFormField(
       controller: extra.putIfAbsent(key, TextEditingController.new),
