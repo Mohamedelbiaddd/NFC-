@@ -35,6 +35,16 @@ class WorkersService {
     await client.rpc('nfc_all_users', params: {'term': term}),
   );
 
+  /// Everything one account produced: profiles it created, its activity and
+  /// its workspaces (super administrators only).
+  Future<Json> userDetail(String userId) async {
+    final value = await client.rpc(
+      'nfc_admin_user_detail',
+      params: {'target_id': userId},
+    );
+    return value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
+  }
+
   /// Per-profile scan counters for one workspace.
   Future<List<Json>> scanOverview(String tenant) async => _rows(
     await client.rpc('nfc_scan_overview', params: {'workspace_id': tenant}),

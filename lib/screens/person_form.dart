@@ -9,6 +9,7 @@ import '../core/people.dart';
 import '../core/repository.dart';
 import '../core/storage_service.dart';
 import '../core/theme.dart';
+import 'catalog_editor.dart';
 
 /// One clear form for adding or editing a person (vCard) or another card kind.
 /// Image picking/uploads, slug suggestion and publishing live here so the
@@ -42,6 +43,8 @@ class _PersonFormState extends State<PersonForm> {
   final website = TextEditingController();
   final description = TextEditingController();
   final slug = TextEditingController();
+  final pin = TextEditingController();
+  bool hasPin = false;
   final extra = <String, TextEditingController>{};
 
   late String kind;
@@ -77,6 +80,9 @@ class _PersonFormState extends State<PersonForm> {
       website.text = profileField(p, 'website');
       description.text = profileField(p, 'description');
       slug.text = personSlug(p);
+      widget.repo.profileHasPin('${p['id']}').then((value) {
+        if (mounted) setState(() => hasPin = value);
+      });
       for (final key in (fieldsByKind[kind] ?? const <String, String>{}).keys) {
         extra[key] = TextEditingController(text: profileField(p, key));
       }
@@ -105,6 +111,7 @@ class _PersonFormState extends State<PersonForm> {
     website.dispose();
     description.dispose();
     slug.dispose();
+    pin.dispose();
     for (final controller in extra.values) {
       controller.dispose();
     }
@@ -233,6 +240,10 @@ class _PersonFormState extends State<PersonForm> {
       if (removed != null && removed != imageUrl) {
         await storage.deleteImage(removed);
       }
+      final code = pin.text.trim();
+      if (code.isNotEmpty && id != null) {
+        await widget.repo.setProfilePin(id, code);
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) setState(() => error = _errorFor(e));
@@ -315,6 +326,121 @@ class _PersonFormState extends State<PersonForm> {
       ],
     );
   }
+
+  static String _randomPin() {
+    final random = Random.secure();
+    return List.generate(6, (_) => random.nextInt(10)).join();
+  }
+
+  Future<void> _removePin() async {
+    final id = savedId;
+    if (id == null) return;
+    try {
+      await widget.repo.setProfilePin(id, '');
+      if (mounted) {
+        setState(() {
+          hasPin = false;
+          pin.clear();
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => error = userError(e));
+    }
+  }
+
+  Future<void> _openCatalog() async {
+    final id = savedId;
+    if (id == null) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute<bool>(
+        builder: (_) => CatalogEditor(
+          repo: widget.repo,
+          tenant: widget.tenant,
+          profileId: id,
+          title: name.text.trim(),
+        ),
+      ),
+    );
+  }
+
+  Widget _ownerSection() => Container(
+    margin: const EdgeInsets.only(top: 8),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: AppColors.surfaceHigh,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: AppColors.border),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.key_rounded, size: 18, color: AppColors.accent),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'رمز التعديل لصاحب البطاقة',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+            ),
+            if (hasPin)
+              const Pill('مفعّل', color: AppColors.success, icon: Icons.check_rounded),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'يضغط صاحب البطاقة 3 مرات على صورته في صفحته، ويكتب هذا الرمز '
+          'ليعدّل بياناته وصوره والكتالوج بنفسه.',
+          style: TextStyle(fontSize: 11.5, color: AppColors.muted, height: 1.5),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: pin,
+          keyboardType: TextInputType.number,
+          textDirection: TextDirection.ltr,
+          maxLength: 12,
+          decoration: InputDecoration(
+            labelText: hasPin ? 'رمز جديد (اتركه فارغاً للإبقاء على الحالي)' : 'الرمز (6 أرقام أو أكثر) — اختياري',
+            counterText: '',
+            suffixIcon: IconButton(
+              tooltip: 'توليد رمز',
+              onPressed: locked ? null : () => setState(() => pin.text = _randomPin()),
+              icon: const Icon(Icons.casino_outlined),
+            ),
+          ),
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return null;
+            return RegExp(r'^[0-9]{6,12}$').hasMatch(text)
+                ? null
+                : 'من 6 إلى 12 رقماً';
+          },
+        ),
+        if (hasPin)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: locked ? null : _removePin,
+              icon: const Icon(Icons.key_off_rounded, size: 16),
+              label: const Text('إلغاء الرمز'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            ),
+          ),
+        const Divider(height: 20),
+        OutlinedButton.icon(
+          onPressed: savedId == null || locked ? null : _openCatalog,
+          icon: const Icon(Icons.grid_view_rounded, size: 18),
+          label: Text(
+            savedId == null
+                ? 'الكتالوج (احفظ البطاقة أولاً)'
+                : 'تعديل الكتالوج: منتجات وصور وأسعار',
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _kindField(String key, String label) => Padding(
     padding: const EdgeInsets.only(top: 14),
@@ -483,6 +609,7 @@ class _PersonFormState extends State<PersonForm> {
                     style: TextStyle(fontSize: 12, color: AppColors.muted),
                   ),
                 ),
+                _ownerSection(),
                 ExpansionTile(
                   tilePadding: EdgeInsets.zero,
                   childrenPadding: const EdgeInsets.only(bottom: 4),

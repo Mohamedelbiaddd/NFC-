@@ -43,3 +43,27 @@ export async function trackScan(config,slug,source='link',fetcher=fetch){
   });
  }catch{/* counting must never break the page */}
 }
+
+// ---- Owner self-editing (PIN protected, verified in the database) ----
+async function rpc(config,name,body,fetcher=fetch){
+ const response=await fetcher(`${config.supabaseUrl}/rest/v1/rpc/${name}`,{
+  method:'POST',headers:{'Content-Type':'application/json',apikey:config.publishableKey},
+  body:JSON.stringify(body),cache:'no-store'});
+ if(response.status===400)throw new Error('invalid');
+ if(!response.ok)throw new Error('rpc '+response.status);
+ return response.json();
+}
+export function ownerLogin(config,slug,pin,fetcher=fetch){
+ return rpc(config,'nfc_owner_login',{target_slug:slug,pin},fetcher);
+}
+export function ownerUpdate(config,slug,pin,{title,data,catalog,imageUrl},fetcher=fetch){
+ return rpc(config,'nfc_owner_update',{target_slug:slug,pin,new_title:title,new_data:data,new_catalog:catalog,new_image_url:imageUrl},fetcher);
+}
+export async function ownerUpload(config,slug,pin,file,fetcher=fetch){
+ const form=new FormData();form.append('slug',slug);form.append('pin',pin);form.append('file',file);
+ const response=await fetcher(`${config.supabaseUrl}/functions/v1/owner-upload`,{
+  method:'POST',headers:{apikey:config.publishableKey},body:form});
+ const body=await response.json().catch(()=>({}));
+ if(!response.ok||!body.url)throw new Error(body.error||'upload');
+ return body.url;
+}

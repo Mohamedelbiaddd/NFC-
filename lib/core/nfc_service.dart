@@ -12,16 +12,19 @@ class NfcService {
   bool _processing = false;
   static NdefMessage uriMessage(String url) {
     final u = Uri.parse(url);
-    if (u.scheme != 'https' || u.host.isEmpty) {
-      throw const FormatException('HTTPS required');
+    if ((u.scheme != 'https' && u.scheme != 'http') || u.host.isEmpty) {
+      throw const FormatException('الرابط يجب أن يبدأ بـ https://');
     }
+    // NDEF URI prefix codes: 0x04 = "https://", 0x03 = "http://".
+    final https = u.scheme == 'https';
+    final rest = url.substring(https ? 8 : 7);
     return NdefMessage(
       records: [
         NdefRecord(
           typeNameFormat: TypeNameFormat.wellKnown,
           type: Uint8List.fromList([0x55]),
           identifier: Uint8List(0),
-          payload: Uint8List.fromList([0x04, ...utf8.encode(url.substring(8))]),
+          payload: Uint8List.fromList([https ? 0x04 : 0x03, ...utf8.encode(rest)]),
         ),
       ],
     );

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/repository.dart';
 import '../core/theme.dart';
 import '../core/workers_service.dart';
+import 'user_detail_screen.dart';
 
 /// Super-administrator only: every account in the project, what it produced,
 /// and the power to block it instantly.
@@ -256,6 +257,19 @@ class _UsersTabState extends State<UsersTab> {
       padding: const EdgeInsets.only(bottom: 10),
       child: SurfaceCard(
         padding: const EdgeInsets.all(16),
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => UserDetailScreen(
+                service: widget.service,
+                user: user,
+                canBan: !isMe && !isAdmin,
+              ),
+            ),
+          );
+          if (mounted) await load();
+        },
         child: Column(
           children: [
             Row(
@@ -359,6 +373,14 @@ class _UsersTabState extends State<UsersTab> {
                   'لا نشاط بعد',
               ].join(' · '),
               style: const TextStyle(fontSize: 11, color: AppColors.muted),
+            ),
+            const SizedBox(height: 6),
+            const Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Text(
+                'اضغط لعرض التفاصيل ›',
+                style: TextStyle(fontSize: 11, color: AppColors.primarySoft),
+              ),
             ),
           ],
         ),

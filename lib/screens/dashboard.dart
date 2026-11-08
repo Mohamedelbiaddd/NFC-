@@ -12,6 +12,7 @@ import 'people_tab.dart';
 import 'person_form.dart';
 import 'qr_screen.dart';
 import 'users_tab.dart';
+import 'link_writer_screen.dart';
 import 'workers_tab.dart';
 import 'writer_screen.dart';
 
@@ -647,6 +648,18 @@ class _DashboardState extends State<Dashboard> {
         actions: [
           _addButton(),
           const SizedBox(width: 4),
+          IconButton(
+            tooltip: 'رابط مباشر على بطاقة NFC',
+            onPressed: canEdit
+                ? () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => LinkWriterScreen(repo: repo, tenant: tenant),
+                    ),
+                  )
+                : null,
+            icon: const Icon(Icons.add_link_rounded, size: 20),
+          ),
           IconButton(
             tooltip: 'تحديث',
             onPressed: loading ? null : () => load(),

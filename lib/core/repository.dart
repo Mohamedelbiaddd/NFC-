@@ -56,6 +56,29 @@ class Repository {
     }
   }
 
+  /// Sets (6-12 digits) or clears (empty) the PIN the card owner uses to edit
+  /// their public page.
+  Future<void> setProfilePin(String profileId, String pin) async {
+    await client.rpc(
+      'nfc_set_profile_pin',
+      params: {'target_profile': profileId, 'pin': pin},
+    );
+  }
+
+  Future<bool> profileHasPin(String profileId) async {
+    try {
+      final rows = await client.rpc(
+        'nfc_profile_pin_status',
+        params: {
+          'profile_ids': [profileId],
+        },
+      );
+      return rows is List && rows.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Free-form audit event (login, QR saved, worker management...). The server
   /// forces the actor to be the signed-in user.
   Future<void> logEvent(
