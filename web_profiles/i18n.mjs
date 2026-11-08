@@ -1,6 +1,7 @@
 // Tiny translation helper for the public pages: Arabic, English, Italian.
 const DICT = {
   ar: {
+    noticeTitle: '⚠️ تنبيه من الإدارة', suspendedTitle: '⛔ الخدمة موقوفة مؤقتاً', suspendedText: 'تم إيقاف بطاقة الولاء ولوحة المحل مؤقتاً لعدم دفع الاشتراك الشهري الذي يغطي تكاليف الخادم. بعد الدفع تعود الخدمة فوراً وتبقى كل بيانات زبائنك محفوظة. تواصل مع المسؤول عنك.',
     location: '📍 موقع المحل', useLocation: '📍 استخدم موقعي الحالي (وأنت داخل المحل)', noLocation: 'لم يُحدَّد الموقع بعد', locationSet: 'تم تحديد الموقع، اضغط حفظ', noGeo: 'تعذّر تحديد الموقع، فعّل GPS واسمح للمتصفح', radius: 'نطاق التذكير بالأمتار (50 - 1000)', radiusNote: 'يستعمل لتذكير الزبائن القريبين من المحل عبر المحفظة. في Google Wallet تحدد جوجل المسافة الفعلية بنفسها.',
     loading: 'جارٍ التحميل…', unavailable: 'هذا المحل غير متاح', unavailableText: 'تأكد من الرابط أو اسأل صاحب المحل.',
     network: 'تعذّر الاتصال، تحقق من الإنترنت.', join: 'انضم لبطاقة الولاء', joinText: 'اكتب اسمك ورقم هاتفك مرة واحدة فقط، وبعدها تُحسب زياراتك تلقائياً.',
@@ -23,6 +24,7 @@ const DICT = {
     minutesAgo: 'قبل {n} د', hoursAgo: 'قبل {n} س', daysAgo: 'قبل {n} يوم', privacy: 'الخصوصية', terms: 'الشروط',
   },
   en: {
+    noticeTitle: '⚠️ Notice from the management', suspendedTitle: '⛔ Service temporarily suspended', suspendedText: 'Your loyalty card and dashboard are paused because the monthly subscription (server costs) has not been paid. Service returns immediately after payment and all your customers are kept. Please contact your agent.',
     location: '📍 Shop location', useLocation: '📍 Use my current location (inside the shop)', noLocation: 'Location not set yet', locationSet: 'Location set, press Save', noGeo: 'Could not get location; turn on GPS and allow the browser', radius: 'Reminder radius in metres (50 - 1000)', radiusNote: 'Used to remind nearby customers through the wallet. In Google Wallet, Google decides the actual distance itself.',
     loading: 'Loading…', unavailable: 'This shop is not available', unavailableText: 'Check the link or ask the shop.',
     network: 'Connection failed, check your internet.', join: 'Join the loyalty card', joinText: 'Enter your name and phone once; after that every visit is counted automatically.',
@@ -45,6 +47,7 @@ const DICT = {
     minutesAgo: '{n} min ago', hoursAgo: '{n} h ago', daysAgo: '{n} d ago', privacy: 'Privacy', terms: 'Terms',
   },
   it: {
+    noticeTitle: '⚠️ Avviso dalla gestione', suspendedTitle: '⛔ Servizio sospeso temporaneamente', suspendedText: 'La carta fedeltà e il pannello sono sospesi perché l\'abbonamento mensile (costi del server) non è stato pagato. Dopo il pagamento il servizio torna subito attivo e tutti i tuoi clienti restano salvati. Contatta il tuo referente.',
     location: '📍 Posizione del negozio', useLocation: '📍 Usa la mia posizione (dentro il negozio)', noLocation: 'Posizione non impostata', locationSet: 'Posizione impostata, premi Salva', noGeo: 'Posizione non disponibile; attiva il GPS e consenti al browser', radius: 'Raggio promemoria in metri (50 - 1000)', radiusNote: 'Serve a ricordare il negozio ai clienti vicini tramite il wallet. In Google Wallet la distanza effettiva la decide Google.',
     loading: 'Caricamento…', unavailable: 'Negozio non disponibile', unavailableText: 'Controlla il link o chiedi al negozio.',
     network: 'Connessione non riuscita, controlla internet.', join: 'Iscriviti alla carta fedeltà', joinText: 'Inserisci nome e telefono una sola volta; poi ogni visita viene contata da sola.',

@@ -49,7 +49,7 @@ async function refreshQr() {
   clearTimeout(qrTimer);
   try {
     const r = await rpc(config, 'nfc_shop_qr', {target_slug: slug, session: session()});
-    if (!r?.ok) return;
+    if (!r?.ok) { if (r?.error !== 'suspended') qrTimer = setTimeout(refreshQr, 10000); return; }
     qr = {code: r.code, until: Date.now() + r.expires_in * 1000};
     if (tab === 'code') render();
     qrTimer = setTimeout(refreshQr, Math.max(1, r.expires_in) * 1000 + 300);
@@ -260,14 +260,30 @@ function settingsView() {
     el('h2', t('banners'), 'section'), gallery, save, out];
 }
 
+function noticeBox(text, strong) {
+  const box = el('div', undefined, 'pay-notice' + (strong ? ' strong' : ''));
+  box.append(el('strong', strong ? t('suspendedTitle') : t('noticeTitle')));
+  box.append(el('p', text));
+  return box;
+}
+
 function render() {
   if (!data) return;
   document.title = data.shop.name;
   const head = el('div', undefined, 'shop-head');
   head.append(el('div', industry(data.shop).icon, 'avatar'));
   const meta = el('div', undefined, 'shop-meta'); meta.append(el('h1', data.shop.name)); head.append(meta);
+  if (data.suspended) {
+    clearTimeout(qrTimer);
+    const out = el('button', t('logout'), 'button secondary'); out.type = 'button';
+    out.addEventListener('click', () => { storage(sessionKey, null); loginView(); });
+    root.replaceChildren(head, noticeBox(data.notice || t('suspendedText'), true), out);
+    return;
+  }
+  const parts = [head];
+  if (data.notice) parts.push(noticeBox(data.notice, false));
   const body = tab === 'code' ? codeView() : tab === 'customers' ? customersView() : settingsView();
-  root.replaceChildren(head, statsRow(), tabs(), ...body);
+  root.replaceChildren(...parts, statsRow(), tabs(), ...body);
 }
 
 async function start() {

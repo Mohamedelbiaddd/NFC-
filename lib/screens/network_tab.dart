@@ -14,6 +14,81 @@ Color statusColor(String? status) => switch (status) {
   _ => AppColors.muted,
 };
 
+const noticeTemplates = <String, String>{
+  'العربية':
+      'تذكير ودّي 🌟\nلاحظنا أن اشتراك هذا الشهر لم يُدفع بعد. هذا الاشتراك يغطي تكاليف الخادم '
+      'وتشغيل بطاقات الولاء لزبائنك.\nالمرجو تسوية المبلغ في أقرب وقت لتستمر الخدمة دون انقطاع، '
+      'وإلا سيتم إيقاف الحساب مؤقتاً.\nشكراً لثقتك 🙏',
+  'Français':
+      'Petit rappel 🌟\nL’abonnement de ce mois n’a pas encore été réglé. Il couvre les frais du serveur '
+      'et le fonctionnement de la carte de fidélité de vos clients.\nMerci de régler le montant rapidement '
+      'pour éviter une suspension temporaire du compte.\nMerci de votre confiance 🙏',
+  'Italiano':
+      'Promemoria 🌟\nL’abbonamento di questo mese non risulta ancora pagato. Copre i costi del server '
+      'e il funzionamento della carta fedeltà dei tuoi clienti.\nTi chiediamo di saldare al più presto '
+      'per evitare la sospensione temporanea dell’account.\nGrazie per la fiducia 🙏',
+  'English':
+      'Friendly reminder 🌟\nThis month’s subscription has not been paid yet. It covers the server costs '
+      'and keeps your customers’ loyalty card running.\nPlease settle the amount soon to avoid a temporary '
+      'suspension of the account.\nThank you for your trust 🙏',
+};
+
+/// Lets an agent / admin write (or remove) the payment notice shown to a shop
+/// owner or staff member. Returns true when something changed.
+Future<bool> editNotice(
+  BuildContext context,
+  NetworkService service,
+  String subject,
+  String id,
+  String name,
+  String? current,
+) async {
+  final text = TextEditingController(text: current ?? noticeTemplates['العربية']);
+  final result = await showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('تنبيه دفع إلى «$name»'),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              spacing: 6,
+              children: [
+                for (final entry in noticeTemplates.entries)
+                  ActionChip(label: Text(entry.key), onPressed: () => text.text = entry.value),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextField(controller: text, minLines: 5, maxLines: 9, maxLength: 1000),
+            Text(
+              subject == 'shop'
+                  ? 'يظهر في أعلى لوحة صاحب المحل. لا يوقف أي شيء، والإيقاف يبقى بقرارك.'
+                  : 'يظهر للعامل داخل التطبيق. لا يوقف أي شيء، والإيقاف يبقى بقرارك.',
+              style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        if (current != null)
+          TextButton(
+            onPressed: () => Navigator.pop(context, ''),
+            child: const Text('إزالة التنبيه', style: TextStyle(color: AppColors.danger)),
+          ),
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+        FilledButton(onPressed: () => Navigator.pop(context, text.text.trim()), child: const Text('إرسال')),
+      ],
+    ),
+  );
+  text.dispose();
+  if (result == null) return false;
+  await service.setNotice(subject, id, result);
+  return true;
+}
+
 /// The caller's staff network: agents and workers below them, their monthly
 /// subscription (green / red), suspension and password resets, plus a live
 /// feed of everything that happened in the network.
@@ -261,6 +336,18 @@ class _NetworkTabState extends State<NetworkTab> {
     );
   }
 
+  Future<void> _notice(Json m) async {
+    try {
+      final changed = await editNotice(context, widget.service, 'staff', '${m['user_id']}', '${m['name']}', m['notice'] as String?);
+      if (changed) {
+        await load(quiet: true);
+        _snack('تم');
+      }
+    } catch (e) {
+      _snack(userError(e), bad: true);
+    }
+  }
+
   Future<void> _reset(Json m) async {
     final ok = await _confirm('كلمة مرور جديدة؟', 'ستتوقف كلمة المرور القديمة فوراً.', yes: 'إنشاء');
     if (!ok) return;
@@ -361,6 +448,8 @@ class _NetworkTabState extends State<NetworkTab> {
                     switch (v) {
                       case 'pay3':
                         _guard(() => widget.service.markPaid('staff', '${m['user_id']}', months: 3), '✓ تم تسجيل 3 أشهر');
+                      case 'notice':
+                        _notice(m);
                       case 'reset':
                         _reset(m);
                       case 'suspend':
@@ -371,6 +460,7 @@ class _NetworkTabState extends State<NetworkTab> {
                   },
                   itemBuilder: (_) => [
                     const PopupMenuItem(value: 'pay3', child: Text('💵 دفع 3 أشهر')),
+                    PopupMenuItem(value: 'notice', child: Text(m['notice'] == null ? '📩 إرسال تنبيه دفع' : '📩 تعديل / إزالة التنبيه')),
                     const PopupMenuItem(value: 'reset', child: Text('🔑 كلمة مرور جديدة')),
                     PopupMenuItem(value: 'suspend', child: Text(active ? '⛔ إيقاف' : '✅ تفعيل')),
                     const PopupMenuItem(value: 'delete', child: Text('🗑️ حذف')),
@@ -396,6 +486,7 @@ class _NetworkTabState extends State<NetworkTab> {
                   Pill('${m['shops']} محل', color: AppColors.accent, icon: Icons.storefront_outlined),
                   if ((m['members'] as num? ?? 0) > 0) Pill('${m['members']} عامل', color: AppColors.accent),
                   if (!active) const Pill('موقوف', color: AppColors.danger, icon: Icons.block),
+                  if (m['notice'] != null) const Pill('📩 تنبيه مُرسل', color: AppColors.warning),
                   if (widget.isSuper && '${m['parent_name'] ?? ''}'.isNotEmpty) Pill('تابع لـ ${m['parent_name']}', color: AppColors.muted),
                   Pill('آخر دخول: ${relativeTime(DateTime.tryParse('${m['last_sign_in'] ?? ''}'))}', color: AppColors.muted),
                 ],
@@ -418,6 +509,8 @@ class _NetworkTabState extends State<NetworkTab> {
     'shop_created': 'سجّل محلاً',
     'shop_suspended': 'أوقف محل',
     'shop_resumed': 'فعّل محل',
+    'notice_sent': '📩 أرسل تنبيه دفع إلى',
+    'notice_cleared': 'أزال التنبيه عن',
   };
 
   Widget _eventsList() => Column(

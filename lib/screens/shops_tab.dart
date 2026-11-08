@@ -9,7 +9,7 @@ import '../core/network_service.dart';
 import '../core/repository.dart';
 import '../core/shops_service.dart';
 import '../core/theme.dart';
-import 'network_tab.dart' show statusColor;
+import 'network_tab.dart' show statusColor, editNotice;
 
 /// Loyalty shops of the workspace. Field agents see the shops they created;
 /// owners / admins see all of them. One simple form creates a shop.
@@ -308,6 +308,16 @@ class _ShopsTabState extends State<ShopsTab> {
                         await _form(shop);
                       case 'toggle':
                         await _toggle(shop);
+                      case 'notice':
+                        try {
+                          final changed = await editNotice(context, widget.network, 'shop', '${shop['id']}', '${shop['name']}', shop['notice'] as String?);
+                          if (changed) {
+                            await load(quiet: true);
+                            _snack('تم');
+                          }
+                        } catch (e) {
+                          _snack(userError(e), bad: true);
+                        }
                     }
                   },
                   itemBuilder: (_) => [
@@ -315,6 +325,7 @@ class _ShopsTabState extends State<ShopsTab> {
                     const PopupMenuItem(value: 'open', child: Text('🖥️ فتح لوحة المحل')),
                     const PopupMenuItem(value: 'join', child: Text('📱 رابط و QR الزبائن')),
                     const PopupMenuItem(value: 'edit', child: Text('✏️ تعديل المحل')),
+                    PopupMenuItem(value: 'notice', child: Text(shop['notice'] == null ? '📩 إرسال تنبيه دفع' : '📩 تعديل / إزالة التنبيه')),
                     PopupMenuItem(value: 'toggle', child: Text(enabled ? '⛔ إيقاف المحل وروابطه' : '✅ تفعيل المحل')),
                   ],
                 ),
@@ -338,6 +349,7 @@ class _ShopsTabState extends State<ShopsTab> {
                 Pill('${shop['visits_7d']} هذا الأسبوع', color: AppColors.accent),
                 Pill('${shop['goal']}+1 · ${shop['reward']}', color: AppColors.success),
                 if (!enabled) const Pill('موقوف', color: AppColors.danger),
+                if (shop['notice'] != null) const Pill('📩 تنبيه مُرسل', color: AppColors.warning),
                 if (shop['has_password'] != true) const Pill('بدون كلمة مرور', color: AppColors.warning),
                 if (widget.seeAll && '${shop['creator'] ?? ''}'.isNotEmpty)
                   Pill('أضافه: ${shop['creator']}', color: AppColors.muted),

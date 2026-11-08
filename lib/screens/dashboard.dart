@@ -31,6 +31,7 @@ class _DashboardState extends State<Dashboard> {
   late final ShopsService shops;
   late final NetworkService network;
   String staffRole = '';
+  String? staffNotice;
   bool allowed = true;
   List<Json> tenants = const [], businesses = const [], profiles = const [];
   String? tenant, error;
@@ -141,6 +142,7 @@ class _DashboardState extends State<Dashboard> {
         allowed = account['allowed'] != false;
         final staff = account['staff'];
         staffRole = staff is Map ? '${staff['role'] ?? ''}' : '';
+        staffNotice = staff is Map && staff['notice'] != null ? '${staff['notice']}' : null;
         profileScans = scans;
         totalScans = scanTotal;
         if (page >= tabCount) page = 0;
@@ -714,6 +716,18 @@ class _DashboardState extends State<Dashboard> {
       ),
       body: Column(
         children: [
+          if (staffNotice != null)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.warning.withValues(alpha: 0.6)),
+              ),
+              child: Text('⚠️ $staffNotice', style: const TextStyle(height: 1.5)),
+            ),
           _workspaceBar(),
           Expanded(child: _body()),
         ],

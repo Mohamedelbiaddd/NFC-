@@ -43,6 +43,12 @@ class NetworkService {
     );
   }
 
+  /// Shows (or clears with an empty message) a payment notice to a shop owner
+  /// or a staff member. Nothing is ever sent automatically.
+  Future<void> setNotice(String subject, String id, String message) async {
+    await client.rpc('nfc_set_notice', params: {'subject': subject, 'target': id, 'message': message});
+  }
+
   Future<Json> _call(Map<String, dynamic> body) async {
     try {
       final response = await client.functions.invoke('staff-admin', body: body);
