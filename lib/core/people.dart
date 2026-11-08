@@ -1,4 +1,5 @@
 import 'repository.dart';
+import 'i18n.dart';
 
 /// Reads a string field from a profile's JSONB `data` object.
 String profileField(Json profile, String key) {
@@ -15,7 +16,7 @@ String personName(Json profile) {
   if (full.isNotEmpty) return full;
   final title = profile['title'];
   if (title is String && title.trim().isNotEmpty) return title.trim();
-  return 'بدون اسم';
+  return tr('بدون اسم');
 }
 
 String personTitle(Json profile) {
@@ -45,4 +46,4 @@ String personInitial(Json p) {
   return name.isEmpty ? '?' : name.substring(0, 1);
 }
 
-String kindLabel(Json p) => kindNames['${p['kind']}'] ?? 'بطاقة';
+String kindLabel(Json p) => kindNames['${p['kind']}'] ?? tr('بطاقة');

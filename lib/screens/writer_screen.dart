@@ -3,6 +3,7 @@ import '../core/app_config.dart';
 import '../core/repository.dart';
 import '../core/nfc_service.dart';
 import '../core/theme.dart';
+import '../core/i18n.dart';
 
 class WriterScreen extends StatefulWidget {
   const WriterScreen({
@@ -24,7 +25,7 @@ class _WriterScreenState extends State<WriterScreen>
   final nfc = NfcService();
   final domain = TextEditingController(text: AppConfig.profileBase);
   bool busy = false;
-  String message = 'قرّب بطاقة NFC فارغة من الهاتف ثم اضغط «كتابة الرابط».';
+  String message = tr('قرّب بطاقة NFC فارغة من الهاتف ثم اضغط «كتابة الرابط».');
   String? writtenUrl;
   @override
   void initState() {
@@ -51,19 +52,19 @@ class _WriterScreenState extends State<WriterScreen>
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('قفل نهائي غير قابل للتراجع'),
-          content: const Text(
-            'ستُقفل الشريحة بعد مطابقة الرابط. قد لا يمكن إعادة برمجتها مطلقاً. تأكد من النطاق الدائم، وقرّب الشريحة التي تريد قفلها فقط.',
+          title: Text(tr('قفل نهائي غير قابل للتراجع')),
+          content: Text(
+            tr('ستُقفل الشريحة بعد مطابقة الرابط. قد لا يمكن إعادة برمجتها مطلقاً. تأكد من النطاق الدائم، وقرّب الشريحة التي تريد قفلها فقط.'),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
+              child: Text(tr('إلغاء')),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('أوافق على القفل النهائي'),
+              child: Text(tr('أوافق على القفل النهائي')),
             ),
           ],
         ),
@@ -72,12 +73,12 @@ class _WriterScreenState extends State<WriterScreen>
     }
     setState(() {
       busy = true;
-      message = 'جارٍ التحقق من الملف…';
+      message = tr('جارٍ التحقق من الملف…');
     });
     try {
       final p = await widget.repo.profile(widget.profileId, widget.tenant);
       if (p['published'] != true) {
-        throw StateError('انشر البطاقة أولاً حتى يكون الرابط صالحاً للزوار');
+        throw StateError(tr('انشر البطاقة أولاً حتى يكون الرابط صالحاً للزوار'));
       }
       final url = AppConfig.profileUrl(
         domain.text,
@@ -87,9 +88,9 @@ class _WriterScreenState extends State<WriterScreen>
       if (!mounted) return;
       setState(() {
         message = switch (action) {
-          'write' => 'تمت كتابة البطاقة. اختبرها بلمس الهاتف بها.',
-          'verify' => 'الرابط على البطاقة مطابق للمطلوب.',
-          _ => 'تم قفل البطاقة نهائياً.',
+          'write' => tr('تمت كتابة البطاقة. اختبرها بلمس الهاتف بها.'),
+          'verify' => tr('الرابط على البطاقة مطابق للمطلوب.'),
+          _ => tr('تم قفل البطاقة نهائياً.'),
         };
         if (action != 'lock') writtenUrl = url.toString();
       });
@@ -112,7 +113,7 @@ class _WriterScreenState extends State<WriterScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('ربط بطاقة NFC', style: TextStyle(fontSize: 18)),
+              Text(tr('ربط بطاقة NFC'), style: TextStyle(fontSize: 18)),
               if (widget.profileName.isNotEmpty)
                 Text(
                   widget.profileName,
@@ -159,7 +160,7 @@ class _WriterScreenState extends State<WriterScreen>
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        busy ? 'في انتظار البطاقة…' : 'جاهز للكتابة',
+                        busy ? tr('في انتظار البطاقة…') : tr('جاهز للكتابة'),
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -213,8 +214,8 @@ class _WriterScreenState extends State<WriterScreen>
                     controller: domain,
                     enabled: !busy,
                     textDirection: TextDirection.ltr,
-                    decoration: const InputDecoration(
-                      labelText: 'النطاق الدائم HTTPS',
+                    decoration: InputDecoration(
+                      labelText: tr('النطاق الدائم HTTPS'),
                       hintText: 'https://cards.example.com',
                     ),
                   ),
@@ -230,10 +231,9 @@ class _WriterScreenState extends State<WriterScreen>
                           color: AppColors.warning,
                         ),
                         const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'كتابة البطاقات تحتاج هاتف Android يدعم NFC. '
-                            'يمكنك هنا إدارة البيانات ورمز QR فقط.',
+                            tr('كتابة البطاقات تحتاج هاتف Android يدعم NFC. يمكنك هنا إدارة البيانات ورمز QR فقط.'),
                             style: TextStyle(fontSize: 12.5, height: 1.5),
                           ),
                         ),
@@ -243,7 +243,7 @@ class _WriterScreenState extends State<WriterScreen>
                 FilledButton.icon(
                   onPressed: busy || !supported ? null : () => act('write'),
                   icon: Icon(busy ? Icons.hourglass_top_rounded : Icons.nfc),
-                  label: Text(busy ? 'جارٍ العمل…' : 'كتابة الرابط على البطاقة'),
+                  label: Text(busy ? tr('جارٍ العمل…') : tr('كتابة الرابط على البطاقة')),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(56),
                   ),
@@ -257,7 +257,7 @@ class _WriterScreenState extends State<WriterScreen>
                             ? null
                             : () => act('verify'),
                         icon: const Icon(Icons.verified_outlined, size: 18),
-                        label: const Text('التحقق'),
+                        label: Text(tr('التحقق')),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -265,7 +265,7 @@ class _WriterScreenState extends State<WriterScreen>
                       child: OutlinedButton.icon(
                         onPressed: busy || !supported ? null : () => act('lock'),
                         icon: const Icon(Icons.lock_outline_rounded, size: 18),
-                        label: const Text('قفل نهائي'),
+                        label: Text(tr('قفل نهائي')),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.danger,
                           side: BorderSide(
@@ -286,12 +286,12 @@ class _WriterScreenState extends State<WriterScreen>
                         if (mounted) setState(() => message = userError(e));
                       }
                     },
-                    child: const Text('إلغاء الانتظار (قبل بدء الكتابة)'),
+                    child: Text(tr('إلغاء الانتظار (قبل بدء الكتابة)')),
                   ),
                 ],
                 const SizedBox(height: 14),
-                const Text(
-                  'يُكتب المسار /p/custom-slug فقط، ولا يُكتب UUID على البطاقة.',
+                Text(
+                  tr('يُكتب المسار /p/custom-slug فقط، ولا يُكتب UUID على البطاقة.'),
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 11, color: AppColors.muted),
                 ),

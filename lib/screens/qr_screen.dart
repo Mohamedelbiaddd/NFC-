@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import '../core/i18n.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -47,22 +48,21 @@ class _QrScreenState extends State<QrScreen> {
     });
     try {
       if (kIsWeb) {
-        throw StateError('حفظ الصورة في المعرض متاح على تطبيق الهاتف فقط.');
+        throw StateError(tr('حفظ الصورة في المعرض متاح على تطبيق الهاتف فقط.'));
       }
       final boundary = labelKey.currentContext?.findRenderObject();
       if (boundary is! RenderRepaintBoundary) {
-        throw StateError('تعذّر تجهيز صورة الملصق، أعد المحاولة.');
+        throw StateError(tr('تعذّر تجهيز صورة الملصق، أعد المحاولة.'));
       }
       final image = await boundary.toImage(pixelRatio: 2);
       try {
         final data = await image.toByteData(format: ui.ImageByteFormat.png);
-        if (data == null) throw StateError('تعذّر إنشاء صورة PNG للملصق.');
+        if (data == null) throw StateError(tr('تعذّر إنشاء صورة PNG للملصق.'));
         var granted = await Gal.hasAccess();
         if (!granted) granted = await Gal.requestAccess();
         if (!granted) {
           throw StateError(
-            'لم يُسمح بالوصول إلى المعرض. فعّل صلاحية الصور من إعدادات '
-            'التطبيق ثم أعد المحاولة.',
+            tr('لم يُسمح بالوصول إلى المعرض. فعّل صلاحية الصور من إعدادات التطبيق ثم أعد المحاولة.'),
           );
         }
         await Gal.putImageBytes(
@@ -78,8 +78,7 @@ class _QrScreenState extends State<QrScreen> {
       if (!mounted) return;
       setState(
         () => message =
-            'تم حفظ صورة الـ QR في معرض الهاتف. اطبعها كملصق حراري '
-            '58 مم والصقها على البطاقة.',
+            tr('تم حفظ صورة الـ QR في معرض الهاتف. اطبعها كملصق حراري 58 مم والصقها على البطاقة.'),
       );
       await widget.onSaved?.call();
     } on GalException catch (e) {
@@ -89,7 +88,7 @@ class _QrScreenState extends State<QrScreen> {
         setState(
           () => message = e is StateError
               ? e.message
-              : 'تعذّر حفظ الصورة في المعرض: $e',
+              : trf('تعذّر حفظ الصورة في المعرض: {0}', [e]),
         );
       }
     } finally {
@@ -99,12 +98,12 @@ class _QrScreenState extends State<QrScreen> {
 
   String galleryMessage(GalExceptionType type) => switch (type) {
     GalExceptionType.accessDenied =>
-      'لم يُسمح بالوصول إلى المعرض. فعّل صلاحية الصور من إعدادات التطبيق.',
+      tr('لم يُسمح بالوصول إلى المعرض. فعّل صلاحية الصور من إعدادات التطبيق.'),
     GalExceptionType.notEnoughSpace =>
-      'لا توجد مساحة كافية في الجهاز لحفظ الصورة.',
+      tr('لا توجد مساحة كافية في الجهاز لحفظ الصورة.'),
     GalExceptionType.notSupportedFormat =>
-      'صيغة الصورة غير مدعومة على هذا الجهاز.',
-    GalExceptionType.unexpected => 'حدث خطأ غير متوقع أثناء حفظ الصورة.',
+      tr('صيغة الصورة غير مدعومة على هذا الجهاز.'),
+    GalExceptionType.unexpected => tr('حدث خطأ غير متوقع أثناء حفظ الصورة.'),
   };
 
   Future<void> copyLink() async {
@@ -112,7 +111,7 @@ class _QrScreenState extends State<QrScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('تم نسخ الرابط')));
+    ).showSnackBar(SnackBar(content: Text(tr('تم نسخ الرابط'))));
   }
 
   /// The printable label. It is a fixed 384 logical pixels wide, which is the
@@ -160,7 +159,7 @@ class _QrScreenState extends State<QrScreen> {
             dataModuleShape: QrDataModuleShape.square,
             color: Colors.black,
           ),
-          semanticsLabel: 'رمز QR لرابط الملف',
+          semanticsLabel: tr('رمز QR لرابط الملف'),
         ),
         const SizedBox(height: 12),
         Text(
@@ -173,8 +172,8 @@ class _QrScreenState extends State<QrScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'امسح الرمز لفتح الملف الرقمي',
+        Text(
+          tr('امسح الرمز لفتح الملف الرقمي'),
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.black54, fontSize: 12),
         ),
@@ -184,7 +183,7 @@ class _QrScreenState extends State<QrScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('رمز QR للطباعة')),
+    appBar: AppBar(title: Text(tr('رمز QR للطباعة'))),
     body: ListView(
       padding: const EdgeInsets.all(24),
       children: [
@@ -202,10 +201,10 @@ class _QrScreenState extends State<QrScreen> {
         ),
         const SizedBox(height: 18),
         if (!widget.published)
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(bottom: 12),
             child: Text(
-              'هذا الملف ما زال مسودة. لن يعمل الرابط حتى تنشره من شاشة التعديل.',
+              tr('هذا الملف ما زال مسودة. لن يعمل الرابط حتى تنشره من شاشة التعديل.'),
               style: TextStyle(color: Color(0xFFFFB86B)),
             ),
           ),
@@ -225,13 +224,13 @@ class _QrScreenState extends State<QrScreen> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.download_outlined),
-          label: Text(saving ? 'جارٍ الحفظ…' : 'حفظ الصورة للطباعة'),
+          label: Text(saving ? tr('جارٍ الحفظ…') : tr('حفظ الصورة للطباعة')),
         ),
         const SizedBox(height: 10),
         OutlinedButton.icon(
           onPressed: saving ? null : copyLink,
           icon: const Icon(Icons.link),
-          label: const Text('نسخ الرابط'),
+          label: Text(tr('نسخ الرابط')),
         ),
         if (message != null)
           Padding(
@@ -239,10 +238,8 @@ class _QrScreenState extends State<QrScreen> {
             child: Text(message!),
           ),
         const SizedBox(height: 18),
-        const Text(
-          'التلميح: احفظ الصورة ثم افتح تطبيق الطابعة الحرارية واختر الصورة '
-          'من المعرض. الملصق بعرض 384 نقطة (58 مم) وأبيض وأسود ليبقى واضحاً '
-          'عند الطباعة.',
+        Text(
+          tr('التلميح: احفظ الصورة ثم افتح تطبيق الطابعة الحرارية واختر الصورة من المعرض. الملصق بعرض 384 نقطة (58 مم) وأبيض وأسود ليبقى واضحاً عند الطباعة.'),
           style: TextStyle(color: Color(0xFFA7AEC6), fontSize: 13),
         ),
       ],

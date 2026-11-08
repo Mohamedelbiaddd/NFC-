@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 
 import '../core/repository.dart';
 import '../core/theme.dart';
@@ -81,7 +82,7 @@ class _UsersTabState extends State<UsersTab> {
   String _name(Json user) {
     final display = '${user['display_name'] ?? ''}'.trim();
     if (display.isNotEmpty) return display;
-    return '${user['email'] ?? 'حساب'}';
+    return trf('{0}', [user['email'] ?? tr('حساب')]);
   }
 
   Future<void> _toggleBan(Json user) async {
@@ -91,24 +92,23 @@ class _UsersTabState extends State<UsersTab> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(banned ? 'فك الحظر عن الحساب؟' : 'حظر الحساب؟'),
+        title: Text(banned ? tr('فك الحظر عن الحساب؟') : tr('حظر الحساب؟')),
         content: Text(
           banned
-              ? 'سيستطيع «$name» تسجيل الدخول من جديد بمجرد فك الحظر.'
-              : 'لن يستطيع «$name» تسجيل الدخول بعد الآن، مع بقاء بياناته '
-                    'وسجلاته محفوظة لديك. يمكنك فك الحظر في أي وقت.',
+              ? trf('سيستطيع «{0}» تسجيل الدخول من جديد بمجرد فك الحظر.', [name])
+              : trf('لن يستطيع «{0}» تسجيل الدخول بعد الآن، مع بقاء بياناته وسجلاته محفوظة لديك. يمكنك فك الحظر في أي وقت.', [name]),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('إلغاء'),
+            child: Text(tr('إلغاء')),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: banned ? AppColors.success : AppColors.danger,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: Text(banned ? 'فك الحظر' : 'حظر'),
+            child: Text(banned ? tr('فك الحظر') : tr('حظر')),
           ),
         ],
       ),
@@ -121,7 +121,7 @@ class _UsersTabState extends State<UsersTab> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(banned ? 'تم فك الحظر.' : 'تم حظر الحساب.'),
+          content: Text(banned ? tr('تم فك الحظر.') : tr('تم حظر الحساب.')),
         ),
       );
     } on WorkerException catch (e) {
@@ -145,12 +145,12 @@ class _UsersTabState extends State<UsersTab> {
     if (error != null) {
       return EmptyState(
         icon: Icons.shield_outlined,
-        title: 'تعذّر تحميل المستخدمين',
+        title: tr('تعذّر تحميل المستخدمين'),
         text: error!,
         action: FilledButton.icon(
           onPressed: load,
           icon: const Icon(Icons.refresh_rounded),
-          label: const Text('إعادة المحاولة'),
+          label: Text(tr('إعادة المحاولة')),
         ),
       );
     }
@@ -171,25 +171,25 @@ class _UsersTabState extends State<UsersTab> {
                       color: AppColors.warning,
                     ),
                     const SizedBox(width: 10),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'لوحة المدير العام',
+                        tr('لوحة المدير العام'),
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
-                    Pill('${users.length} حساب', color: AppColors.accent),
+                    Pill(trf('{0} حساب', [users.length]), color: AppColors.accent),
                   ],
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _stat('مستخدم', '${users.length}', AppColors.accent),
-                    _stat('بطاقة', '$totalProfiles', AppColors.success),
-                    _stat('مشاهدة', '$totalScans', AppColors.primarySoft),
-                    _stat('كتابة NFC', '$totalCards', AppColors.warning),
+                    _stat(tr('مستخدم'), '${users.length}', AppColors.accent),
+                    _stat(tr('بطاقة'), '$totalProfiles', AppColors.success),
+                    _stat(tr('مشاهدة'), '$totalScans', AppColors.primarySoft),
+                    _stat(tr('كتابة NFC'), '$totalCards', AppColors.warning),
                   ],
                 ),
               ],
@@ -199,18 +199,18 @@ class _UsersTabState extends State<UsersTab> {
           TextField(
             controller: search,
             onChanged: (_) => load(),
-            decoration: const InputDecoration(
-              hintText: 'ابحث ببريد المستخدم…',
+            decoration: InputDecoration(
+              hintText: tr('ابحث ببريد المستخدم…'),
               prefixIcon: Icon(Icons.search_rounded),
               isDense: true,
             ),
           ),
           const SizedBox(height: 18),
           if (users.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Text(
-                'لا يوجد مستخدمون مطابقون.',
+                tr('لا يوجد مستخدمون مطابقون.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.muted),
               ),
@@ -316,15 +316,15 @@ class _UsersTabState extends State<UsersTab> {
                         runSpacing: 4,
                         children: [
                           if (isAdmin)
-                            const Pill(
-                              'مدير عام',
+                            Pill(
+                              tr('مدير عام'),
                               color: AppColors.warning,
                               icon: Icons.shield_rounded,
                             ),
-                          if (isMe) const Pill('أنت', color: AppColors.accent),
+                          if (isMe) Pill(tr('أنت'), color: AppColors.accent),
                           if (banned)
-                            const Pill(
-                              'محظور',
+                            Pill(
+                              tr('محظور'),
                               color: AppColors.danger,
                               icon: Icons.block_rounded,
                             ),
@@ -335,7 +335,7 @@ class _UsersTabState extends State<UsersTab> {
                 ),
                 if (!isMe && !isAdmin)
                   IconButton(
-                    tooltip: banned ? 'فك الحظر' : 'حظر',
+                    tooltip: banned ? tr('فك الحظر') : tr('حظر'),
                     onPressed: busyId == null ? () => _toggleBan(user) : null,
                     icon: busyId == '${user['user_id']}'
                         ? const SizedBox(
@@ -357,28 +357,28 @@ class _UsersTabState extends State<UsersTab> {
             const SizedBox(height: 12),
             Row(
               children: [
-                _mini('بطاقات', '${_int(user['profiles_created'])}'),
+                _mini(tr('بطاقات'), '${_int(user['profiles_created'])}'),
                 _mini('NFC', '${_int(user['cards_written'])}'),
-                _mini('مشاهدات', '${_int(user['scans'])}'),
-                _mini('نشاطات', '${_int(user['actions'])}'),
+                _mini(tr('مشاهدات'), '${_int(user['scans'])}'),
+                _mini(tr('نشاطات'), '${_int(user['actions'])}'),
               ],
             ),
             const SizedBox(height: 10),
             Text(
               [
-                if (signedUp != null) 'سجّل ${shortDate(signedUp)}',
+                if (signedUp != null) trf('سجّل {0}', [shortDate(signedUp)]),
                 if (last != null)
-                  'آخر نشاط ${relativeTime(last)}'
+                  trf('آخر نشاط {0}', [relativeTime(last)])
                 else
-                  'لا نشاط بعد',
+                  tr('لا نشاط بعد'),
               ].join(' · '),
               style: const TextStyle(fontSize: 11, color: AppColors.muted),
             ),
             const SizedBox(height: 6),
-            const Align(
+            Align(
               alignment: AlignmentDirectional.centerEnd,
               child: Text(
-                'اضغط لعرض التفاصيل ›',
+                tr('اضغط لعرض التفاصيل ›'),
                 style: TextStyle(fontSize: 11, color: AppColors.primarySoft),
               ),
             ),

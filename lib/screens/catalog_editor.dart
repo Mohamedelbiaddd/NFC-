@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../core/i18n.dart';
 
 import '../core/repository.dart';
 import '../core/storage_service.dart';
@@ -113,7 +114,7 @@ class _CatalogEditorState extends State<CatalogEditor> {
       if (file == null) return;
       final payload = decodeImagePayload(await file.readAsBytes());
       if (payload == null) {
-        setState(() => error = 'اختر صورة JPG أو PNG أو WebP أصغر من 5 ميجابايت.');
+        setState(() => error = tr('اختر صورة JPG أو PNG أو WebP أصغر من 5 ميجابايت.'));
         return;
       }
       setState(() {
@@ -201,8 +202,8 @@ class _CatalogEditorState extends State<CatalogEditor> {
                       TextField(
                         controller: item.name,
                         maxLength: 120,
-                        decoration: const InputDecoration(
-                          labelText: 'الاسم',
+                        decoration: InputDecoration(
+                          labelText: tr('الاسم'),
                           counterText: '',
                         ),
                       ),
@@ -210,8 +211,8 @@ class _CatalogEditorState extends State<CatalogEditor> {
                       TextField(
                         controller: item.price,
                         maxLength: 40,
-                        decoration: const InputDecoration(
-                          labelText: 'السعر (اختياري)',
+                        decoration: InputDecoration(
+                          labelText: tr('السعر (اختياري)'),
                           counterText: '',
                         ),
                       ),
@@ -219,7 +220,7 @@ class _CatalogEditorState extends State<CatalogEditor> {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'حذف',
+                  tooltip: tr('حذف'),
                   onPressed: () => setState(() {
                     items.removeAt(index).dispose();
                   }),
@@ -233,8 +234,8 @@ class _CatalogEditorState extends State<CatalogEditor> {
               maxLength: 1000,
               minLines: 1,
               maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'الوصف (اختياري)',
+              decoration: InputDecoration(
+                labelText: tr('الوصف (اختياري)'),
                 counterText: '',
               ),
             ),
@@ -243,7 +244,7 @@ class _CatalogEditorState extends State<CatalogEditor> {
                 alignment: AlignmentDirectional.centerStart,
                 child: TextButton(
                   onPressed: () => setState(() => item.imageUrl = null),
-                  child: const Text('إزالة الصورة'),
+                  child: Text(tr('إزالة الصورة')),
                 ),
               ),
           ],
@@ -260,7 +261,7 @@ class _CatalogEditorState extends State<CatalogEditor> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('الكتالوج', style: TextStyle(fontSize: 18)),
+            Text(tr('الكتالوج'), style: TextStyle(fontSize: 18)),
             Text(
               widget.title,
               style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
@@ -270,7 +271,7 @@ class _CatalogEditorState extends State<CatalogEditor> {
         actions: [
           TextButton(
             onPressed: saving || loading ? null : _save,
-            child: Text(saving ? 'جارٍ الحفظ…' : 'حفظ'),
+            child: Text(saving ? tr('جارٍ الحفظ…') : tr('حفظ')),
           ),
         ],
       ),
@@ -281,7 +282,7 @@ class _CatalogEditorState extends State<CatalogEditor> {
                   ? null
                   : () => setState(() => items.add(_CatalogItem())),
               icon: const Icon(Icons.add),
-              label: const Text('إضافة عنصر'),
+              label: Text(tr('إضافة عنصر')),
             ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
@@ -294,11 +295,10 @@ class _CatalogEditorState extends State<CatalogEditor> {
                     child: Text(error!, style: const TextStyle(color: AppColors.danger)),
                   ),
                 if (items.isEmpty)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 40),
                     child: Text(
-                      'لا توجد عناصر بعد. أضف منتجات أو خدمات بصورها وأسعارها، '
-                      'وستظهر في صفحة البطاقة تحت عنوان «الكتالوج».',
+                      tr('لا توجد عناصر بعد. أضف منتجات أو خدمات بصورها وأسعارها، وستظهر في صفحة البطاقة تحت عنوان «الكتالوج».'),
                       textAlign: TextAlign.center,
                       style: TextStyle(color: AppColors.muted, height: 1.7),
                     ),

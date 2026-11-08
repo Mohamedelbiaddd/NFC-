@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'i18n.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,14 +12,14 @@ class ShopsService {
 
   final SupabaseClient client;
 
-  static const industries = <String, (String, String)>{
-    'barber': ('✂️', 'حلاقة'),
-    'beauty': ('💅', 'تجميل'),
-    'carwash': ('🚗', 'غسيل سيارات'),
-    'bakery': ('🥐', 'مخبزة'),
-    'cafe': ('☕', 'مقهى'),
-    'snack': ('🍕', 'سناك / بيتزاريا'),
-    'other': ('⭐', 'نشاط آخر'),
+  static Map<String, (String, String)> get industries => <String, (String, String)>{
+    'barber': ('✂️', tr('حلاقة')),
+    'beauty': ('💅', tr('تجميل')),
+    'carwash': ('🚗', tr('غسيل سيارات')),
+    'bakery': ('🥐', tr('مخبزة')),
+    'cafe': ('☕', tr('مقهى')),
+    'snack': ('🍕', tr('سناك / بيتزاريا')),
+    'other': ('⭐', tr('نشاط آخر')),
   };
 
   static String _base() {

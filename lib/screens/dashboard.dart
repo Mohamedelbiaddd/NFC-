@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../core/i18n.dart';
 
 import '../core/app_config.dart';
 import '../core/people.dart';
@@ -169,11 +170,11 @@ class _DashboardState extends State<Dashboard> {
 
   Future<void> addPerson() async {
     if (tenant == null) {
-      _snack('أنشئ مساحة عمل أولاً.');
+      _snack(tr('أنشئ مساحة عمل أولاً.'));
       return;
     }
     if (businesses.isEmpty) {
-      _snack('أضف نشاطاً تجارياً أولاً.');
+      _snack(tr('أضف نشاطاً تجارياً أولاً.'));
       await businessForm();
       return;
     }
@@ -189,7 +190,7 @@ class _DashboardState extends State<Dashboard> {
     if (changed == true) {
       setState(() => page = 0);
       await refresh();
-      _snack('تم حفظ الشخص وأصبح في القائمة.');
+      _snack(tr('تم حفظ الشخص وأصبح في القائمة.'));
     }
   }
 
@@ -209,14 +210,13 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> deletePerson(Json profile) async {
-    if (!await confirm('سيصبح رابط «${personName(profile)}» غير متاح. '
-        'الاسم المخصص يبقى محجوزاً لمنع انتحال البطاقات.')) {
+    if (!await confirm(trf('سيصبح رابط «{0}» غير متاح. الاسم المخصص يبقى محجوزاً لمنع انتحال البطاقات.', [personName(profile)]))) {
       return;
     }
     try {
       await repo.delete('nfc_profiles', '${profile['id']}');
       await refresh();
-      _snack('تم حذف البطاقة.');
+      _snack(tr('تم حذف البطاقة.'));
     } catch (e) {
       notify(e);
     }
@@ -233,7 +233,7 @@ class _DashboardState extends State<Dashboard> {
         profileLink(profile),
         mode: LaunchMode.externalApplication,
       )) {
-        throw StateError('تعذّر فتح الرابط');
+        throw StateError(tr('تعذّر فتح الرابط'));
       }
     } catch (e) {
       notify(e);
@@ -244,7 +244,7 @@ class _DashboardState extends State<Dashboard> {
     final slug = '${profile['custom_slug'] ?? ''}';
     if (slug.isEmpty) {
 
-      _snack('لا يوجد رابط مخصص لهذا الشخص.');
+      _snack(tr('لا يوجد رابط مخصص لهذا الشخص.'));
       return;
     }
     final match = businesses.where((b) => b['id'] == profile['business_id']);
@@ -290,17 +290,17 @@ class _DashboardState extends State<Dashboard> {
       await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('تأكيد الحذف'),
+          title: Text(tr('تأكيد الحذف')),
           content: Text(text),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
+              child: Text(tr('إلغاء')),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('حذف'),
+              child: Text(tr('حذف')),
             ),
           ],
         ),
@@ -322,11 +322,11 @@ class _DashboardState extends State<Dashboard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            child: Text(tr('إلغاء')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, input.text.trim()),
-            child: const Text('متابعة'),
+            child: Text(tr('متابعة')),
           ),
         ],
       ),
@@ -337,7 +337,7 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> newTenant() async {
-    final name = await ask('مساحة عمل جديدة', 'اسم المساحة');
+    final name = await ask(tr('مساحة عمل جديدة'), tr('اسم المساحة'));
     if (name == null || name.isEmpty) return;
     try {
       final id = await repo.client.rpc(
@@ -367,7 +367,7 @@ class _DashboardState extends State<Dashboard> {
       barrierDismissible: false,
       builder: (context) => StatefulBuilder(
         builder: (context, update) => AlertDialog(
-          title: Text(business == null ? 'إضافة نشاط تجاري' : 'تعديل الهوية'),
+          title: Text(business == null ? tr('إضافة نشاط تجاري') : tr('تعديل الهوية')),
           content: SizedBox(
             width: 480,
             child: SingleChildScrollView(
@@ -379,17 +379,17 @@ class _DashboardState extends State<Dashboard> {
                     TextFormField(
                       controller: name,
                       maxLength: 120,
-                      decoration: const InputDecoration(
-                        labelText: 'اسم النشاط',
+                      decoration: InputDecoration(
+                        labelText: tr('اسم النشاط'),
                         prefixIcon: Icon(Icons.storefront_outlined),
                       ),
                       validator: (v) =>
-                          v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                          v == null || v.trim().isEmpty ? tr('مطلوب') : null,
                     ),
                     const SizedBox(height: 10),
                     for (final pair in [
-                      (primary, 'اللون الأساسي'),
-                      (accent, 'لون التمييز'),
+                      (primary, tr('اللون الأساسي')),
+                      (accent, tr('لون التمييز')),
                     ])
                       Padding(
                         padding: const EdgeInsets.only(bottom: 14),
@@ -402,7 +402,7 @@ class _DashboardState extends State<Dashboard> {
                           validator: (v) =>
                               RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v ?? '')
                               ? null
-                              : 'صيغة #RRGGBB',
+                              : tr('صيغة #RRGGBB'),
                         ),
                       ),
                     if (err != null)
@@ -415,7 +415,7 @@ class _DashboardState extends State<Dashboard> {
           actions: [
             TextButton(
               onPressed: saving ? null : () => Navigator.pop(context),
-              child: const Text('إلغاء'),
+              child: Text(tr('إلغاء')),
             ),
             FilledButton(
               onPressed: saving
@@ -441,7 +441,7 @@ class _DashboardState extends State<Dashboard> {
                         }
                       }
                     },
-              child: Text(saving ? 'جارٍ الحفظ…' : 'حفظ'),
+              child: Text(saving ? tr('جارٍ الحفظ…') : tr('حفظ')),
             ),
           ],
         ),
@@ -484,7 +484,7 @@ class _DashboardState extends State<Dashboard> {
       child: FilledButton.icon(
         onPressed: onPressed,
         icon: const Icon(Icons.add_rounded, size: 20),
-        label: const Text('إضافة شخص'),
+        label: Text(tr('إضافة شخص')),
         style: FilledButton.styleFrom(
           minimumSize: const Size(0, 40),
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -513,7 +513,7 @@ class _DashboardState extends State<Dashboard> {
               child: DropdownButton<String>(
                 value: tenant,
                 isExpanded: true,
-                hint: const Text('اختر مساحة عمل'),
+                hint: Text(tr('اختر مساحة عمل')),
                 borderRadius: BorderRadius.circular(16),
                 dropdownColor: AppColors.surfaceHigh,
                 style: const TextStyle(
@@ -541,12 +541,12 @@ class _DashboardState extends State<Dashboard> {
             ),
           ),
           IconButton(
-            tooltip: 'مساحة عمل جديدة',
+            tooltip: tr('مساحة عمل جديدة'),
             onPressed: newTenant,
             icon: const Icon(Icons.add_box_outlined, size: 20),
           ),
           IconButton(
-            tooltip: businesses.isEmpty ? 'أضف نشاطاً تجارياً' : 'النشاط التجاري',
+            tooltip: businesses.isEmpty ? tr('أضف نشاطاً تجارياً') : tr('النشاط التجاري'),
             onPressed: tenant == null || !canEdit ? null : () => businessForm(),
             icon: const Icon(Icons.storefront_outlined, size: 20),
           ),
@@ -559,37 +559,36 @@ class _DashboardState extends State<Dashboard> {
     if (!allowed && !loading) {
       return EmptyState(
         icon: Icons.lock_outline_rounded,
-        title: 'هذا الحساب غير مفعّل',
-        text: 'الحسابات تُنشأ فقط من طرف الإدارة أو الوكيل المسؤول. '
-            'إذا كان حسابك موقوفاً تواصل مع المسؤول عنك.',
+        title: tr('هذا الحساب غير مفعّل'),
+        text: tr('الحسابات تُنشأ فقط من طرف الإدارة أو الوكيل المسؤول. إذا كان حسابك موقوفاً تواصل مع المسؤول عنك.'),
         action: FilledButton.icon(
           onPressed: signOut,
           icon: const Icon(Icons.logout_rounded),
-          label: const Text('تسجيل الخروج'),
+          label: Text(tr('تسجيل الخروج')),
         ),
       );
     }
     if (error != null) {
       return EmptyState(
         icon: Icons.cloud_off_rounded,
-        title: 'تعذّر تحميل البيانات',
+        title: tr('تعذّر تحميل البيانات'),
         text: error!,
         action: FilledButton.icon(
           onPressed: () => load(),
           icon: const Icon(Icons.refresh_rounded),
-          label: const Text('إعادة المحاولة'),
+          label: Text(tr('إعادة المحاولة')),
         ),
       );
     }
     if (tenants.isEmpty && !loading) {
       return EmptyState(
         icon: Icons.workspaces_outline,
-        title: 'لا توجد مساحة عمل',
-        text: 'أنشئ مساحة عمل لتبدأ بإضافة الأشخاص وكتابة بطاقات NFC.',
+        title: tr('لا توجد مساحة عمل'),
+        text: tr('أنشئ مساحة عمل لتبدأ بإضافة الأشخاص وكتابة بطاقات NFC.'),
         action: FilledButton.icon(
           onPressed: newTenant,
           icon: const Icon(Icons.add_rounded),
-          label: const Text('مساحة عمل جديدة'),
+          label: Text(tr('مساحة عمل جديدة')),
         ),
       );
     }
@@ -675,7 +674,7 @@ class _DashboardState extends State<Dashboard> {
               children: [
                 const Text('NFC Studio', style: TextStyle(fontSize: 16)),
                 Text(
-                  isSuper ? 'مدير عام · صلاحيات كاملة' : 'لوحة الإدارة',
+                  isSuper ? tr('مدير عام · صلاحيات كاملة') : tr('لوحة الإدارة'),
                   style: const TextStyle(
                     fontSize: 10.5,
                     color: AppColors.muted,
@@ -687,10 +686,11 @@ class _DashboardState extends State<Dashboard> {
           ],
         ),
         actions: [
+          const LanguageButton(),
           _addButton(),
           const SizedBox(width: 4),
           IconButton(
-            tooltip: 'رابط مباشر على بطاقة NFC',
+            tooltip: tr('رابط مباشر على بطاقة NFC'),
             onPressed: canEdit
                 ? () => Navigator.push(
                     context,
@@ -702,12 +702,12 @@ class _DashboardState extends State<Dashboard> {
             icon: const Icon(Icons.add_link_rounded, size: 20),
           ),
           IconButton(
-            tooltip: 'تحديث',
+            tooltip: tr('تحديث'),
             onPressed: loading ? null : () => load(),
             icon: const Icon(Icons.sync_rounded, size: 20),
           ),
           IconButton(
-            tooltip: 'تسجيل الخروج',
+            tooltip: tr('تسجيل الخروج'),
             onPressed: signOut,
             icon: const Icon(Icons.logout_rounded, size: 20),
           ),
@@ -737,33 +737,33 @@ class _DashboardState extends State<Dashboard> {
               selectedIndex: page.clamp(0, tabCount - 1).toInt(),
               onDestinationSelected: (index) => setState(() => page = index),
               destinations: [
-                const NavigationDestination(
+                NavigationDestination(
                   icon: Icon(Icons.people_alt_outlined),
                   selectedIcon: Icon(Icons.people_alt_rounded),
-                  label: 'الأشخاص',
+                  label: tr('الأشخاص'),
                 ),
-                const NavigationDestination(
+                NavigationDestination(
                   icon: Icon(Icons.storefront_outlined),
                   selectedIcon: Icon(Icons.storefront_rounded),
-                  label: 'المحلات',
+                  label: tr('المحلات'),
                 ),
                 if (seesNetwork)
-                  const NavigationDestination(
+                  NavigationDestination(
                     icon: Icon(Icons.hub_outlined),
                     selectedIcon: Icon(Icons.hub_rounded),
-                    label: 'الشبكة',
+                    label: tr('الشبكة'),
                   ),
                 if (isSuper)
-                  const NavigationDestination(
+                  NavigationDestination(
                     icon: Icon(Icons.insights_outlined),
                     selectedIcon: Icon(Icons.insights_rounded),
-                    label: 'المتابعة',
+                    label: tr('المتابعة'),
                   ),
                 if (isSuper)
-                  const NavigationDestination(
+                  NavigationDestination(
                     icon: Icon(Icons.shield_outlined),
                     selectedIcon: Icon(Icons.shield_rounded),
-                    label: 'المستخدمون',
+                    label: tr('المستخدمون'),
                   ),
               ],
             )

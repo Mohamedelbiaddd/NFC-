@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'i18n.dart';
 
 typedef Json = Map<String, dynamic>;
 
@@ -112,40 +113,39 @@ class Repository {
 String userError(Object e) {
   if (e is AuthException) return e.message;
   if (e is PostgrestException && e.code == '23505') {
-    return 'هذا الاسم المخصص مستخدم أو محجوز سابقاً.';
+    return tr('هذا الاسم المخصص مستخدم أو محجوز سابقاً.');
   }
   if (e is PostgrestException && (e.code == '42703' || e.code == 'PGRST204')) {
-    return 'قاعدة البيانات لا تحتوي الحقل المطلوب. طبّق ملفات '
-        'supabase/migrations على مشروع Supabase أولاً.';
+    return tr('قاعدة البيانات لا تحتوي الحقل المطلوب. طبّق ملفات supabase/migrations على مشروع Supabase أولاً.');
   }
-  if (e is PostgrestException) return 'تعذّر حفظ/قراءة البيانات: ${e.message}';
+  if (e is PostgrestException) return trf('تعذّر حفظ/قراءة البيانات: {0}', [e.message]);
   return e.toString();
 }
 
-const kindNames = {
-  'vcard': 'بطاقة اتصال · vCard',
-  'menu': 'قائمة · Menu',
-  'review': 'تقييم Google',
-  'equipment': 'معدّة · Equipment',
-  'loyalty': 'ولاء · Loyalty',
+Map<String, String> get kindNames => {
+  'vcard': tr('بطاقة اتصال · vCard'),
+  'menu': tr('قائمة · Menu'),
+  'review': tr('تقييم Google'),
+  'equipment': tr('معدّة · Equipment'),
+  'loyalty': tr('ولاء · Loyalty'),
 };
-const fieldsByKind = {
+Map<String, Map<String, String>> get fieldsByKind => {
   'vcard': {
-    'full_name': 'الاسم الكامل *',
-    'phone': 'الهاتف',
-    'email': 'البريد',
-    'website': 'الموقع HTTPS',
+    'full_name': tr('الاسم الكامل *'),
+    'phone': tr('الهاتف'),
+    'email': tr('البريد'),
+    'website': tr('الموقع HTTPS'),
   },
-  'menu': {'menu_url': 'رابط القائمة HTTPS *'},
-  'review': {'review_url': 'رابط التقييم HTTPS *'},
+  'menu': {'menu_url': tr('رابط القائمة HTTPS *')},
+  'review': {'review_url': tr('رابط التقييم HTTPS *')},
   'equipment': {
-    'equipment_name': 'اسم المعدّة *',
-    'serial': 'الرقم التسلسلي',
-    'manual_url': 'دليل التشغيل HTTPS',
+    'equipment_name': tr('اسم المعدّة *'),
+    'serial': tr('الرقم التسلسلي'),
+    'manual_url': tr('دليل التشغيل HTTPS'),
   },
   'loyalty': {
-    'loyalty_url': 'رابط برنامج الولاء HTTPS *',
-    'terms': 'الشروط العامة',
+    'loyalty_url': tr('رابط برنامج الولاء HTTPS *'),
+    'terms': tr('الشروط العامة'),
   },
 };
 bool validHttps(String value) {

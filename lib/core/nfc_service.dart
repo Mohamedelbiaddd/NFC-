@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:ndef_record/ndef_record.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/nfc_manager_android.dart';
+import 'i18n.dart';
 
 class NfcService {
   static bool get supported =>
@@ -13,7 +14,7 @@ class NfcService {
   static NdefMessage uriMessage(String url) {
     final u = Uri.parse(url);
     if ((u.scheme != 'https' && u.scheme != 'http') || u.host.isEmpty) {
-      throw const FormatException('الرابط يجب أن يبدأ بـ https://');
+      throw FormatException(tr('الرابط يجب أن يبدأ بـ https://'));
     }
     // NDEF URI prefix codes: 0x04 = "https://", 0x03 = "http://".
     final https = u.scheme == 'https';
@@ -32,15 +33,15 @@ class NfcService {
 
   Future<Map<String, dynamic>> perform(String action, String url) async {
     if (!supported) {
-      throw UnsupportedError('برمجة NFC تتطلب هاتف Android داعماً.');
+      throw UnsupportedError(tr('برمجة NFC تتطلب هاتف Android داعماً.'));
     }
     if (!{'write', 'verify', 'lock'}.contains(action)) {
       throw ArgumentError('Invalid operation');
     }
-    if (_pending != null) throw StateError('جلسة NFC قيد التنفيذ');
+    if (_pending != null) throw StateError(tr('جلسة NFC قيد التنفيذ'));
     if (await NfcManager.instance.checkAvailability() !=
         NfcAvailability.enabled) {
-      throw StateError('فعّل NFC في إعدادات الهاتف');
+      throw StateError(tr('فعّل NFC في إعدادات الهاتف'));
     }
     final c = Completer<Map<String, dynamic>>();
     _pending = c;
@@ -57,24 +58,24 @@ class NfcService {
             if (ndef == null) {
               final raw = NdefFormatableAndroid.from(tag);
               if (action != 'write' || raw == null) {
-                throw StateError('الشريحة لا تدعم العملية أو تحتاج تهيئة NDEF');
+                throw StateError(tr('الشريحة لا تدعم العملية أو تحتاج تهيئة NDEF'));
               }
               await raw.format(expected);
               if (!c.isCompleted) {
                 c.complete({
                   'action': 'formatted_unverified',
                   'message':
-                      'تمت التهيئة والكتابة. أبعد البطاقة ثم استخدم التحقق بإعادة المسح قبل القفل.',
+                      tr('تمت التهيئة والكتابة. أبعد البطاقة ثم استخدم التحقق بإعادة المسح قبل القفل.'),
                 });
               }
             } else {
               if (action == 'write') {
                 if (!ndef.isWritable) {
-                  throw StateError('البطاقة مقفلة للقراءة فقط');
+                  throw StateError(tr('البطاقة مقفلة للقراءة فقط'));
                 }
                 if (expected.byteLength > ndef.maxSize) {
                   throw StateError(
-                    'مساحة الشريحة لا تكفي للرابط (${expected.byteLength}/${ndef.maxSize})',
+                    trf('مساحة الشريحة لا تكفي للرابط ({0}/{1})', [expected.byteLength, ndef.maxSize]),
                   );
                 }
                 await ndef.writeNdefMessage(expected);
@@ -82,17 +83,17 @@ class NfcService {
               final actual = await ndef.getNdefMessage();
               if (actual != expected) {
                 throw StateError(
-                  'فشل التحقق: محتوى البطاقة لا يطابق الرابط المطلوب',
+                  tr('فشل التحقق: محتوى البطاقة لا يطابق الرابط المطلوب'),
                 );
               }
               if (action == 'lock') {
                 if (!ndef.isWritable) {
                   throw StateError(
-                    'الشريحة مقفلة بالفعل؛ لم يتم إجراء قفل جديد',
+                    tr('الشريحة مقفلة بالفعل؛ لم يتم إجراء قفل جديد'),
                   );
                 }
                 if (!ndef.canMakeReadOnly) {
-                  throw StateError('الشريحة لا تدعم makeReadOnly');
+                  throw StateError(tr('الشريحة لا تدعم makeReadOnly'));
                 }
                 await ndef.makeReadOnly();
               }
@@ -104,8 +105,8 @@ class NfcService {
                       ? 'locked'
                       : 'verified',
                   'message': action == 'lock'
-                      ? 'تم القفل نهائياً بعد مطابقة الرابط.'
-                      : 'تمت مطابقة رابط الاسم المخصص على الشريحة.',
+                      ? tr('تم القفل نهائياً بعد مطابقة الرابط.')
+                      : tr('تمت مطابقة رابط الاسم المخصص على الشريحة.'),
                 });
               }
             }
@@ -117,7 +118,7 @@ class NfcService {
       return await c.future.timeout(
         const Duration(seconds: 45),
         onTimeout: () => throw TimeoutException(
-          'انتهت الجلسة. إن بدأت الكتابة فأعد المسح للتحقق من حالة البطاقة؛ لا يُفترض إلغاء التغيير المادي.',
+          tr('انتهت الجلسة. إن بدأت الكتابة فأعد المسح للتحقق من حالة البطاقة؛ لا يُفترض إلغاء التغيير المادي.'),
         ),
       );
     } finally {
@@ -130,8 +131,8 @@ class NfcService {
     final p = _pending;
     if (p == null) return;
     if (_processing) {
-      throw StateError('عملية مادية بدأت؛ انتظر النتيجة ولا تبعد الشريحة');
+      throw StateError(tr('عملية مادية بدأت؛ انتظر النتيجة ولا تبعد الشريحة'));
     }
-    if (!p.isCompleted) p.completeError(StateError('أُلغيت جلسة الانتظار'));
+    if (!p.isCompleted) p.completeError(StateError(tr('أُلغيت جلسة الانتظار')));
   }
 }

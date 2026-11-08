@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../core/i18n.dart';
 
 import 'dart:async';
 
@@ -76,11 +77,11 @@ class _ShopsTabState extends State<ShopsTab> {
         final ok = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('إلغاء آخر دفعة؟'),
-            content: const Text('سيرجع تاريخ الاشتراك كما كان قبل آخر علامة ✓.'),
+            title: Text(tr('إلغاء آخر دفعة؟')),
+            content: Text(tr('سيرجع تاريخ الاشتراك كما كان قبل آخر علامة ✓.')),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('لا')),
-              FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('نعم')),
+              TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('لا'))),
+              FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('نعم'))),
             ],
           ),
         );
@@ -88,7 +89,7 @@ class _ShopsTabState extends State<ShopsTab> {
         await widget.network.undoPayment('shop', id);
       } else {
         await widget.network.markPaid('shop', id);
-        _snack('✓ تم تسجيل دفع شهر لـ ${shop['name']}');
+        _snack(trf('✓ تم تسجيل دفع شهر لـ {0}', [shop['name']]));
       }
       await load(quiet: true);
     } catch (e) {
@@ -119,27 +120,26 @@ class _ShopsTabState extends State<ShopsTab> {
     final slug = '${shop['shop_slug']}';
     final link = ShopsService.ownerLink(slug);
     final message =
-        'لوحة محلك «${shop['name']}»:\n$link\nكلمة المرور: $password\n\n'
-        'افتح الرابط من متصفح هاتفك، ومنه يظهر الكود المتحرك وقائمة زبائنك.';
+        trf('لوحة محلك «{0}»:\n{1}\nكلمة المرور: {2}\n\nافتح الرابط من متصفح هاتفك، ومنه يظهر الكود المتحرك وقائمة زبائنك.', [shop['name'], link, password]);
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('دخول صاحب المحل'),
+        title: Text(tr('دخول صاحب المحل')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('أرسل هذه المعلومات لصاحب المحل:', style: TextStyle(color: AppColors.muted)),
+            Text(tr('أرسل هذه المعلومات لصاحب المحل:'), style: TextStyle(color: AppColors.muted)),
             const SizedBox(height: 10),
             SelectableText(link, textDirection: TextDirection.ltr, style: const TextStyle(color: AppColors.accent)),
             const SizedBox(height: 8),
             SelectableText(
-              'كلمة المرور: $password',
+              trf('كلمة المرور: {0}', [password]),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'احفظ كلمة المرور الآن: لا تُعرض مرة أخرى، ويمكن إنشاء واحدة جديدة في أي وقت.',
+            Text(
+              tr('احفظ كلمة المرور الآن: لا تُعرض مرة أخرى، ويمكن إنشاء واحدة جديدة في أي وقت.'),
               style: TextStyle(fontSize: 11.5, color: AppColors.warning),
             ),
           ],
@@ -149,16 +149,16 @@ class _ShopsTabState extends State<ShopsTab> {
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: message));
               if (context.mounted) Navigator.pop(context);
-              _snack('تم النسخ، أرسلها عبر واتساب');
+              _snack(tr('تم النسخ، أرسلها عبر واتساب'));
             },
-            child: const Text('نسخ الرسالة'),
+            child: Text(tr('نسخ الرسالة')),
           ),
           FilledButton(
             onPressed: () async {
               final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(message)}');
               await launchUrl(uri, mode: LaunchMode.externalApplication);
             },
-            child: const Text('إرسال واتساب'),
+            child: Text(tr('إرسال واتساب')),
           ),
         ],
       ),
@@ -169,11 +169,11 @@ class _ShopsTabState extends State<ShopsTab> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('كلمة مرور جديدة؟'),
-        content: const Text('ستتوقف كلمة المرور القديمة، ويخرج صاحب المحل من كل الأجهزة.'),
+        title: Text(tr('كلمة مرور جديدة؟')),
+        content: Text(tr('ستتوقف كلمة المرور القديمة، ويخرج صاحب المحل من كل الأجهزة.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('إنشاء')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('إلغاء'))),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('إنشاء'))),
         ],
       ),
     );
@@ -199,7 +199,7 @@ class _ShopsTabState extends State<ShopsTab> {
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('رابط الزبائن · ${shop['name']}'),
+        title: Text(trf('رابط الزبائن · {0}', [shop['name']])),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -211,9 +211,8 @@ class _ShopsTabState extends State<ShopsTab> {
             const SizedBox(height: 10),
             SelectableText(link, textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 12)),
             const SizedBox(height: 8),
-            const Text(
-              'هذا الرمز ثابت: للانضمام ولكتابته على بطاقات NFC. أما تسجيل الزيارات '
-              'فيتم بالكود المتحرك في لوحة المحل.',
+            Text(
+              tr('هذا الرمز ثابت: للانضمام ولكتابته على بطاقات NFC. أما تسجيل الزيارات فيتم بالكود المتحرك في لوحة المحل.'),
               style: TextStyle(fontSize: 11.5, color: AppColors.muted, height: 1.5),
             ),
           ],
@@ -224,7 +223,7 @@ class _ShopsTabState extends State<ShopsTab> {
               await Clipboard.setData(ClipboardData(text: link));
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('نسخ الرابط'),
+            child: Text(tr('نسخ الرابط')),
           ),
         ],
       ),
@@ -236,7 +235,7 @@ class _ShopsTabState extends State<ShopsTab> {
     try {
       await widget.network.setShopSuspended('${shop['id']}', !suspended);
       await load(quiet: true);
-      _snack(suspended ? 'تم تفعيل المحل وروابطه' : 'تم إيقاف المحل وكل روابطه');
+      _snack(suspended ? tr('تم تفعيل المحل وروابطه') : tr('تم إيقاف المحل وكل روابطه'));
     } catch (e) {
       _snack(userError(e), bad: true);
     }
@@ -313,7 +312,7 @@ class _ShopsTabState extends State<ShopsTab> {
                           final changed = await editNotice(context, widget.network, 'shop', '${shop['id']}', '${shop['name']}', shop['notice'] as String?);
                           if (changed) {
                             await load(quiet: true);
-                            _snack('تم');
+                            _snack(tr('تم'));
                           }
                         } catch (e) {
                           _snack(userError(e), bad: true);
@@ -321,12 +320,12 @@ class _ShopsTabState extends State<ShopsTab> {
                     }
                   },
                   itemBuilder: (_) => [
-                    const PopupMenuItem(value: 'owner', child: Text('🔑 رابط وكلمة مرور صاحب المحل')),
-                    const PopupMenuItem(value: 'open', child: Text('🖥️ فتح لوحة المحل')),
-                    const PopupMenuItem(value: 'join', child: Text('📱 رابط و QR الزبائن')),
-                    const PopupMenuItem(value: 'edit', child: Text('✏️ تعديل المحل')),
-                    PopupMenuItem(value: 'notice', child: Text(shop['notice'] == null ? '📩 إرسال تنبيه دفع' : '📩 تعديل / إزالة التنبيه')),
-                    PopupMenuItem(value: 'toggle', child: Text(enabled ? '⛔ إيقاف المحل وروابطه' : '✅ تفعيل المحل')),
+                    PopupMenuItem(value: 'owner', child: Text(tr('🔑 رابط وكلمة مرور صاحب المحل'))),
+                    PopupMenuItem(value: 'open', child: Text(tr('🖥️ فتح لوحة المحل'))),
+                    PopupMenuItem(value: 'join', child: Text(tr('📱 رابط و QR الزبائن'))),
+                    PopupMenuItem(value: 'edit', child: Text(tr('✏️ تعديل المحل'))),
+                    PopupMenuItem(value: 'notice', child: Text(shop['notice'] == null ? tr('📩 إرسال تنبيه دفع') : tr('📩 تعديل / إزالة التنبيه'))),
+                    PopupMenuItem(value: 'toggle', child: Text(enabled ? tr('⛔ إيقاف المحل وروابطه') : tr('✅ تفعيل المحل'))),
                   ],
                 ),
               ],
@@ -338,23 +337,23 @@ class _ShopsTabState extends State<ShopsTab> {
               children: [
                 Pill(
                   status == 'paid' && paidUntil != null
-                      ? 'مدفوع حتى ${shortDate(paidUntil)}'
+                      ? trf('مدفوع حتى {0}', [shortDate(paidUntil)])
                       : status == 'expired' && paidUntil != null
-                      ? 'انتهى ${shortDate(paidUntil)}'
+                      ? trf('انتهى {0}', [shortDate(paidUntil)])
                       : statusLabel(status),
                   color: color,
                 ),
-                Pill('${shop['customers']} زبون', icon: Icons.people_alt_rounded),
-                Pill('${shop['visits']} زيارة', color: AppColors.accent),
-                Pill('${shop['visits_7d']} هذا الأسبوع', color: AppColors.accent),
+                Pill(trf('{0} زبون', [shop['customers']]), icon: Icons.people_alt_rounded),
+                Pill(trf('{0} زيارة', [shop['visits']]), color: AppColors.accent),
+                Pill(trf('{0} هذا الأسبوع', [shop['visits_7d']]), color: AppColors.accent),
                 Pill('${shop['goal']}+1 · ${shop['reward']}', color: AppColors.success),
-                if (!enabled) const Pill('موقوف', color: AppColors.danger),
-                if (shop['notice'] != null) const Pill('📩 تنبيه مُرسل', color: AppColors.warning),
+                if (!enabled) Pill(tr('موقوف'), color: AppColors.danger),
+                if (shop['notice'] != null) Pill(tr('📩 تنبيه مُرسل'), color: AppColors.warning),
                 if (shop['reset_requested'] == true)
-                  const Pill('🔑 يطلب كلمة مرور جديدة', color: AppColors.danger),
-                if (shop['has_password'] != true) const Pill('بدون كلمة مرور', color: AppColors.warning),
+                  Pill(tr('🔑 يطلب كلمة مرور جديدة'), color: AppColors.danger),
+                if (shop['has_password'] != true) Pill(tr('بدون كلمة مرور'), color: AppColors.warning),
                 if (widget.seeAll && '${shop['creator'] ?? ''}'.isNotEmpty)
-                  Pill('أضافه: ${shop['creator']}', color: AppColors.muted),
+                  Pill(trf('أضافه: {0}', [shop['creator']]), color: AppColors.muted),
               ],
             ),
           ],
@@ -371,7 +370,7 @@ class _ShopsTabState extends State<ShopsTab> {
         heroTag: 'add-shop',
         onPressed: () => _form(),
         icon: const Icon(Icons.add_business_rounded),
-        label: const Text('محل جديد'),
+        label: Text(tr('محل جديد')),
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
@@ -386,10 +385,10 @@ class _ShopsTabState extends State<ShopsTab> {
                       child: Text(error!, style: const TextStyle(color: AppColors.danger)),
                     ),
                   if (shops.isEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 60),
                       child: Text(
-                        'لا توجد محلات بعد.\nاضغط «محل جديد» وسجّل أول محل في دقيقة.',
+                        tr('لا توجد محلات بعد.\nاضغط «محل جديد» وسجّل أول محل في دقيقة.'),
                         textAlign: TextAlign.center,
                         style: TextStyle(color: AppColors.muted, height: 1.8),
                       ),
@@ -420,7 +419,7 @@ class _ShopFormState extends State<ShopForm> {
   late final phone = TextEditingController(text: '${widget.shop?['phone'] ?? ''}');
   late final address = TextEditingController(text: '${widget.shop?['address'] ?? ''}');
   late final hours = TextEditingController(text: '${widget.shop?['hours'] ?? ''}');
-  late final reward = TextEditingController(text: '${widget.shop?['reward'] ?? 'زيارة مجانية'}');
+  late final reward = TextEditingController(text: trf('{0}', [widget.shop?['reward'] ?? tr('زيارة مجانية')]));
   late String industry = '${widget.shop?['industry'] ?? 'barber'}';
   late int goal = (widget.shop?['goal'] as num?)?.toInt() ?? 5;
   late int radius = (widget.shop?['radius_m'] as num?)?.toInt() ?? 200;
@@ -441,13 +440,13 @@ class _ShopFormState extends State<ShopForm> {
   }
 
   String _defaultReward(String kind) => switch (kind) {
-    'barber' => 'حلاقة مجانية',
-    'beauty' => 'خدمة مجانية',
-    'carwash' => 'غسلة مجانية',
-    'bakery' => 'منتج مجاني',
-    'cafe' => 'قهوة مجانية',
-    'snack' => 'طلب مجاني',
-    _ => 'زيارة مجانية',
+    'barber' => tr('حلاقة مجانية'),
+    'beauty' => tr('خدمة مجانية'),
+    'carwash' => tr('غسلة مجانية'),
+    'bakery' => tr('منتج مجاني'),
+    'cafe' => tr('قهوة مجانية'),
+    'snack' => tr('طلب مجاني'),
+    _ => tr('زيارة مجانية'),
   };
 
   Future<void> _save() async {
@@ -494,25 +493,24 @@ class _ShopFormState extends State<ShopForm> {
       final password = created.password;
       final link = ShopsService.ownerLink(created.slug);
       final message =
-          'لوحة محلك «${name.text.trim()}»:\n$link\nكلمة المرور: $password\n\n'
-          'افتح الرابط من متصفح هاتفك، ومنه يظهر الكود المتحرك وقائمة زبائنك.';
+          trf('لوحة محلك «{0}»:\n{1}\nكلمة المرور: {2}\n\nافتح الرابط من متصفح هاتفك، ومنه يظهر الكود المتحرك وقائمة زبائنك.', [name.text.trim(), link, password]);
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
-          title: const Text('✅ تم تسجيل المحل'),
+          title: Text(tr('✅ تم تسجيل المحل')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('أرسل لصاحب المحل:', style: TextStyle(color: AppColors.muted)),
+              Text(tr('أرسل لصاحب المحل:'), style: TextStyle(color: AppColors.muted)),
               const SizedBox(height: 8),
               SelectableText(link, textDirection: TextDirection.ltr, style: const TextStyle(color: AppColors.accent)),
               const SizedBox(height: 8),
-              SelectableText('كلمة المرور: $password', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              SelectableText(trf('كلمة المرور: {0}', [password]), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
-              const Text(
-                'احفظها الآن: لا تُعرض مرة أخرى (يمكن إنشاء واحدة جديدة من قائمة ⋮).',
+              Text(
+                tr('احفظها الآن: لا تُعرض مرة أخرى (يمكن إنشاء واحدة جديدة من قائمة ⋮).'),
                 style: TextStyle(fontSize: 11.5, color: AppColors.warning),
               ),
             ],
@@ -522,7 +520,7 @@ class _ShopFormState extends State<ShopForm> {
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: message));
               },
-              child: const Text('نسخ'),
+              child: Text(tr('نسخ')),
             ),
             TextButton(
               onPressed: () async {
@@ -531,9 +529,9 @@ class _ShopFormState extends State<ShopForm> {
                   mode: LaunchMode.externalApplication,
                 );
               },
-              child: const Text('واتساب'),
+              child: Text(tr('واتساب')),
             ),
-            FilledButton(onPressed: () => Navigator.pop(context), child: const Text('تم')),
+            FilledButton(onPressed: () => Navigator.pop(context), child: Text(tr('تم'))),
           ],
         ),
       );
@@ -548,13 +546,13 @@ class _ShopFormState extends State<ShopForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(editing ? 'تعديل المحل' : 'محل جديد')),
+      appBar: AppBar(title: Text(editing ? tr('تعديل المحل') : tr('محل جديد'))),
       body: Form(
         key: formKey,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
           children: [
-            const Text('نوع النشاط', style: TextStyle(fontWeight: FontWeight.w700)),
+            Text(tr('نوع النشاط'), style: TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -565,7 +563,7 @@ class _ShopFormState extends State<ShopForm> {
                     label: Text('${entry.value.$1} ${entry.value.$2}'),
                     selected: industry == entry.key,
                     onSelected: (_) => setState(() {
-                      if (reward.text.trim().isEmpty || reward.text == _defaultReward(industry) || reward.text == 'زيارة مجانية') {
+                      if (reward.text.trim().isEmpty || reward.text == _defaultReward(industry) || reward.text == tr('زيارة مجانية')) {
                         reward.text = _defaultReward(entry.key);
                       }
                       industry = entry.key;
@@ -577,8 +575,8 @@ class _ShopFormState extends State<ShopForm> {
             TextFormField(
               controller: name,
               maxLength: 120,
-              decoration: const InputDecoration(labelText: 'اسم المحل *', counterText: ''),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'اكتب اسم المحل' : null,
+              decoration: InputDecoration(labelText: tr('اسم المحل *'), counterText: ''),
+              validator: (v) => (v ?? '').trim().isEmpty ? tr('اكتب اسم المحل') : null,
             ),
             const SizedBox(height: 10),
             TextFormField(
@@ -586,21 +584,21 @@ class _ShopFormState extends State<ShopForm> {
               keyboardType: TextInputType.phone,
               textDirection: TextDirection.ltr,
               maxLength: 40,
-              decoration: const InputDecoration(labelText: 'الهاتف', counterText: ''),
+              decoration: InputDecoration(labelText: tr('الهاتف'), counterText: ''),
             ),
             const SizedBox(height: 10),
             TextFormField(
               controller: address,
               maxLength: 200,
-              decoration: const InputDecoration(labelText: 'العنوان', counterText: ''),
+              decoration: InputDecoration(labelText: tr('العنوان'), counterText: ''),
             ),
             const SizedBox(height: 10),
             TextFormField(
               controller: hours,
               maxLength: 300,
-              decoration: const InputDecoration(
-                labelText: 'أوقات العمل',
-                hintText: 'مثال: كل يوم 9:00 - 21:00، الجمعة مغلق',
+              decoration: InputDecoration(
+                labelText: tr('أوقات العمل'),
+                hintText: tr('مثال: كل يوم 9:00 - 21:00، الجمعة مغلق'),
                 counterText: '',
               ),
             ),
@@ -608,17 +606,17 @@ class _ShopFormState extends State<ShopForm> {
             TextFormField(
               controller: location,
               textDirection: TextDirection.ltr,
-              decoration: const InputDecoration(
-                labelText: '📍 موقع المحل (اختياري)',
-                hintText: 'الصق رابط Google Maps أو 33.5731, -7.5898',
+              decoration: InputDecoration(
+                labelText: tr('📍 موقع المحل (اختياري)'),
+                hintText: tr('الصق رابط Google Maps أو 33.5731, -7.5898'),
               ),
               validator: (v) => (v ?? '').trim().isEmpty || ShopsService.parseLocation(v!) != null
                   ? null
-                  : 'لم أفهم الموقع: الصق رابط خرائط فيه الإحداثيات',
+                  : tr('لم أفهم الموقع: الصق رابط خرائط فيه الإحداثيات'),
             ),
             Row(
               children: [
-                const Expanded(child: Text('نطاق التذكير (متر)')),
+                Expanded(child: Text(tr('نطاق التذكير (متر)'))),
                 IconButton(
                   onPressed: radius > 50 ? () => setState(() => radius -= 50) : null,
                   icon: const Icon(Icons.remove_circle_outline),
@@ -630,16 +628,16 @@ class _ShopFormState extends State<ShopForm> {
                 ),
               ],
             ),
-            const Text(
-              'صاحب المحل يستطيع أيضاً تحديد الموقع بضغطة من لوحته وهو داخل المحل.',
+            Text(
+              tr('صاحب المحل يستطيع أيضاً تحديد الموقع بضغطة من لوحته وهو داخل المحل.'),
               style: TextStyle(fontSize: 11.5, color: AppColors.muted),
             ),
             const SizedBox(height: 18),
-            const Text('بطاقة الولاء', style: TextStyle(fontWeight: FontWeight.w700)),
+            Text(tr('بطاقة الولاء'), style: TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Row(
               children: [
-                const Expanded(child: Text('عدد الزيارات قبل الهدية')),
+                Expanded(child: Text(tr('عدد الزيارات قبل الهدية'))),
                 IconButton(
                   onPressed: goal > 1 ? () => setState(() => goal--) : null,
                   icon: const Icon(Icons.remove_circle_outline),
@@ -652,15 +650,15 @@ class _ShopFormState extends State<ShopForm> {
               ],
             ),
             Text(
-              'الزبون يجمع $goal ثم تكون الزيارة رقم ${goal + 1} مجانية.',
+              trf('الزبون يجمع {0} ثم تكون الزيارة رقم {1} مجانية.', [goal, goal + 1]),
               style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
             const SizedBox(height: 10),
             TextFormField(
               controller: reward,
               maxLength: 120,
-              decoration: const InputDecoration(labelText: 'الهدية', counterText: ''),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'اكتب الهدية' : null,
+              decoration: InputDecoration(labelText: tr('الهدية'), counterText: ''),
+              validator: (v) => (v ?? '').trim().isEmpty ? tr('اكتب الهدية') : null,
             ),
             if (error != null) ...[
               const SizedBox(height: 12),
@@ -670,7 +668,7 @@ class _ShopFormState extends State<ShopForm> {
             FilledButton.icon(
               onPressed: saving ? null : _save,
               icon: const Icon(Icons.check_rounded),
-              label: Text(saving ? 'جارٍ الحفظ…' : editing ? 'حفظ التعديلات' : 'تسجيل المحل'),
+              label: Text(saving ? tr('جارٍ الحفظ…') : editing ? tr('حفظ التعديلات') : tr('تسجيل المحل')),
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
             ),
           ],

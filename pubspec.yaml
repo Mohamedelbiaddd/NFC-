@@ -19,6 +19,8 @@ dependencies:
   qr_flutter: ^4.1.0
   # Save the rendered QR label to the phone gallery for thermal printing.
   gal: ^2.3.0
+  # Remembers the chosen app language.
+  shared_preferences: ^2.3.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

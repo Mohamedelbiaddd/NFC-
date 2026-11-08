@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'i18n.dart';
 
 import 'repository.dart';
 
@@ -130,16 +131,16 @@ class WorkersService {
       final match = RegExp(r'"error"\s*:\s*"([^"]+)"').firstMatch(e.toString());
       throw WorkerException(
         match?.group(1) ??
-            'تعذّر تنفيذ الطلب. تحقق من الاتصال ثم أعد المحاولة.',
+            tr('تعذّر تنفيذ الطلب. تحقق من الاتصال ثم أعد المحاولة.'),
       );
     }
   }
 
   String _errorMessage(dynamic data, int status) {
     if (data is Map && data['error'] != null) return '${data['error']}';
-    if (status == 401) return 'انتهت الجلسة. سجّل الدخول من جديد.';
-    if (status == 403) return 'لا تملك صلاحية هذه العملية.';
-    return 'فشل الطلب (رمز $status).';
+    if (status == 401) return tr('انتهت الجلسة. سجّل الدخول من جديد.');
+    if (status == 403) return tr('لا تملك صلاحية هذه العملية.');
+    return trf('فشل الطلب (رمز {0}).', [status]);
   }
 
   List<Json> _rows(dynamic data) {

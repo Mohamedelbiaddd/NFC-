@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'i18n.dart';
 
 import 'repository.dart';
 
@@ -58,11 +59,11 @@ class NetworkService {
     } on FunctionException catch (e) {
       final details = e.details;
       if (details is Map && details['error'] != null) throw NetworkException('${details['error']}');
-      throw NetworkException(e.status == 403 ? 'لا تملك صلاحية هذه العملية.' : 'فشل الطلب (رمز ${e.status}).');
+      throw NetworkException(e.status == 403 ? tr('لا تملك صلاحية هذه العملية.') : trf('فشل الطلب (رمز {0}).', [e.status]));
     } catch (e) {
       if (e is NetworkException) rethrow;
       final match = RegExp(r'"error"\s*:\s*"([^"]+)"').firstMatch(e.toString());
-      throw NetworkException(match?.group(1) ?? 'تعذّر تنفيذ الطلب. تحقق من الاتصال.');
+      throw NetworkException(match?.group(1) ?? tr('تعذّر تنفيذ الطلب. تحقق من الاتصال.'));
     }
   }
 
@@ -84,9 +85,9 @@ class NetworkService {
 
 /// green = paid this month, red = expired, grey = never paid.
 String statusLabel(String? status) => switch (status) {
-  'paid' => 'مدفوع',
-  'expired' => 'منتهي',
-  _ => 'لم يدفع بعد',
+  'paid' => tr('مدفوع'),
+  'expired' => tr('منتهي'),
+  _ => tr('لم يدفع بعد'),
 };
 
 class NetworkException implements Exception {

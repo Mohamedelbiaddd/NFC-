@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 
 import '../core/labels.dart';
 import '../core/repository.dart';
@@ -92,12 +93,12 @@ class _ActivityTabState extends State<ActivityTab> {
     if (error != null) {
       return EmptyState(
         icon: Icons.cloud_off_rounded,
-        title: 'تعذّر تحميل المتابعة',
+        title: tr('تعذّر تحميل المتابعة'),
         text: error!,
         action: FilledButton.icon(
           onPressed: load,
           icon: const Icon(Icons.refresh_rounded),
-          label: const Text('إعادة المحاولة'),
+          label: Text(tr('إعادة المحاولة')),
         ),
       );
     }
@@ -106,20 +107,20 @@ class _ActivityTabState extends State<ActivityTab> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
-          const SectionTitle('إنجاز كل مستخدم'),
+          SectionTitle(tr('إنجاز كل مستخدم')),
           ...members.map(_memberCard),
           const SizedBox(height: 20),
           SectionTitle(
-            'سجل النشاط',
+            tr('سجل النشاط'),
             trailing: DropdownButton<String?>(
               value: filter,
               underline: const SizedBox.shrink(),
               borderRadius: BorderRadius.circular(16),
               style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
               items: [
-                const DropdownMenuItem<String?>(
+                DropdownMenuItem<String?>(
                   value: null,
-                  child: Text('الكل'),
+                  child: Text(tr('الكل')),
                 ),
                 ...members.map(
                   (m) => DropdownMenuItem<String?>(
@@ -132,10 +133,10 @@ class _ActivityTabState extends State<ActivityTab> {
             ),
           ),
           if (visibleFeed.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 28),
               child: Text(
-                'لا يوجد نشاط مسجّل بعد. سيظهر كل ما يقوم به المستخدمون هنا.',
+                tr('لا يوجد نشاط مسجّل بعد. سيظهر كل ما يقوم به المستخدمون هنا.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.muted),
               ),
@@ -207,7 +208,7 @@ class _ActivityTabState extends State<ActivityTab> {
                           ),
                           if (isMe) ...[
                             const SizedBox(width: 6),
-                            const Pill('أنت', color: AppColors.accent),
+                            Pill(tr('أنت'), color: AppColors.accent),
                           ],
                         ],
                       ),
@@ -231,10 +232,10 @@ class _ActivityTabState extends State<ActivityTab> {
             const SizedBox(height: 14),
             Row(
               children: [
-                _metric('أضاف', '$created', AppColors.success),
-                _metric('كتب بطاقة', '$written', AppColors.primarySoft),
-                _metric('مشاهدات', '${member['scans'] ?? 0}', AppColors.accent),
-                _metric('نشاطات', '$actions', AppColors.warning),
+                _metric(tr('أضاف'), '$created', AppColors.success),
+                _metric(tr('كتب بطاقة'), '$written', AppColors.primarySoft),
+                _metric(tr('مشاهدات'), '${member['scans'] ?? 0}', AppColors.accent),
+                _metric(tr('نشاطات'), '$actions', AppColors.warning),
               ],
             ),
             const SizedBox(height: 12),
@@ -243,8 +244,8 @@ class _ActivityTabState extends State<ActivityTab> {
                 Expanded(
                   child: Text(
                     last == null
-                        ? 'لا نشاط بعد'
-                        : 'آخر نشاط ${relativeTime(last)} · ${shortDate(last)}',
+                        ? tr('لا نشاط بعد')
+                        : trf('آخر نشاط {0} · {1}', [relativeTime(last), shortDate(last)]),
                     style: const TextStyle(
                       fontSize: 11.5,
                       color: AppColors.muted,
@@ -252,13 +253,13 @@ class _ActivityTabState extends State<ActivityTab> {
                   ),
                 ),
                 if (locked > 0)
-                  Pill('$locked مقفلة', color: AppColors.muted),
+                  Pill(trf('{0} مقفلة', [locked]), color: AppColors.muted),
                 if (member['banned_until'] is String &&
                     DateTime.tryParse('${member['banned_until']}')?.isAfter(
                           DateTime.now(),
                         ) ==
                         true)
-                  const Pill('محظور', color: AppColors.danger),
+                  Pill(tr('محظور'), color: AppColors.danger),
               ],
             ),
           ],
@@ -290,12 +291,12 @@ class _ActivityTabState extends State<ActivityTab> {
   Widget _feedRow(Json row) {
     final action = '${row['action'] ?? ''}';
     final subject = '${row['subject'] ?? ''}';
-    final actor = '${row['actor'] ?? 'مستخدم'}';
+    final actor = trf('{0}', [row['actor'] ?? tr('مستخدم')]);
     final time = _time(row['created_at']);
     final color = actionColor(action);
     final actorId = row['actor_id'];
     final who = filter == null
-        ? (actorId == widget.currentUserId ? 'أنت' : actor)
+        ? (actorId == widget.currentUserId ? tr('أنت') : actor)
         : null;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

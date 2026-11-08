@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 
 import '../core/people.dart';
 import '../core/repository.dart';
@@ -91,13 +92,13 @@ class _PeopleTabState extends State<PeopleTab> {
                       controller: search,
                       onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
-                        hintText: 'ابحث بالاسم أو الهاتف أو الرابط…',
+                        hintText: tr('ابحث بالاسم أو الهاتف أو الرابط…'),
                         prefixIcon: const Icon(Icons.search_rounded),
                         isDense: true,
                         suffixIcon: search.text.isEmpty
                             ? null
                             : IconButton(
-                                tooltip: 'مسح',
+                                tooltip: tr('مسح'),
                                 onPressed: () => setState(search.clear),
                                 icon: const Icon(Icons.close_rounded),
                               ),
@@ -106,7 +107,7 @@ class _PeopleTabState extends State<PeopleTab> {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    tooltip: 'تحديث',
+                    tooltip: tr('تحديث'),
                     onPressed: widget.loading ? null : widget.onRefresh,
                     icon: const Icon(Icons.refresh_rounded),
                   ),
@@ -116,18 +117,18 @@ class _PeopleTabState extends State<PeopleTab> {
               Row(
                 children: [
                   Pill(
-                    '${widget.profiles.length} شخص',
+                    trf('{0} شخص', [widget.profiles.length]),
                     icon: Icons.people_alt_outlined,
                   ),
                   const SizedBox(width: 8),
                   Pill(
-                    '$published منشور',
+                    trf('{0} منشور', [published]),
                     color: AppColors.success,
                     icon: Icons.public,
                   ),
                   const SizedBox(width: 8),
                   Pill(
-                    '${widget.totalScans} مشاهدة',
+                    trf('{0} مشاهدة', [widget.totalScans]),
                     color: AppColors.primarySoft,
                     icon: Icons.visibility_outlined,
                   ),
@@ -136,7 +137,7 @@ class _PeopleTabState extends State<PeopleTab> {
                     TextButton.icon(
                       onPressed: widget.onCreate,
                       icon: const Icon(Icons.person_add_alt_1, size: 18),
-                      label: const Text('شخص جديد'),
+                      label: Text(tr('شخص جديد')),
                     ),
                 ],
               ),
@@ -156,16 +157,16 @@ class _PeopleTabState extends State<PeopleTab> {
                             EmptyState(
                               icon: Icons.person_search_rounded,
                               title: widget.profiles.isEmpty
-                                  ? 'لا يوجد أشخاص بعد'
-                                  : 'لا نتائج مطابقة',
+                                  ? tr('لا يوجد أشخاص بعد')
+                                  : tr('لا نتائج مطابقة'),
                               text: widget.profiles.isEmpty
-                                  ? 'أضف أول شخص، ثم اكتب بطاقة NFC أو اطبع رمز QR من نفس الشاشة.'
-                                  : 'جرّب البحث باسم آخر أو رقم هاتف.',
+                                  ? tr('أضف أول شخص، ثم اكتب بطاقة NFC أو اطبع رمز QR من نفس الشاشة.')
+                                  : tr('جرّب البحث باسم آخر أو رقم هاتف.'),
                               action: widget.canEdit && widget.profiles.isEmpty
                                   ? FilledButton.icon(
                                       onPressed: widget.onCreate,
                                       icon: const Icon(Icons.add_rounded),
-                                      label: const Text('إضافة شخص'),
+                                      label: Text(tr('إضافة شخص')),
                                     )
                                   : null,
                             ),
@@ -256,7 +257,7 @@ class _PeopleTabState extends State<PeopleTab> {
                     ),
                     if (!isPublished) ...[
                       const SizedBox(width: 6),
-                      const Pill('مسودة', color: AppColors.warning),
+                      Pill(tr('مسودة'), color: AppColors.warning),
                     ],
                   ],
                 ),
@@ -301,7 +302,7 @@ class _PeopleTabState extends State<PeopleTab> {
               ),
             ),
           PopupMenuButton<String>(
-            tooltip: 'خيارات',
+            tooltip: tr('خيارات'),
             icon: const Icon(Icons.more_vert_rounded, color: AppColors.muted),
             onSelected: (value) {
               switch (value) {
@@ -319,16 +320,16 @@ class _PeopleTabState extends State<PeopleTab> {
             },
             itemBuilder: (context) => [
               if (widget.canEdit)
-                const PopupMenuItem(value: 'edit', child: Text('تعديل')),
-              const PopupMenuItem(value: 'qr', child: Text('رمز QR')),
-              const PopupMenuItem(value: 'write', child: Text('ربط بطاقة NFC')),
-              const PopupMenuItem(value: 'preview', child: Text('فتح الرابط')),
+                PopupMenuItem(value: 'edit', child: Text(tr('تعديل'))),
+              PopupMenuItem(value: 'qr', child: Text(tr('رمز QR'))),
+              PopupMenuItem(value: 'write', child: Text(tr('ربط بطاقة NFC'))),
+              PopupMenuItem(value: 'preview', child: Text(tr('فتح الرابط'))),
               if (widget.canDelete) ...[
                 const PopupMenuDivider(),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
                   child: Text(
-                    'حذف',
+                    tr('حذف'),
                     style: TextStyle(color: AppColors.danger),
                   ),
                 ),
@@ -380,7 +381,7 @@ class _PeopleTabState extends State<PeopleTab> {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'إغلاق',
+                  tooltip: tr('إغلاق'),
                   onPressed: () => setState(() => selectedId = null),
                   icon: const Icon(Icons.close_rounded, size: 20),
                 ),
@@ -393,7 +394,7 @@ class _PeopleTabState extends State<PeopleTab> {
                   child: FilledButton.icon(
                     onPressed: () => widget.onWrite(profile),
                     icon: const Icon(Icons.nfc_rounded, size: 20),
-                    label: const Text('ربط البطاقة'),
+                    label: Text(tr('ربط البطاقة')),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -401,7 +402,7 @@ class _PeopleTabState extends State<PeopleTab> {
                   child: OutlinedButton.icon(
                     onPressed: () => widget.onQr(profile),
                     icon: const Icon(Icons.qr_code_2_rounded, size: 20),
-                    label: const Text('رمز QR'),
+                    label: Text(tr('رمز QR')),
                   ),
                 ),
               ],

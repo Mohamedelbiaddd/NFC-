@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../core/i18n.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,9 +17,7 @@ Color statusColor(String? status) => switch (status) {
 
 const noticeTemplates = <String, String>{
   'العربية':
-      'تذكير ودّي 🌟\nلاحظنا أن اشتراك هذا الشهر لم يُدفع بعد. هذا الاشتراك يغطي تكاليف الخادم '
-      'وتشغيل بطاقات الولاء لزبائنك.\nالمرجو تسوية المبلغ في أقرب وقت لتستمر الخدمة دون انقطاع، '
-      'وإلا سيتم إيقاف الحساب مؤقتاً.\nشكراً لثقتك 🙏',
+      'تذكير ودّي 🌟\nلاحظنا أن اشتراك هذا الشهر لم يُدفع بعد. هذا الاشتراك يغطي تكاليف الخادم وتشغيل بطاقات الولاء لزبائنك.\nالمرجو تسوية المبلغ في أقرب وقت لتستمر الخدمة دون انقطاع، وإلا سيتم إيقاف الحساب مؤقتاً.\nشكراً لثقتك 🙏',
   'Français':
       'Petit rappel 🌟\nL’abonnement de ce mois n’a pas encore été réglé. Il couvre les frais du serveur '
       'et le fonctionnement de la carte de fidélité de vos clients.\nMerci de régler le montant rapidement '
@@ -39,11 +38,11 @@ Future<bool> editNotice(
   String name,
   String? current,
 ) async {
-  final text = TextEditingController(text: current ?? noticeTemplates['العربية']);
+  final text = TextEditingController(text: current ?? noticeTemplates[tr('العربية')]);
   final result = await showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text('تنبيه دفع إلى «$name»'),
+      title: Text(trf('تنبيه دفع إلى «{0}»', [name])),
       content: SizedBox(
         width: 420,
         child: Column(
@@ -61,8 +60,8 @@ Future<bool> editNotice(
             TextField(controller: text, minLines: 5, maxLines: 9, maxLength: 1000),
             Text(
               subject == 'shop'
-                  ? 'يظهر في أعلى لوحة صاحب المحل. لا يوقف أي شيء، والإيقاف يبقى بقرارك.'
-                  : 'يظهر للعامل داخل التطبيق. لا يوقف أي شيء، والإيقاف يبقى بقرارك.',
+                  ? tr('يظهر في أعلى لوحة صاحب المحل. لا يوقف أي شيء، والإيقاف يبقى بقرارك.')
+                  : tr('يظهر للعامل داخل التطبيق. لا يوقف أي شيء، والإيقاف يبقى بقرارك.'),
               style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
             ),
           ],
@@ -72,10 +71,10 @@ Future<bool> editNotice(
         if (current != null)
           TextButton(
             onPressed: () => Navigator.pop(context, ''),
-            child: const Text('إزالة التنبيه', style: TextStyle(color: AppColors.danger)),
+            child: Text(tr('إزالة التنبيه'), style: TextStyle(color: AppColors.danger)),
           ),
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-        FilledButton(onPressed: () => Navigator.pop(context, text.text.trim()), child: const Text('إرسال')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('إلغاء'))),
+        FilledButton(onPressed: () => Navigator.pop(context, text.text.trim()), child: Text(tr('إرسال'))),
       ],
     ),
   );
@@ -155,12 +154,11 @@ class _NetworkTabState extends State<NetworkTab> {
 
   Future<void> _showPassword(String name, String email, String password) async {
     final message =
-        'مرحباً $name 👋\nحسابك في NFC Studio جاهز.\nالبريد: $email\nكلمة المرور: $password\n\n'
-        'نزّل التطبيق وسجّل الدخول بهذه البيانات.';
+        trf('مرحباً {0} 👋\nحسابك في NFC Studio جاهز.\nالبريد: {1}\nكلمة المرور: {2}\n\nنزّل التطبيق وسجّل الدخول بهذه البيانات.', [name, email, password]);
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('✅ بيانات الدخول'),
+        title: Text(tr('✅ بيانات الدخول')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -173,8 +171,8 @@ class _NetworkTabState extends State<NetworkTab> {
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 1),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'أرسلها الآن: كلمة المرور لا تُعرض مرة أخرى (يمكن إنشاء واحدة جديدة).',
+            Text(
+              tr('أرسلها الآن: كلمة المرور لا تُعرض مرة أخرى (يمكن إنشاء واحدة جديدة).'),
               style: TextStyle(fontSize: 11.5, color: AppColors.warning),
             ),
           ],
@@ -182,16 +180,16 @@ class _NetworkTabState extends State<NetworkTab> {
         actions: [
           TextButton(
             onPressed: () => Clipboard.setData(ClipboardData(text: message)),
-            child: const Text('نسخ'),
+            child: Text(tr('نسخ')),
           ),
           TextButton(
             onPressed: () => launchUrl(
               Uri.parse('https://wa.me/?text=${Uri.encodeComponent(message)}'),
               mode: LaunchMode.externalApplication,
             ),
-            child: const Text('واتساب'),
+            child: Text(tr('واتساب')),
           ),
-          FilledButton(onPressed: () => Navigator.pop(context), child: const Text('تم')),
+          FilledButton(onPressed: () => Navigator.pop(context), child: Text(tr('تم'))),
         ],
       ),
     );
@@ -206,33 +204,33 @@ class _NetworkTabState extends State<NetworkTab> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setLocal) => AlertDialog(
-          title: const Text('إضافة حساب جديد'),
+          title: Text(tr('إضافة حساب جديد')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.isSuper)
                 SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'agent', label: Text('وكيل'), icon: Icon(Icons.hub_outlined)),
-                    ButtonSegment(value: 'worker', label: Text('عامل'), icon: Icon(Icons.person_outline)),
+                  segments: [
+                    ButtonSegment(value: 'agent', label: Text(tr('وكيل')), icon: Icon(Icons.hub_outlined)),
+                    ButtonSegment(value: 'worker', label: Text(tr('عامل')), icon: Icon(Icons.person_outline)),
                   ],
                   selected: {role},
                   onSelectionChanged: (v) => setLocal(() => role = v.first),
                 ),
               const SizedBox(height: 12),
-              TextField(controller: name, decoration: const InputDecoration(labelText: 'الاسم')),
+              TextField(controller: name, decoration: InputDecoration(labelText: tr('الاسم'))),
               const SizedBox(height: 10),
               TextField(
                 controller: email,
                 keyboardType: TextInputType.emailAddress,
                 textDirection: TextDirection.ltr,
-                decoration: const InputDecoration(labelText: 'البريد الإلكتروني'),
+                decoration: InputDecoration(labelText: tr('البريد الإلكتروني')),
               ),
               const SizedBox(height: 8),
               Text(
                 role == 'agent'
-                    ? 'الوكيل يستطيع إضافة عماله ومتابعتهم، ولا يرى إلا شبكته.'
-                    : 'العامل يسجّل المحلات ويرى محلاته فقط.',
+                    ? tr('الوكيل يستطيع إضافة عماله ومتابعتهم، ولا يرى إلا شبكته.')
+                    : tr('العامل يسجّل المحلات ويرى محلاته فقط.'),
                 style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
               ),
               if (err != null) ...[
@@ -242,7 +240,7 @@ class _NetworkTabState extends State<NetworkTab> {
             ],
           ),
           actions: [
-            TextButton(onPressed: busy ? null : () => Navigator.pop(context), child: const Text('إلغاء')),
+            TextButton(onPressed: busy ? null : () => Navigator.pop(context), child: Text(tr('إلغاء'))),
             FilledButton(
               onPressed: busy
                   ? null
@@ -267,7 +265,7 @@ class _NetworkTabState extends State<NetworkTab> {
                         });
                       }
                     },
-              child: Text(busy ? 'جارٍ الإنشاء…' : 'إنشاء وتوليد كلمة مرور'),
+              child: Text(busy ? tr('جارٍ الإنشاء…') : tr('إنشاء وتوليد كلمة مرور')),
             ),
           ],
         ),
@@ -280,21 +278,21 @@ class _NetworkTabState extends State<NetworkTab> {
   Future<void> _togglePaid(Json m) async {
     final id = '${m['user_id']}';
     if (m['status'] == 'paid') {
-      final ok = await _confirm('إلغاء آخر دفعة؟', 'سيرجع تاريخ الاشتراك كما كان قبل آخر علامة ✓.');
-      if (ok) await _guard(() => widget.service.undoPayment('staff', id), 'تم إلغاء الدفعة');
+      final ok = await _confirm(tr('إلغاء آخر دفعة؟'), tr('سيرجع تاريخ الاشتراك كما كان قبل آخر علامة ✓.'));
+      if (ok) await _guard(() => widget.service.undoPayment('staff', id), tr('تم إلغاء الدفعة'));
     } else {
-      await _guard(() => widget.service.markPaid('staff', id), '✓ تم تسجيل دفع شهر');
+      await _guard(() => widget.service.markPaid('staff', id), tr('✓ تم تسجيل دفع شهر'));
     }
   }
 
-  Future<bool> _confirm(String title, String text, {String yes = 'تأكيد'}) async {
+  Future<bool> _confirm(String title, String text, {String yes = tr('تأكيد')}) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(title),
         content: Text(text),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('إلغاء'))),
           FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(yes)),
         ],
       ),
@@ -306,21 +304,21 @@ class _NetworkTabState extends State<NetworkTab> {
     final id = '${m['user_id']}';
     final active = m['active'] == true;
     if (!active) {
-      await _guard(() => widget.service.setStaffActive(id, true, includeShops: true), 'تم تفعيل الحساب ومحلاته');
+      await _guard(() => widget.service.setStaffActive(id, true, includeShops: true), tr('تم تفعيل الحساب ومحلاته'));
       return;
     }
     final choice = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('إيقاف «${m['name']}»؟'),
-        content: const Text('لن يستطيع تسجيل الدخول. يمكنك أيضاً إيقاف كل المحلات التي سجّلها.'),
+        title: Text(trf('إيقاف «{0}»؟', [m['name']])),
+        content: Text(tr('لن يستطيع تسجيل الدخول. يمكنك أيضاً إيقاف كل المحلات التي سجّلها.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-          TextButton(onPressed: () => Navigator.pop(context, 'login'), child: const Text('الحساب فقط')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('إلغاء'))),
+          TextButton(onPressed: () => Navigator.pop(context, 'login'), child: Text(tr('الحساب فقط'))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(context, 'all'),
-            child: const Text('الحساب ومحلاته'),
+            child: Text(tr('الحساب ومحلاته')),
           ),
         ],
       ),
@@ -328,7 +326,7 @@ class _NetworkTabState extends State<NetworkTab> {
     if (choice == null) return;
     await _guard(
       () => widget.service.setStaffActive(id, false, includeShops: choice == 'all'),
-      'تم الإيقاف',
+      tr('تم الإيقاف'),
     );
   }
 
@@ -337,7 +335,7 @@ class _NetworkTabState extends State<NetworkTab> {
       final changed = await editNotice(context, widget.service, 'staff', '${m['user_id']}', '${m['name']}', m['notice'] as String?);
       if (changed) {
         await load(quiet: true);
-        _snack('تم');
+        _snack(tr('تم'));
       }
     } catch (e) {
       _snack(userError(e), bad: true);
@@ -345,7 +343,7 @@ class _NetworkTabState extends State<NetworkTab> {
   }
 
   Future<void> _reset(Json m) async {
-    final ok = await _confirm('كلمة مرور جديدة؟', 'ستتوقف كلمة المرور القديمة فوراً.', yes: 'إنشاء');
+    final ok = await _confirm(tr('كلمة مرور جديدة؟'), tr('ستتوقف كلمة المرور القديمة فوراً.'), yes: tr('إنشاء'));
     if (!ok) return;
     try {
       final pass = await widget.service.resetPassword('${m['user_id']}');
@@ -356,12 +354,12 @@ class _NetworkTabState extends State<NetworkTab> {
   }
 
   Future<void> _delete(Json m) async {
-    final ok = await _confirm('حذف «${m['name']}» نهائياً؟', 'لا يمكن التراجع. الحسابات التي لها محلات أو عمال تُوقف ولا تُحذف.', yes: 'حذف');
+    final ok = await _confirm(trf('حذف «{0}» نهائياً؟', [m['name']]), tr('لا يمكن التراجع. الحسابات التي لها محلات أو عمال تُوقف ولا تُحذف.'), yes: tr('حذف'));
     if (!ok) return;
     try {
       await widget.service.delete('${m['user_id']}');
       await load(quiet: true);
-      _snack('تم الحذف');
+      _snack(tr('تم الحذف'));
     } catch (e) {
       _snack(e is NetworkException ? e.message : userError(e), bad: true);
     }
@@ -443,7 +441,7 @@ class _NetworkTabState extends State<NetworkTab> {
                   onSelected: (v) {
                     switch (v) {
                       case 'pay3':
-                        _guard(() => widget.service.markPaid('staff', '${m['user_id']}', months: 3), '✓ تم تسجيل 3 أشهر');
+                        _guard(() => widget.service.markPaid('staff', '${m['user_id']}', months: 3), tr('✓ تم تسجيل 3 أشهر'));
                       case 'notice':
                         _notice(m);
                       case 'reset':
@@ -455,11 +453,11 @@ class _NetworkTabState extends State<NetworkTab> {
                     }
                   },
                   itemBuilder: (_) => [
-                    const PopupMenuItem(value: 'pay3', child: Text('💵 دفع 3 أشهر')),
-                    PopupMenuItem(value: 'notice', child: Text(m['notice'] == null ? '📩 إرسال تنبيه دفع' : '📩 تعديل / إزالة التنبيه')),
-                    const PopupMenuItem(value: 'reset', child: Text('🔑 كلمة مرور جديدة')),
-                    PopupMenuItem(value: 'suspend', child: Text(active ? '⛔ إيقاف' : '✅ تفعيل')),
-                    const PopupMenuItem(value: 'delete', child: Text('🗑️ حذف')),
+                    PopupMenuItem(value: 'pay3', child: Text(tr('💵 دفع 3 أشهر'))),
+                    PopupMenuItem(value: 'notice', child: Text(m['notice'] == null ? tr('📩 إرسال تنبيه دفع') : tr('📩 تعديل / إزالة التنبيه'))),
+                    PopupMenuItem(value: 'reset', child: Text(tr('🔑 كلمة مرور جديدة'))),
+                    PopupMenuItem(value: 'suspend', child: Text(active ? tr('⛔ إيقاف') : tr('✅ تفعيل'))),
+                    PopupMenuItem(value: 'delete', child: Text(tr('🗑️ حذف'))),
                   ],
                 ),
               ],
@@ -470,21 +468,21 @@ class _NetworkTabState extends State<NetworkTab> {
                 spacing: 6,
                 runSpacing: 6,
                 children: [
-                  Pill(m['role'] == 'agent' ? 'وكيل' : 'عامل', icon: m['role'] == 'agent' ? Icons.hub_outlined : Icons.person_outline),
+                  Pill(m['role'] == 'agent' ? tr('وكيل') : tr('عامل'), icon: m['role'] == 'agent' ? Icons.hub_outlined : Icons.person_outline),
                   Pill(
                     status == 'paid' && paidUntil != null
-                        ? 'مدفوع حتى ${shortDate(paidUntil)}'
+                        ? trf('مدفوع حتى {0}', [shortDate(paidUntil)])
                         : status == 'expired' && paidUntil != null
-                        ? 'انتهى ${shortDate(paidUntil)}'
+                        ? trf('انتهى {0}', [shortDate(paidUntil)])
                         : statusLabel(status),
                     color: color,
                   ),
-                  Pill('${m['shops']} محل', color: AppColors.accent, icon: Icons.storefront_outlined),
-                  if ((m['members'] as num? ?? 0) > 0) Pill('${m['members']} عامل', color: AppColors.accent),
-                  if (!active) const Pill('موقوف', color: AppColors.danger, icon: Icons.block),
-                  if (m['notice'] != null) const Pill('📩 تنبيه مُرسل', color: AppColors.warning),
-                  if (widget.isSuper && '${m['parent_name'] ?? ''}'.isNotEmpty) Pill('تابع لـ ${m['parent_name']}', color: AppColors.muted),
-                  Pill('آخر دخول: ${relativeTime(DateTime.tryParse('${m['last_sign_in'] ?? ''}'))}', color: AppColors.muted),
+                  Pill(trf('{0} محل', [m['shops']]), color: AppColors.accent, icon: Icons.storefront_outlined),
+                  if ((m['members'] as num? ?? 0) > 0) Pill(trf('{0} عامل', [m['members']]), color: AppColors.accent),
+                  if (!active) Pill(tr('موقوف'), color: AppColors.danger, icon: Icons.block),
+                  if (m['notice'] != null) Pill(tr('📩 تنبيه مُرسل'), color: AppColors.warning),
+                  if (widget.isSuper && '${m['parent_name'] ?? ''}'.isNotEmpty) Pill(trf('تابع لـ {0}', [m['parent_name']]), color: AppColors.muted),
+                  Pill(trf('آخر دخول: {0}', [relativeTime(DateTime.tryParse('${m['last_sign_in'] ?? ''}'))]), color: AppColors.muted),
                 ],
               ),
             ),
@@ -494,29 +492,29 @@ class _NetworkTabState extends State<NetworkTab> {
     );
   }
 
-  static const _eventNames = {
-    'staff_created': 'أضاف حساباً',
-    'staff_suspended': 'أوقف حساب',
-    'staff_resumed': 'فعّل حساب',
-    'staff_deleted': 'حذف حساب',
-    'password_reset': 'غيّر كلمة مرور',
-    'payment': '✓ سجّل دفع',
-    'payment_undone': 'ألغى دفعة',
-    'shop_created': 'سجّل محلاً',
-    'shop_suspended': 'أوقف محل',
-    'shop_resumed': 'فعّل محل',
-    'notice_sent': '📩 أرسل تنبيه دفع إلى',
-    'notice_cleared': 'أزال التنبيه عن',
-    'owner_reset_requested': '🔑 طلب كلمة مرور جديدة لمحل',
-    'owner_password_changed': 'غيّر كلمة مرور محل',
+  static Map<String, String> get _eventNames => {
+    'staff_created': tr('أضاف حساباً'),
+    'staff_suspended': tr('أوقف حساب'),
+    'staff_resumed': tr('فعّل حساب'),
+    'staff_deleted': tr('حذف حساب'),
+    'password_reset': tr('غيّر كلمة مرور'),
+    'payment': tr('✓ سجّل دفع'),
+    'payment_undone': tr('ألغى دفعة'),
+    'shop_created': tr('سجّل محلاً'),
+    'shop_suspended': tr('أوقف محل'),
+    'shop_resumed': tr('فعّل محل'),
+    'notice_sent': tr('📩 أرسل تنبيه دفع إلى'),
+    'notice_cleared': tr('أزال التنبيه عن'),
+    'owner_reset_requested': tr('🔑 طلب كلمة مرور جديدة لمحل'),
+    'owner_password_changed': tr('غيّر كلمة مرور محل'),
   };
 
   Widget _eventsList() => Column(
     children: [
       if (events.isEmpty)
-        const Padding(
+        Padding(
           padding: EdgeInsets.all(24),
-          child: Text('لا توجد حركات بعد.', style: TextStyle(color: AppColors.muted)),
+          child: Text(tr('لا توجد حركات بعد.'), style: TextStyle(color: AppColors.muted)),
         ),
       for (final e in events)
         ListTile(
@@ -545,7 +543,7 @@ class _NetworkTabState extends State<NetworkTab> {
         heroTag: 'add-staff',
         onPressed: _add,
         icon: const Icon(Icons.person_add_alt_1_rounded),
-        label: Text(widget.isSuper ? 'وكيل / عامل جديد' : 'عامل جديد'),
+        label: Text(widget.isSuper ? tr('وكيل / عامل جديد') : tr('عامل جديد')),
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
@@ -556,18 +554,18 @@ class _NetworkTabState extends State<NetworkTab> {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: _summary('${members.length}', 'في شبكتك', AppColors.primarySoft, 'all')),
+                      Expanded(child: _summary('${members.length}', tr('في شبكتك'), AppColors.primarySoft, 'all')),
                       const SizedBox(width: 8),
-                      Expanded(child: _summary('$paid', 'مدفوع', AppColors.success, 'paid')),
+                      Expanded(child: _summary('$paid', tr('مدفوع'), AppColors.success, 'paid')),
                       const SizedBox(width: 8),
-                      Expanded(child: _summary('$unpaid', 'غير مدفوع', AppColors.danger, 'expired')),
+                      Expanded(child: _summary('$unpaid', tr('غير مدفوع'), AppColors.danger, 'expired')),
                     ],
                   ),
                   const SizedBox(height: 12),
                   SegmentedButton<bool>(
-                    segments: const [
-                      ButtonSegment(value: false, label: Text('الأعضاء'), icon: Icon(Icons.groups_outlined)),
-                      ButtonSegment(value: true, label: Text('الحركات'), icon: Icon(Icons.timeline)),
+                    segments: [
+                      ButtonSegment(value: false, label: Text(tr('الأعضاء')), icon: Icon(Icons.groups_outlined)),
+                      ButtonSegment(value: true, label: Text(tr('الحركات')), icon: Icon(Icons.timeline)),
                     ],
                     selected: {showEvents},
                     onSelectionChanged: (v) => setState(() => showEvents = v.first),
@@ -582,10 +580,10 @@ class _NetworkTabState extends State<NetworkTab> {
                     _eventsList()
                   else ...[
                     if (list.isEmpty)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 40),
                         child: Text(
-                          'لا يوجد أعضاء بعد.\nاضغط الزر بالأسفل لإضافة أول حساب بالبريد الإلكتروني.',
+                          tr('لا يوجد أعضاء بعد.\nاضغط الزر بالأسفل لإضافة أول حساب بالبريد الإلكتروني.'),
                           textAlign: TextAlign.center,
                           style: TextStyle(color: AppColors.muted, height: 1.8),
                         ),

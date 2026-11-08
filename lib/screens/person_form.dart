@@ -1,4 +1,5 @@
 import 'dart:math';
+import '../core/i18n.dart';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -133,7 +134,7 @@ class _PersonFormState extends State<PersonForm> {
       final payload = decodeImagePayload(await file.readAsBytes());
       if (payload == null) {
         setState(
-          () => error = 'اختر صورة JPG أو PNG أو WebP أصغر من 5 ميجابايت.',
+          () => error = tr('اختر صورة JPG أو PNG أو WebP أصغر من 5 ميجابايت.'),
         );
         return;
       }
@@ -181,7 +182,7 @@ class _PersonFormState extends State<PersonForm> {
   String _errorFor(Object e) {
     if (e is PostgrestException) {
       if (e.code == '23505') {
-        return 'هذا الرابط المختصر مستخدم. اختر رابطاً آخر.';
+        return tr('هذا الرابط المختصر مستخدم. اختر رابطاً آخر.');
       }
       return userError(e);
     }
@@ -191,7 +192,7 @@ class _PersonFormState extends State<PersonForm> {
   Future<void> save() async {
     if (!form.currentState!.validate()) return;
     if (business == null) {
-      setState(() => error = 'أضف نشاطاً تجارياً أولاً.');
+      setState(() => error = tr('أضف نشاطاً تجارياً أولاً.'));
       return;
     }
     setState(() {
@@ -305,7 +306,7 @@ class _PersonFormState extends State<PersonForm> {
         ),
         const SizedBox(height: 6),
         Text(
-          hasImage ? 'تغيير' : 'صورة',
+          hasImage ? tr('تغيير') : tr('صورة'),
           style: const TextStyle(fontSize: 11, color: AppColors.muted),
         ),
         if (hasImage && !uploading)
@@ -321,7 +322,7 @@ class _PersonFormState extends State<PersonForm> {
               padding: EdgeInsets.zero,
               minimumSize: const Size(0, 24),
             ),
-            child: const Text('إزالة', style: TextStyle(fontSize: 11)),
+            child: Text(tr('إزالة'), style: TextStyle(fontSize: 11)),
           ),
       ],
     );
@@ -379,20 +380,19 @@ class _PersonFormState extends State<PersonForm> {
           children: [
             const Icon(Icons.key_rounded, size: 18, color: AppColors.accent),
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text(
-                'رمز التعديل لصاحب البطاقة',
+                tr('رمز التعديل لصاحب البطاقة'),
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
               ),
             ),
             if (hasPin)
-              const Pill('مفعّل', color: AppColors.success, icon: Icons.check_rounded),
+              Pill(tr('مفعّل'), color: AppColors.success, icon: Icons.check_rounded),
           ],
         ),
         const SizedBox(height: 4),
-        const Text(
-          'يضغط صاحب البطاقة 3 مرات على صورته في صفحته، ويكتب هذا الرمز '
-          'ليعدّل بياناته وصوره والكتالوج بنفسه.',
+        Text(
+          tr('يضغط صاحب البطاقة 3 مرات على صورته في صفحته، ويكتب هذا الرمز ليعدّل بياناته وصوره والكتالوج بنفسه.'),
           style: TextStyle(fontSize: 11.5, color: AppColors.muted, height: 1.5),
         ),
         const SizedBox(height: 8),
@@ -402,10 +402,10 @@ class _PersonFormState extends State<PersonForm> {
           textDirection: TextDirection.ltr,
           maxLength: 12,
           decoration: InputDecoration(
-            labelText: hasPin ? 'رمز جديد (اتركه فارغاً للإبقاء على الحالي)' : 'الرمز (6 أرقام أو أكثر) — اختياري',
+            labelText: hasPin ? tr('رمز جديد (اتركه فارغاً للإبقاء على الحالي)') : tr('الرمز (6 أرقام أو أكثر) — اختياري'),
             counterText: '',
             suffixIcon: IconButton(
-              tooltip: 'توليد رمز',
+              tooltip: tr('توليد رمز'),
               onPressed: locked ? null : () => setState(() => pin.text = _randomPin()),
               icon: const Icon(Icons.casino_outlined),
             ),
@@ -415,7 +415,7 @@ class _PersonFormState extends State<PersonForm> {
             if (text.isEmpty) return null;
             return RegExp(r'^[0-9]{6,12}$').hasMatch(text)
                 ? null
-                : 'من 6 إلى 12 رقماً';
+                : tr('من 6 إلى 12 رقماً');
           },
         ),
         if (hasPin)
@@ -424,7 +424,7 @@ class _PersonFormState extends State<PersonForm> {
             child: TextButton.icon(
               onPressed: locked ? null : _removePin,
               icon: const Icon(Icons.key_off_rounded, size: 16),
-              label: const Text('إلغاء الرمز'),
+              label: Text(tr('إلغاء الرمز')),
               style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             ),
           ),
@@ -434,8 +434,8 @@ class _PersonFormState extends State<PersonForm> {
           icon: const Icon(Icons.grid_view_rounded, size: 18),
           label: Text(
             savedId == null
-                ? 'الكتالوج (احفظ البطاقة أولاً)'
-                : 'تعديل الكتالوج: منتجات وصور وأسعار',
+                ? tr('الكتالوج (احفظ البطاقة أولاً)')
+                : tr('تعديل الكتالوج: منتجات وصور وأسعار'),
           ),
         ),
       ],
@@ -454,11 +454,11 @@ class _PersonFormState extends State<PersonForm> {
       ),
       validator: (value) {
         final text = value?.trim() ?? '';
-        if (label.endsWith('*') && text.isEmpty) return 'مطلوب';
+        if (label.endsWith('*') && text.isEmpty) return tr('مطلوب');
         if (text.isNotEmpty &&
             (key.endsWith('_url') || key == 'website') &&
             !validHttps(text)) {
-          return 'أدخل رابط HTTPS صالحاً';
+          return tr('أدخل رابط HTTPS صالحاً');
         }
         return null;
       },
@@ -478,7 +478,7 @@ class _PersonFormState extends State<PersonForm> {
       } catch (_) {}
     }
     return AlertDialog(
-      title: Text(widget.profile == null ? 'إضافة شخص' : 'تعديل البطاقة'),
+      title: Text(widget.profile == null ? tr('إضافة شخص') : tr('تعديل البطاقة')),
       content: SizedBox(
         width: 560,
         child: SingleChildScrollView(
@@ -499,12 +499,12 @@ class _PersonFormState extends State<PersonForm> {
                         maxLength: 120,
                         textInputAction: TextInputAction.next,
                         decoration: InputDecoration(
-                          labelText: isVcard ? 'اسم الشخص' : 'عنوان البطاقة',
+                          labelText: isVcard ? tr('اسم الشخص') : tr('عنوان البطاقة'),
                           counterText: '',
                           prefixIcon: const Icon(Icons.person_outline),
                         ),
                         validator: (v) =>
-                            (v?.trim().isEmpty ?? true) ? 'الاسم مطلوب' : null,
+                            (v?.trim().isEmpty ?? true) ? tr('الاسم مطلوب') : null,
                       ),
                     ),
                   ],
@@ -515,8 +515,8 @@ class _PersonFormState extends State<PersonForm> {
                     controller: phone,
                     keyboardType: TextInputType.phone,
                     textDirection: TextDirection.ltr,
-                    decoration: const InputDecoration(
-                      labelText: 'رقم الهاتف',
+                    decoration: InputDecoration(
+                      labelText: tr('رقم الهاتف'),
                       prefixIcon: Icon(Icons.phone_outlined),
                     ),
                     validator: (v) {
@@ -524,7 +524,7 @@ class _PersonFormState extends State<PersonForm> {
                       if (text.isEmpty) return null;
                       return RegExp(r'^[+0-9 ()-]{3,40}$').hasMatch(text)
                           ? null
-                          : 'رقم غير صالح';
+                          : tr('رقم غير صالح');
                     },
                   ),
                   const SizedBox(height: 14),
@@ -532,8 +532,8 @@ class _PersonFormState extends State<PersonForm> {
                     controller: email,
                     keyboardType: TextInputType.emailAddress,
                     textDirection: TextDirection.ltr,
-                    decoration: const InputDecoration(
-                      labelText: 'البريد الإلكتروني',
+                    decoration: InputDecoration(
+                      labelText: tr('البريد الإلكتروني'),
                       prefixIcon: Icon(Icons.alternate_email),
                     ),
                     validator: (v) {
@@ -541,7 +541,7 @@ class _PersonFormState extends State<PersonForm> {
                       if (text.isEmpty) return null;
                       return text.contains('@') && !text.contains(' ')
                           ? null
-                          : 'بريد غير صالح';
+                          : tr('بريد غير صالح');
                     },
                   ),
                   const SizedBox(height: 14),
@@ -549,14 +549,14 @@ class _PersonFormState extends State<PersonForm> {
                     controller: website,
                     keyboardType: TextInputType.url,
                     textDirection: TextDirection.ltr,
-                    decoration: const InputDecoration(
-                      labelText: 'الموقع (HTTPS) — اختياري',
+                    decoration: InputDecoration(
+                      labelText: tr('الموقع (HTTPS) — اختياري'),
                       prefixIcon: Icon(Icons.language),
                     ),
                     validator: (v) {
                       final text = v?.trim() ?? '';
                       if (text.isEmpty) return null;
-                      return validHttps(text) ? null : 'أدخل رابط HTTPS صالحاً';
+                      return validHttps(text) ? null : tr('أدخل رابط HTTPS صالحاً');
                     },
                   ),
                 ] else
@@ -569,8 +569,8 @@ class _PersonFormState extends State<PersonForm> {
                   maxLength: 2000,
                   maxLines: 2,
                   minLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: 'وصف قصير — اختياري',
+                  decoration: InputDecoration(
+                    labelText: tr('وصف قصير — اختياري'),
                     counterText: '',
                   ),
                 ),
@@ -579,8 +579,8 @@ class _PersonFormState extends State<PersonForm> {
                   DropdownButtonFormField<String>(
                     initialValue: business,
                     isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'النشاط التجاري',
+                    decoration: InputDecoration(
+                      labelText: tr('النشاط التجاري'),
                       prefixIcon: Icon(Icons.storefront_outlined),
                     ),
                     items: widget.businesses
@@ -603,9 +603,9 @@ class _PersonFormState extends State<PersonForm> {
                   onChanged: locked
                       ? null
                       : (v) => setState(() => published = v),
-                  title: const Text('نشر البطاقة للعامة'),
-                  subtitle: const Text(
-                    'يظهر الرابط ورمز QR للزبائن مباشرة بعد الحفظ.',
+                  title: Text(tr('نشر البطاقة للعامة')),
+                  subtitle: Text(
+                    tr('يظهر الرابط ورمز QR للزبائن مباشرة بعد الحفظ.'),
                     style: TextStyle(fontSize: 12, color: AppColors.muted),
                   ),
                 ),
@@ -615,16 +615,16 @@ class _PersonFormState extends State<PersonForm> {
                   childrenPadding: const EdgeInsets.only(bottom: 4),
                   shape: const Border(),
                   collapsedShape: const Border(),
-                  title: const Text(
-                    'خيارات متقدمة',
+                  title: Text(
+                    tr('خيارات متقدمة'),
                     style: TextStyle(fontSize: 13, color: AppColors.muted),
                   ),
                   children: [
                     DropdownButtonFormField<String>(
                       initialValue: kind,
                       isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: 'نوع البطاقة',
+                      decoration: InputDecoration(
+                        labelText: tr('نوع البطاقة'),
                       ),
                       items: kindNames.entries
                           .map(
@@ -645,14 +645,14 @@ class _PersonFormState extends State<PersonForm> {
                       autocorrect: false,
                       enableSuggestions: false,
                       decoration: InputDecoration(
-                        labelText: 'الرابط المختصر · custom_slug',
+                        labelText: tr('الرابط المختصر · custom_slug'),
                         prefixIcon: const Icon(Icons.link),
-                        helperText: 'يُثبَّت بعد أول نشر لحماية البطاقة',
+                        helperText: tr('يُثبَّت بعد أول نشر لحماية البطاقة'),
                       ),
                       onChanged: (_) => setState(() {}),
                       validator: (v) => AppConfig.validSlug(v?.trim() ?? '')
                           ? null
-                          : '3–63 حرفاً لاتينياً صغيراً وأرقاماً وشرطات',
+                          : tr('3–63 حرفاً لاتينياً صغيراً وأرقاماً وشرطات'),
                     ),
                     const SizedBox(height: 6),
                     Align(
@@ -685,7 +685,7 @@ class _PersonFormState extends State<PersonForm> {
       actions: [
         TextButton(
           onPressed: busy ? null : () => Navigator.pop(context),
-          child: const Text('إلغاء'),
+          child: Text(tr('إلغاء')),
         ),
         FilledButton.icon(
           onPressed: busy ? null : save,
@@ -699,7 +699,7 @@ class _PersonFormState extends State<PersonForm> {
                   ),
                 )
               : const Icon(Icons.check_rounded, size: 20),
-          label: Text(busy ? 'جارٍ الحفظ…' : 'حفظ'),
+          label: Text(busy ? tr('جارٍ الحفظ…') : tr('حفظ')),
         ),
       ],
     );

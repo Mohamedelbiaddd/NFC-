@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'i18n.dart';
 
 /// Central palette and reusable surfaces for the redesigned app.
 class AppColors {
@@ -357,13 +358,13 @@ class EmptyState extends StatelessWidget {
 String relativeTime(DateTime? time) {
   if (time == null) return '—';
   final diff = DateTime.now().difference(time.toLocal());
-  if (diff.inSeconds < 45) return 'الآن';
-  if (diff.inMinutes < 60) return 'قبل ${diff.inMinutes} دقيقة';
-  if (diff.inHours < 24) return 'قبل ${diff.inHours} ساعة';
-  if (diff.inDays < 30) return 'قبل ${diff.inDays} يوم';
+  if (diff.inSeconds < 45) return tr('الآن');
+  if (diff.inMinutes < 60) return trf('قبل {0} دقيقة', [diff.inMinutes]);
+  if (diff.inHours < 24) return trf('قبل {0} ساعة', [diff.inHours]);
+  if (diff.inDays < 30) return trf('قبل {0} يوم', [diff.inDays]);
   final months = (diff.inDays / 30).floor();
-  if (months < 12) return 'قبل $months شهر';
-  return 'قبل ${(months / 12).floor()} سنة';
+  if (months < 12) return trf('قبل {0} شهر', [months]);
+  return trf('قبل {0} سنة', [(months / 12).floor()]);
 }
 
 String shortDate(DateTime? time) {

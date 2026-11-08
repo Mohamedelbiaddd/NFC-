@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'i18n.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -162,7 +163,7 @@ class ProfileImageStorage {
 
   void _requireId(String value) {
     if (!_uuid.hasMatch(value)) {
-      throw const FormatException('معرّف مساحة العمل أو الملف غير صالح.');
+      throw FormatException(tr('معرّف مساحة العمل أو الملف غير صالح.'));
     }
   }
 }
@@ -173,23 +174,21 @@ String imageUploadError(Object e) {
   if (e is FormatException) return e.message;
   final text = e.toString().toLowerCase();
   if (text.contains('bucket not found') || text.contains('bucket_not_found')) {
-    return 'حاوية التخزين غير موجودة. أنشئ Bucket عاماً باسم profile-images، '
-        'أو مرّر SUPABASE_STORAGE_BUCKET عند البناء.';
+    return tr('حاوية التخزين غير موجودة. أنشئ Bucket عاماً باسم profile-images، أو مرّر SUPABASE_STORAGE_BUCKET عند البناء.');
   }
   if (text.contains('row-level security') ||
       text.contains('unauthorized') ||
       text.contains('403') ||
       text.contains('policy')) {
-    return 'رفض الخادم رفع الصورة. تحقق من سياسات Storage في Supabase '
-        'ومن صلاحية عضويتك في مساحة العمل.';
+    return tr('رفض الخادم رفع الصورة. تحقق من سياسات Storage في Supabase ومن صلاحية عضويتك في مساحة العمل.');
   }
   if (text.contains('too large') ||
       text.contains('maximum') ||
       text.contains('413')) {
-    return 'حجم الصورة يتجاوز الحد المسموح في الحاوية (5 ميجابايت).';
+    return tr('حجم الصورة يتجاوز الحد المسموح في الحاوية (5 ميجابايت).');
   }
   if (text.contains('mime') || text.contains('content type')) {
-    return 'صيغة الصورة غير مسموحة في الحاوية. استخدم JPG أو PNG أو WebP.';
+    return tr('صيغة الصورة غير مسموحة في الحاوية. استخدم JPG أو PNG أو WebP.');
   }
-  return 'تعذّر رفع الصورة: $e';
+  return trf('تعذّر رفع الصورة: {0}', [e]);
 }

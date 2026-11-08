@@ -1,3 +1,4 @@
+import 'i18n.dart';
 class AppConfig {
   static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   // Both names are public client keys. The legacy name remains supported.
@@ -48,13 +49,13 @@ class AppConfig {
         uri.hasQuery ||
         uri.userInfo.isNotEmpty ||
         (uri.path.isNotEmpty && uri.path != '/')) {
-      throw const FormatException(
-        'أدخل أصل نطاق HTTPS فقط، مثل https://cards.example.com',
+      throw FormatException(
+        tr('أدخل أصل نطاق HTTPS فقط، مثل https://cards.example.com'),
       );
     }
     if (!validSlug(slug)) {
-      throw const FormatException(
-        'الاسم: 3–63 حرفاً، a-z و0-9 وشرطات مفردة فقط',
+      throw FormatException(
+        tr('الاسم: 3–63 حرفاً، a-z و0-9 وشرطات مفردة فقط'),
       );
     }
     return uri.replace(path: '/p/$slug', query: null, fragment: null);

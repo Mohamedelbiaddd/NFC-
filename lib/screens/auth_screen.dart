@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/app_config.dart';
 import '../core/repository.dart';
 import '../core/theme.dart';
+import '../core/i18n.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -49,12 +50,12 @@ class _AuthScreenState extends State<AuthScreen> {
           setState(() {
             verify = true;
             message =
-                'أكّد بريدك من الرسالة المرسلة إليك، أو أدخل رمز التأكيد.';
+                tr('أكّد بريدك من الرسالة المرسلة إليك، أو أدخل رمز التأكيد.');
           });
         }
       } else {
         final email = AppConfig.loginEmail(login.text);
-        if (email == null) throw const FormatException('أدخل بيانات الدخول.');
+        if (email == null) throw FormatException(tr('أدخل بيانات الدخول.'));
         await auth.signInWithPassword(email: email, password: password.text);
       }
     } catch (e) {
@@ -66,9 +67,9 @@ class _AuthScreenState extends State<AuthScreen> {
           message = e is FormatException
               ? e.message
               : authMessage == 'invalid login credentials'
-              ? 'بيانات الدخول غير صحيحة. تحقق من اسم المستخدم وكلمة المرور.'
+              ? tr('بيانات الدخول غير صحيحة. تحقق من اسم المستخدم وكلمة المرور.')
               : e is AuthException && authMessage.contains('banned')
-              ? 'هذا الحساب محظور من قبل الإدارة. تواصل مع المدير العام.'
+              ? tr('هذا الحساب محظور من قبل الإدارة. تواصل مع المدير العام.')
               : userError(e);
         });
       }
@@ -80,10 +81,10 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final title = verify
-        ? 'تأكيد الحساب'
+        ? tr('تأكيد الحساب')
         : signup
-        ? 'إنشاء حساب جديد'
-        : 'تسجيل الدخول';
+        ? tr('إنشاء حساب جديد')
+        : tr('تسجيل الدخول');
     return Scaffold(
       body: Stack(
         children: [
@@ -171,25 +172,25 @@ class _AuthScreenState extends State<AuthScreen> {
                               : TextInputType.text,
                           decoration: InputDecoration(
                             labelText: signup
-                                ? 'البريد الإلكتروني'
-                                : 'اسم المستخدم أو البريد',
+                                ? tr('البريد الإلكتروني')
+                                : tr('اسم المستخدم أو البريد'),
                             prefixIcon: const Icon(
                               Icons.person_outline_rounded,
                             ),
                             helperText: signup
                                 ? null
-                                : 'عمال الميدان يدخلون باسم المستخدم الذي منحهم المدير.',
+                                : tr('عمال الميدان يدخلون باسم المستخدم الذي منحهم المدير.'),
                           ),
                           validator: (v) {
                             final text = v?.trim() ?? '';
                             if (signup || verify) {
                               return text.contains('@') && text.length > 3
                                   ? null
-                                  : 'أدخل بريداً إلكترونياً صالحاً';
+                                  : tr('أدخل بريداً إلكترونياً صالحاً');
                             }
                             return text.length >= 3
                                 ? null
-                                : 'أدخل اسم المستخدم أو البريد';
+                                : tr('أدخل اسم المستخدم أو البريد');
                           },
                         ),
                         const SizedBox(height: 16),
@@ -198,12 +199,12 @@ class _AuthScreenState extends State<AuthScreen> {
                             controller: password,
                             obscureText: obscure,
                             decoration: InputDecoration(
-                              labelText: 'كلمة المرور',
+                              labelText: tr('كلمة المرور'),
                               prefixIcon: const Icon(
                                 Icons.lock_outline_rounded,
                               ),
                               suffixIcon: IconButton(
-                                tooltip: obscure ? 'إظهار' : 'إخفاء',
+                                tooltip: obscure ? tr('إظهار') : tr('إخفاء'),
                                 onPressed: () =>
                                     setState(() => obscure = !obscure),
                                 icon: Icon(
@@ -215,20 +216,20 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                             validator: (v) => (v?.length ?? 0) >= 8
                                 ? null
-                                : 'ثمانية أحرف على الأقل',
+                                : tr('ثمانية أحرف على الأقل'),
                           ),
                         if (verify)
                           TextFormField(
                             controller: otp,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'رمز التأكيد',
+                            decoration: InputDecoration(
+                              labelText: tr('رمز التأكيد'),
                               prefixIcon: Icon(Icons.pin_outlined),
                             ),
                             validator: (v) =>
                                 (v?.trim().isNotEmpty ?? false)
                                 ? null
-                                : 'أدخل الرمز',
+                                : tr('أدخل الرمز'),
                           ),
                         if (message != null)
                           Padding(
@@ -267,16 +268,15 @@ class _AuthScreenState extends State<AuthScreen> {
                                 )
                               : Text(
                                   verify
-                                      ? 'تأكيد الحساب'
+                                      ? tr('تأكيد الحساب')
                                       : signup
-                                      ? 'إنشاء الحساب'
-                                      : 'دخول',
+                                      ? tr('إنشاء الحساب')
+                                      : tr('دخول'),
                                 ),
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'الحسابات تُنشأ فقط من طرف الإدارة أو الوكيل المسؤول. '
-                          'اطلب بريدك وكلمة المرور من المسؤول عنك.',
+                        Text(
+                          tr('الحسابات تُنشأ فقط من طرف الإدارة أو الوكيل المسؤول. اطلب بريدك وكلمة المرور من المسؤول عنك.'),
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 11.5, color: AppColors.muted, height: 1.5),
                         ),
@@ -284,6 +284,15 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                   ),
                 ),
+              ),
+            ),
+          ),
+          const SafeArea(
+            child: Align(
+              alignment: AlignmentDirectional.topEnd,
+              child: Padding(
+                padding: EdgeInsets.all(8),
+                child: LanguageButton(),
               ),
             ),
           ),

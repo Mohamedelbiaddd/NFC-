@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'i18n.dart';
 
 import 'theme.dart';
 
-const roleLabels = <String, String>{
-  'owner': 'مالك',
-  'admin': 'مدير',
-  'editor': 'محرر ميداني',
-  'viewer': 'مشاهد',
+Map<String, String> get roleLabels => <String, String>{
+  'owner': tr('مالك'),
+  'admin': tr('مدير'),
+  'editor': tr('محرر ميداني'),
+  'viewer': tr('مشاهد'),
 };
 
-String roleLabel(String? role) => roleLabels[role] ?? 'عضو';
+String roleLabel(String? role) => roleLabels[role] ?? tr('عضو');
 
 Color roleColor(String? role) => switch (role) {
   'owner' => AppColors.warning,
@@ -18,21 +19,21 @@ Color roleColor(String? role) => switch (role) {
   _ => AppColors.muted,
 };
 
-const activityLabels = <String, String>{
-  'profile_created': 'أضاف شخصاً جديداً',
-  'profile_updated': 'حدّث بيانات بطاقة',
-  'profile_deleted': 'حذف بطاقة',
-  'business_created': 'أضاف نشاطاً تجارياً',
-  'worker_created': 'أنشأ حساب عامل',
-  'worker_updated': 'عدّل حساب عامل',
-  'worker_password_reset': 'أعاد تعيين كلمة مرور عامل',
-  'worker_disabled': 'غيّر حالة حساب عامل',
-  'worker_deleted': 'حذف حساب عامل',
-  'card_written': 'كتب بطاقة NFC',
-  'card_verified': 'تحقّق من بطاقة NFC',
-  'card_locked': 'قفل بطاقة NFC',
-  'qr_saved': 'حفظ رمز QR',
-  'login': 'سجّل الدخول',
+Map<String, String> get activityLabels => <String, String>{
+  'profile_created': tr('أضاف شخصاً جديداً'),
+  'profile_updated': tr('حدّث بيانات بطاقة'),
+  'profile_deleted': tr('حذف بطاقة'),
+  'business_created': tr('أضاف نشاطاً تجارياً'),
+  'worker_created': tr('أنشأ حساب عامل'),
+  'worker_updated': tr('عدّل حساب عامل'),
+  'worker_password_reset': tr('أعاد تعيين كلمة مرور عامل'),
+  'worker_disabled': tr('غيّر حالة حساب عامل'),
+  'worker_deleted': tr('حذف حساب عامل'),
+  'card_written': tr('كتب بطاقة NFC'),
+  'card_verified': tr('تحقّق من بطاقة NFC'),
+  'card_locked': tr('قفل بطاقة NFC'),
+  'qr_saved': tr('حفظ رمز QR'),
+  'login': tr('سجّل الدخول'),
 };
 
 String actionLabel(String action) => activityLabels[action] ?? action;

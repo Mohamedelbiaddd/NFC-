@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 
 import '../core/nfc_service.dart';
 import '../core/repository.dart';
@@ -20,7 +21,7 @@ class _LinkWriterScreenState extends State<LinkWriterScreen> {
   final nfc = NfcService();
   final url = TextEditingController();
   bool busy = false;
-  String message = 'اكتب الرابط، ثم اضغط «كتابة» وقرّب البطاقة من الهاتف.';
+  String message = tr('اكتب الرابط، ثم اضغط «كتابة» وقرّب البطاقة من الهاتف.');
   String? written;
 
   @override
@@ -48,12 +49,12 @@ class _LinkWriterScreenState extends State<LinkWriterScreen> {
   Future<void> act(String action) async {
     final link = _normalized();
     if (link == null) {
-      setState(() => message = 'الرابط غير صالح. مثال: https://example.com');
+      setState(() => message = tr('الرابط غير صالح. مثال: https://example.com'));
       return;
     }
     setState(() {
       busy = true;
-      message = 'قرّب البطاقة من ظهر الهاتف…';
+      message = tr('قرّب البطاقة من ظهر الهاتف…');
     });
     try {
       await nfc.perform(action, link);
@@ -61,8 +62,8 @@ class _LinkWriterScreenState extends State<LinkWriterScreen> {
       setState(() {
         written = link;
         message = action == 'write'
-            ? 'تمت كتابة الرابط. عند مسح البطاقة سيفتح الموقع مباشرة.'
-            : 'الرابط على البطاقة مطابق.';
+            ? tr('تمت كتابة الرابط. عند مسح البطاقة سيفتح الموقع مباشرة.')
+            : tr('الرابط على البطاقة مطابق.');
       });
       if (action == 'write' && widget.tenant != null) {
         await widget.repo.logEvent(widget.tenant!, 'link_written', subject: link);
@@ -80,7 +81,7 @@ class _LinkWriterScreenState extends State<LinkWriterScreen> {
     return PopScope(
       canPop: !busy,
       child: Scaffold(
-        appBar: AppBar(title: const Text('رابط مباشر على البطاقة')),
+        appBar: AppBar(title: Text(tr('رابط مباشر على البطاقة'))),
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
@@ -128,25 +129,25 @@ class _LinkWriterScreenState extends State<LinkWriterScreen> {
                   textDirection: TextDirection.ltr,
                   autocorrect: false,
                   enableSuggestions: false,
-                  decoration: const InputDecoration(
-                    labelText: 'الرابط (موقع، إنستغرام، واتساب، خرائط…)',
+                  decoration: InputDecoration(
+                    labelText: tr('الرابط (موقع، إنستغرام، واتساب، خرائط…)'),
                     hintText: 'https://example.com',
                     prefixIcon: Icon(Icons.public),
                   ),
                 ),
                 const SizedBox(height: 16),
                 if (!supported)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(bottom: 12),
                     child: Text(
-                      'كتابة البطاقات تحتاج هاتف Android يدعم NFC.',
+                      tr('كتابة البطاقات تحتاج هاتف Android يدعم NFC.'),
                       style: TextStyle(color: AppColors.warning),
                     ),
                   ),
                 FilledButton.icon(
                   onPressed: busy || !supported ? null : () => act('write'),
                   icon: const Icon(Icons.nfc),
-                  label: Text(busy ? 'جارٍ العمل…' : 'كتابة الرابط على البطاقة'),
+                  label: Text(busy ? tr('جارٍ العمل…') : tr('كتابة الرابط على البطاقة')),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(56),
                   ),
@@ -155,7 +156,7 @@ class _LinkWriterScreenState extends State<LinkWriterScreen> {
                 OutlinedButton.icon(
                   onPressed: busy || !supported ? null : () => act('verify'),
                   icon: const Icon(Icons.verified_outlined, size: 18),
-                  label: const Text('التحقق من البطاقة'),
+                  label: Text(tr('التحقق من البطاقة')),
                 ),
                 if (busy) ...[
                   const SizedBox(height: 10),
@@ -167,7 +168,7 @@ class _LinkWriterScreenState extends State<LinkWriterScreen> {
                         if (mounted) setState(() => message = userError(e));
                       }
                     },
-                    child: const Text('إلغاء الانتظار'),
+                    child: Text(tr('إلغاء الانتظار')),
                   ),
                 ],
               ],

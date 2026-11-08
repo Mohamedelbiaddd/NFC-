@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 
 import '../core/repository.dart';
 import '../core/theme.dart';
@@ -22,28 +23,28 @@ class UserDetailScreen extends StatefulWidget {
   State<UserDetailScreen> createState() => _UserDetailScreenState();
 }
 
-const _actionNames = {
-  'profile_created': 'أنشأ بطاقة',
-  'profile_updated': 'عدّل بطاقة',
-  'profile_deleted': 'حذف بطاقة',
-  'business_created': 'أنشأ نشاطاً تجارياً',
-  'worker_created': 'أضاف عاملاً',
-  'worker_updated': 'عدّل عاملاً',
-  'worker_password_reset': 'غيّر كلمة مرور عامل',
-  'worker_disabled': 'أوقف عاملاً',
-  'worker_deleted': 'حذف عاملاً',
-  'card_written': 'كتب بطاقة NFC',
-  'card_verified': 'تحقق من بطاقة',
-  'card_locked': 'قفل بطاقة',
-  'qr_saved': 'حفظ رمز QR',
-  'login': 'سجّل الدخول',
-  'user_joined': 'أنشأ حسابه',
-  'user_banned': 'حظر حساباً',
-  'user_unbanned': 'فك حظر حساب',
-  'pin_set': 'وضع رمز تعديل لبطاقة',
-  'pin_removed': 'أزال رمز تعديل',
-  'owner_edited': 'صاحب البطاقة عدّلها',
-  'link_written': 'كتب رابطاً مباشراً على NFC',
+Map<String, String> get _actionNames => {
+  'profile_created': tr('أنشأ بطاقة'),
+  'profile_updated': tr('عدّل بطاقة'),
+  'profile_deleted': tr('حذف بطاقة'),
+  'business_created': tr('أنشأ نشاطاً تجارياً'),
+  'worker_created': tr('أضاف عاملاً'),
+  'worker_updated': tr('عدّل عاملاً'),
+  'worker_password_reset': tr('غيّر كلمة مرور عامل'),
+  'worker_disabled': tr('أوقف عاملاً'),
+  'worker_deleted': tr('حذف عاملاً'),
+  'card_written': tr('كتب بطاقة NFC'),
+  'card_verified': tr('تحقق من بطاقة'),
+  'card_locked': tr('قفل بطاقة'),
+  'qr_saved': tr('حفظ رمز QR'),
+  'login': tr('سجّل الدخول'),
+  'user_joined': tr('أنشأ حسابه'),
+  'user_banned': tr('حظر حساباً'),
+  'user_unbanned': tr('فك حظر حساب'),
+  'pin_set': tr('وضع رمز تعديل لبطاقة'),
+  'pin_removed': tr('أزال رمز تعديل'),
+  'owner_edited': tr('صاحب البطاقة عدّلها'),
+  'link_written': tr('كتب رابطاً مباشراً على NFC'),
 };
 
 class _UserDetailScreenState extends State<UserDetailScreen> {
@@ -85,23 +86,23 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(banned ? 'فك الحظر؟' : 'حظر الحساب؟'),
+        title: Text(banned ? tr('فك الحظر؟') : tr('حظر الحساب؟')),
         content: Text(
           banned
-              ? 'سيستطيع «$email» تسجيل الدخول من جديد.'
-              : 'لن يستطيع «$email» تسجيل الدخول، وتبقى بياناته محفوظة.',
+              ? trf('سيستطيع «{0}» تسجيل الدخول من جديد.', [email])
+              : trf('لن يستطيع «{0}» تسجيل الدخول، وتبقى بياناته محفوظة.', [email]),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('إلغاء'),
+            child: Text(tr('إلغاء')),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: banned ? AppColors.success : AppColors.danger,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: Text(banned ? 'فك الحظر' : 'حظر'),
+            child: Text(banned ? tr('فك الحظر') : tr('حظر')),
           ),
         ],
       ),
@@ -166,11 +167,11 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                           runSpacing: 6,
                           children: [
                             if (widget.user['is_admin'] == true)
-                              const Pill('مدير عام', color: AppColors.warning, icon: Icons.shield_rounded),
+                              Pill(tr('مدير عام'), color: AppColors.warning, icon: Icons.shield_rounded),
                             if (banned)
-                              const Pill('محظور', color: AppColors.danger, icon: Icons.block_rounded)
+                              Pill(tr('محظور'), color: AppColors.danger, icon: Icons.block_rounded)
                             else
-                              const Pill('نشط', color: AppColors.success),
+                              Pill(tr('نشط'), color: AppColors.success),
                             for (final w in workspaces)
                               Pill('${w['name']} · ${w['role']}'),
                           ],
@@ -178,10 +179,10 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                         const SizedBox(height: 14),
                         Row(
                           children: [
-                            _stat('بطاقات أنشأها', '${profiles.length}'),
-                            _stat('نشاطات', '${activity.length}'),
+                            _stat(tr('بطاقات أنشأها'), '${profiles.length}'),
+                            _stat(tr('نشاطات'), '${activity.length}'),
                             _stat(
-                              'مسح البطاقات',
+                              tr('مسح البطاقات'),
                               '${profiles.fold<int>(0, (s, p) => s + (int.tryParse('${p['scans']}') ?? 0))}',
                             ),
                           ],
@@ -194,18 +195,18 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                               backgroundColor: banned ? AppColors.success : AppColors.danger,
                             ),
                             icon: Icon(banned ? Icons.lock_open_rounded : Icons.block_rounded),
-                            label: Text(banned ? 'فك الحظر' : 'حظر هذا الحساب'),
+                            label: Text(banned ? tr('فك الحظر') : tr('حظر هذا الحساب')),
                           ),
                         ],
                       ],
                     ),
                   ),
                   const SizedBox(height: 18),
-                  const SectionTitle('البطاقات التي أنشأها'),
+                  SectionTitle(tr('البطاقات التي أنشأها')),
                   if (profiles.isEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.all(12),
-                      child: Text('لم ينشئ أي بطاقة بعد.', style: TextStyle(color: AppColors.muted)),
+                      child: Text(tr('لم ينشئ أي بطاقة بعد.'), style: TextStyle(color: AppColors.muted)),
                     ),
                   for (final p in profiles)
                     Padding(
@@ -234,7 +235,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                             Column(
                               children: [
                                 Text('${p['scans']}', style: const TextStyle(fontWeight: FontWeight.w800)),
-                                const Text('مسح', style: TextStyle(fontSize: 10, color: AppColors.muted)),
+                                Text(tr('مسح'), style: TextStyle(fontSize: 10, color: AppColors.muted)),
                               ],
                             ),
                           ],
@@ -242,11 +243,11 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                       ),
                     ),
                   const SizedBox(height: 18),
-                  const SectionTitle('كل ما فعله في التطبيق'),
+                  SectionTitle(tr('كل ما فعله في التطبيق')),
                   if (activity.isEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.all(12),
-                      child: Text('لا نشاط مسجّل.', style: TextStyle(color: AppColors.muted)),
+                      child: Text(tr('لا نشاط مسجّل.'), style: TextStyle(color: AppColors.muted)),
                     ),
                   for (final a in activity)
                     ListTile(
