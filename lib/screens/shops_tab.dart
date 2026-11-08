@@ -348,6 +348,10 @@ class _ShopFormState extends State<ShopForm> {
   late final reward = TextEditingController(text: '${widget.shop?['reward'] ?? 'زيارة مجانية'}');
   late String industry = '${widget.shop?['industry'] ?? 'barber'}';
   late int goal = (widget.shop?['goal'] as num?)?.toInt() ?? 5;
+  late int radius = (widget.shop?['radius_m'] as num?)?.toInt() ?? 200;
+  late final location = TextEditingController(
+    text: widget.shop?['latitude'] == null ? '' : '${widget.shop!['latitude']}, ${widget.shop!['longitude']}',
+  );
   bool saving = false;
   String? error;
 
@@ -355,7 +359,7 @@ class _ShopFormState extends State<ShopForm> {
 
   @override
   void dispose() {
-    for (final c in [name, phone, address, hours, reward]) {
+    for (final c in [name, phone, address, hours, reward, location]) {
       c.dispose();
     }
     super.dispose();
@@ -387,6 +391,8 @@ class _ShopFormState extends State<ShopForm> {
           phone: phone.text,
           address: address.text,
           hours: hours.text,
+          location: ShopsService.parseLocation(location.text),
+          radius: radius,
         );
         await widget.service.setup(
           businessId: id,
@@ -406,6 +412,8 @@ class _ShopFormState extends State<ShopForm> {
         phone: phone.text,
         address: address.text,
         hours: hours.text,
+        location: ShopsService.parseLocation(location.text),
+        radius: radius,
       );
       if (!mounted) return;
       final password = created.password;
@@ -520,6 +528,36 @@ class _ShopFormState extends State<ShopForm> {
                 hintText: 'مثال: كل يوم 9:00 - 21:00، الجمعة مغلق',
                 counterText: '',
               ),
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: location,
+              textDirection: TextDirection.ltr,
+              decoration: const InputDecoration(
+                labelText: '📍 موقع المحل (اختياري)',
+                hintText: 'الصق رابط Google Maps أو 33.5731, -7.5898',
+              ),
+              validator: (v) => (v ?? '').trim().isEmpty || ShopsService.parseLocation(v!) != null
+                  ? null
+                  : 'لم أفهم الموقع: الصق رابط خرائط فيه الإحداثيات',
+            ),
+            Row(
+              children: [
+                const Expanded(child: Text('نطاق التذكير (متر)')),
+                IconButton(
+                  onPressed: radius > 50 ? () => setState(() => radius -= 50) : null,
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                Text('$radius', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                IconButton(
+                  onPressed: radius < 1000 ? () => setState(() => radius += 50) : null,
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+              ],
+            ),
+            const Text(
+              'صاحب المحل يستطيع أيضاً تحديد الموقع بضغطة من لوحته وهو داخل المحل.',
+              style: TextStyle(fontSize: 11.5, color: AppColors.muted),
             ),
             const SizedBox(height: 18),
             const Text('بطاقة الولاء', style: TextStyle(fontWeight: FontWeight.w700)),

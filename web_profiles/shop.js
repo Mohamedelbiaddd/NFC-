@@ -190,6 +190,19 @@ function settingsView() {
   const hours = field('🕒', s.hours);
   const goal = field(t('goal'), s.goal, 'number'); goal.input.min = 1; goal.input.max = 50;
   const reward = field(t('reward'), s.reward);
+  let geo = s.latitude != null ? {lat: s.latitude, lng: s.longitude} : null;
+  const geoInfo = el('p', '', 'muted small');
+  const drawGeo = () => { geoInfo.textContent = geo ? `📍 ${geo.lat.toFixed(5)}, ${geo.lng.toFixed(5)}` : t('noLocation'); };
+  drawGeo();
+  const locate = el('button', t('useLocation'), 'button secondary'); locate.type = 'button';
+  locate.addEventListener('click', () => {
+    if (!navigator.geolocation) { toast(t('noGeo'), true); return; }
+    locate.disabled = true;
+    navigator.geolocation.getCurrentPosition(p => {
+      geo = {lat: p.coords.latitude, lng: p.coords.longitude}; drawGeo(); locate.disabled = false; toast(t('locationSet'));
+    }, () => { toast(t('noGeo'), true); locate.disabled = false; }, {enableHighAccuracy: true, timeout: 15000});
+  });
+  const radius = field(t('radius'), s.radius_m ?? 200, 'number'); radius.input.min = 50; radius.input.max = 1000; radius.input.step = 50;
   const banners = [...(s.banners ?? [])];
   const gallery = el('div', undefined, 'banner-edit');
   const drawGallery = () => {
@@ -229,6 +242,8 @@ function settingsView() {
       const r = await rpc(config, 'nfc_shop_update', {target_slug: slug, session: session(), settings: {
         name: name.input.value, phone: phone.input.value, address: address.input.value, hours: hours.input.value,
         goal: String(Math.min(50, Math.max(1, parseInt(goal.input.value, 10) || 5))), reward: reward.input.value, banners,
+        radius_m: String(Math.min(1000, Math.max(50, parseInt(radius.input.value, 10) || 200))),
+        ...(geo ? {latitude: String(geo.lat), longitude: String(geo.lng)} : {}),
       }});
       if (!r?.ok) { toast(t('saveError'), true); return; }
       toast(t('saved'));
@@ -241,6 +256,7 @@ function settingsView() {
     storage(sessionKey, null); loginView();
   });
   return [name.wrap, phone.wrap, address.wrap, hours.wrap, goal.wrap, reward.wrap,
+    el('h2', t('location'), 'section'), geoInfo, locate, radius.wrap, el('p', t('radiusNote'), 'muted small'),
     el('h2', t('banners'), 'section'), gallery, save, out];
 }
 

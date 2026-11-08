@@ -1,6 +1,7 @@
 // Tiny translation helper for the public pages: Arabic, English, Italian.
 const DICT = {
   ar: {
+    location: '📍 موقع المحل', useLocation: '📍 استخدم موقعي الحالي (وأنت داخل المحل)', noLocation: 'لم يُحدَّد الموقع بعد', locationSet: 'تم تحديد الموقع، اضغط حفظ', noGeo: 'تعذّر تحديد الموقع، فعّل GPS واسمح للمتصفح', radius: 'نطاق التذكير بالأمتار (50 - 1000)', radiusNote: 'يستعمل لتذكير الزبائن القريبين من المحل عبر المحفظة. في Google Wallet تحدد جوجل المسافة الفعلية بنفسها.',
     loading: 'جارٍ التحميل…', unavailable: 'هذا المحل غير متاح', unavailableText: 'تأكد من الرابط أو اسأل صاحب المحل.',
     network: 'تعذّر الاتصال، تحقق من الإنترنت.', join: 'انضم لبطاقة الولاء', joinText: 'اكتب اسمك ورقم هاتفك مرة واحدة فقط، وبعدها تُحسب زياراتك تلقائياً.',
     name: 'الاسم', phone: 'رقم الهاتف', joinBtn: 'انضمام', badName: 'اكتب اسمك', badPhone: 'رقم الهاتف غير صحيح',
@@ -22,6 +23,7 @@ const DICT = {
     minutesAgo: 'قبل {n} د', hoursAgo: 'قبل {n} س', daysAgo: 'قبل {n} يوم', privacy: 'الخصوصية', terms: 'الشروط',
   },
   en: {
+    location: '📍 Shop location', useLocation: '📍 Use my current location (inside the shop)', noLocation: 'Location not set yet', locationSet: 'Location set, press Save', noGeo: 'Could not get location; turn on GPS and allow the browser', radius: 'Reminder radius in metres (50 - 1000)', radiusNote: 'Used to remind nearby customers through the wallet. In Google Wallet, Google decides the actual distance itself.',
     loading: 'Loading…', unavailable: 'This shop is not available', unavailableText: 'Check the link or ask the shop.',
     network: 'Connection failed, check your internet.', join: 'Join the loyalty card', joinText: 'Enter your name and phone once; after that every visit is counted automatically.',
     name: 'Name', phone: 'Phone number', joinBtn: 'Join', badName: 'Enter your name', badPhone: 'Invalid phone number',
@@ -43,6 +45,7 @@ const DICT = {
     minutesAgo: '{n} min ago', hoursAgo: '{n} h ago', daysAgo: '{n} d ago', privacy: 'Privacy', terms: 'Terms',
   },
   it: {
+    location: '📍 Posizione del negozio', useLocation: '📍 Usa la mia posizione (dentro il negozio)', noLocation: 'Posizione non impostata', locationSet: 'Posizione impostata, premi Salva', noGeo: 'Posizione non disponibile; attiva il GPS e consenti al browser', radius: 'Raggio promemoria in metri (50 - 1000)', radiusNote: 'Serve a ricordare il negozio ai clienti vicini tramite il wallet. In Google Wallet la distanza effettiva la decide Google.',
     loading: 'Caricamento…', unavailable: 'Negozio non disponibile', unavailableText: 'Controlla il link o chiedi al negozio.',
     network: 'Connessione non riuscita, controlla internet.', join: 'Iscriviti alla carta fedeltà', joinText: 'Inserisci nome e telefono una sola volta; poi ogni visita viene contata da sola.',
     name: 'Nome', phone: 'Telefono', joinBtn: 'Iscriviti', badName: 'Inserisci il nome', badPhone: 'Numero non valido',

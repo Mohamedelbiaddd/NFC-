@@ -73,6 +73,8 @@ class ShopsService {
     String? phone,
     String? address,
     String? hours,
+    (double, double)? location,
+    int radius = 200,
   }) async {
     final row = await client
         .from('nfc_businesses')
@@ -83,6 +85,9 @@ class ShopsService {
           'phone': _blank(phone),
           'address': _blank(address),
           'hours': _blank(hours),
+          'latitude': location?.$1,
+          'longitude': location?.$2,
+          'geofence_radius_m': radius,
         })
         .select('id')
         .single();
@@ -105,6 +110,8 @@ class ShopsService {
     String? phone,
     String? address,
     String? hours,
+    (double, double)? location,
+    int radius = 200,
   }) async {
     await client.from('nfc_businesses').update({
       'name': name,
@@ -112,6 +119,9 @@ class ShopsService {
       'phone': _blank(phone),
       'address': _blank(address),
       'hours': _blank(hours),
+      'latitude': location?.$1,
+      'longitude': location?.$2,
+      'geofence_radius_m': radius,
     }).eq('id', businessId);
   }
 
@@ -139,6 +149,15 @@ class ShopsService {
       'nfc_shop_disable',
       params: {'target_business': businessId, 'disabled': disabled},
     );
+  }
+
+  /// Accepts "33.57, -7.59" or a Google Maps link containing @lat,lng / q=lat,lng.
+  static (double, double)? parseLocation(String text) {
+    final match = RegExp(r'(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)').firstMatch(text);
+    if (match == null) return null;
+    final lat = double.tryParse(match.group(1)!), lng = double.tryParse(match.group(2)!);
+    if (lat == null || lng == null || lat.abs() > 90 || lng.abs() > 180) return null;
+    return (lat, lng);
   }
 
   static String? _blank(String? value) {
