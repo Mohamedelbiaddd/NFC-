@@ -60,10 +60,15 @@ class _AuthScreenState extends State<AuthScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
+          final authMessage = e is AuthException
+              ? e.message.toLowerCase()
+              : '';
           message = e is FormatException
               ? e.message
-              : e is AuthException && e.message == 'Invalid login credentials'
+              : authMessage == 'invalid login credentials'
               ? 'بيانات الدخول غير صحيحة. تحقق من اسم المستخدم وكلمة المرور.'
+              : e is AuthException && authMessage.contains('banned')
+              ? 'هذا الحساب محظور من قبل الإدارة. تواصل مع المدير العام.'
               : userError(e);
         });
       }

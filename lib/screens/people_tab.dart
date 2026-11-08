@@ -20,6 +20,8 @@ class PeopleTab extends StatefulWidget {
     required this.onWrite,
     required this.onPreview,
     required this.onRefresh,
+    this.scans = const {},
+    this.totalScans = 0,
   });
 
   final List<Json> profiles;
@@ -33,6 +35,8 @@ class PeopleTab extends StatefulWidget {
   final void Function(Json profile) onWrite;
   final void Function(Json profile) onPreview;
   final Future<void> Function() onRefresh;
+  final Map<String, int> scans;
+  final int totalScans;
 
   @override
   State<PeopleTab> createState() => _PeopleTabState();
@@ -120,6 +124,12 @@ class _PeopleTabState extends State<PeopleTab> {
                     '$published منشور',
                     color: AppColors.success,
                     icon: Icons.public,
+                  ),
+                  const SizedBox(width: 8),
+                  Pill(
+                    '${widget.totalScans} مشاهدة',
+                    color: AppColors.primarySoft,
+                    icon: Icons.visibility_outlined,
                   ),
                   const Spacer(),
                   if (widget.canEdit)
@@ -268,6 +278,28 @@ class _PeopleTabState extends State<PeopleTab> {
               ],
             ),
           ),
+          if ((widget.scans[profile['id']] ?? 0) > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.visibility_outlined,
+                    size: 13,
+                    color: AppColors.muted,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    '${widget.scans[profile['id']]}',
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           PopupMenuButton<String>(
             tooltip: 'خيارات',
             icon: const Icon(Icons.more_vert_rounded, color: AppColors.muted),

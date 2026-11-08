@@ -28,3 +28,18 @@ export async function fetchProfile(config,slug,fetcher=fetch){
  if(!response.ok)throw new Error('Profile lookup failed');
  return response.json();
 }
+
+// Fire-and-forget scan counter. The database only accepts published slugs and
+// de-duplicates rapid repeats, so this can never be used to probe profiles.
+export async function trackScan(config,slug,source='link',fetcher=fetch){
+ if(!config?.supabaseUrl||!config?.publishableKey)return;
+ if(!validSlug(slug))return;
+ try{
+  await fetcher(`${config.supabaseUrl}/rest/v1/rpc/nfc_track_scan`,{
+   method:'POST',
+   headers:{'Content-Type':'application/json',apikey:config.publishableKey},
+   body:JSON.stringify({target_slug:slug,scan_source:source,agent:String(globalThis.navigator?.userAgent??'').slice(0,300)}),
+   cache:'no-store',keepalive:true,
+  });
+ }catch{/* counting must never break the page */}
+}

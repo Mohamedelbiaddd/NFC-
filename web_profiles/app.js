@@ -1,4 +1,4 @@
-import {slugFromPath,safeHttps,safeImageUrl,vcardEscape,fetchProfile} from '/routing.mjs';
+import {slugFromPath,safeHttps,safeImageUrl,vcardEscape,fetchProfile,trackScan} from '/routing.mjs';
 const root=document.getElementById('app');
 function el(tag,text,cls){const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;}
 function link(label,url){const safe=safeHttps(url);if(!safe)return;const a=el('a',label,'button');a.href=safe;a.target='_blank';a.rel='noopener noreferrer';root.append(a);}
@@ -59,7 +59,12 @@ async function start(){
   return;
  }
  try{
-  render(await fetchProfile(config,slug),config);
+  const profile=await fetchProfile(config,slug);
+  const source=new URLSearchParams(location.search).get('src');
+  if(profile&&profile.business&&profile.data){
+   void trackScan(config,slug,source==='qr'||source==='nfc'?source:'link');
+  }
+  render(profile,config);
  }catch{
   status('تعذّر الاتصال بقاعدة البيانات','تحقق من الإنترنت ومن عنوان مشروع Supabase ومفتاح publishable ثم أعد التحميل.');
  }

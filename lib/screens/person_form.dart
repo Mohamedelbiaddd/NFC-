@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -83,8 +85,17 @@ class _PersonFormState extends State<PersonForm> {
     }
   }
 
-  static String _suggestSlug() =>
-      'card-${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}';
+  // Longer random slugs make public links hard to guess or enumerate.
+  static String _suggestSlug() {
+    final stamp = DateTime.now().millisecondsSinceEpoch.toRadixString(36);
+    final random = Random.secure();
+    const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
+    final salt = List.generate(
+      4,
+      (_) => alphabet[random.nextInt(alphabet.length)],
+    ).join();
+    return 'card-$stamp$salt';
+  }
 
   @override
   void dispose() {

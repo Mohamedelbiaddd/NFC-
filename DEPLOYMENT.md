@@ -45,3 +45,32 @@
 ## التحقق
 
 شغّل الـ workflow (.github/workflows/build-apk.yml) الذي ينفّذ `flutter analyze` و`flutter test` ثم `flutter build apk --release --dart-define-from-file=config.json`، أو نفّذها محلياً بالأمر نفسه. يحتاج اختبار NFC الفعلي إلى جهاز Android وشريحة متوافقة. القفل دائم ويتطلب تأكيداً مستقلاً؛ لا تختبره على بطاقة تحتاج إعادة استخدامها. لا توجد في هذا المشروع ضمانات جاهزية إنتاجية للبنية التشغيلية والمراقبة والنسخ الاحتياطي والأمان والتوقيع.
+
+## الأدوار والملكية (مدير عام + عمال ميدان)
+
+- **المدير العام** يُعرَّف بالبريد الإلكتروني لا بالمعرّف: الجدول `nfc_private.admin_emails` يحوي `mohamed.elbiad.2025@gmail.com`، ومشغّل `nfc_private.promote_admin_email()` يمنح أي حساب يُطابق هذا البريد صفة مدير عام تلقائياً عند التسجيل. دالة `nfc_private.is_super_admin()` تعتمد الجدولين `nfc_private.admin_emails` و`public.nfc_super_admins`، و`nfc_private.has_role()` تمنح المدير العام كل الأدوار في كل مساحة عمل.
+- لتغيير بريد المدير العام: أضف السطر الجديد إلى `nfc_private.admin_emails` (عبر SQL Editor) واحذف القديم إن أردت. لا يوجد أي مسار من التطبيق يمكن للمستخدم من خلاله ترقية نفسه.
+- **كل حساب جديد** (بريد إلكتروني جديد) يحصل تلقائياً على مساحة عمل خاصة به + نشاط «هويتي» + عضوية `owner` عبر المشغّل `nfc_private.provision_user()` على `auth.users`. لذلك يدخل المستخدم الجديد واجهة العمل العادية مباشرة، ويظهر فوراً في شاشة «المستخدمون» عند المدير العام.
+- **لوحة المستخدمين** (تبويب «المستخدمون»، يظهر للمدير العام فقط) تقرأ `public.nfc_all_users(term)` وتعيد لكل حساب: تاريخ التسجيل، آخر دخول، عدد البطاقات التي أنشأها، عدد عمليات كتابة NFC، **عدد المشاهدات (Scans)**، إجمالي النشاطات، وحالة الحظر. الحظر يتم عبر `public.nfc_admin_set_user_state(target_id, banned)` التي تحظر الحساب في `auth.users.banned_until` وتُسجّل الحدث؛ ولا يمكن للمدير العام حظر نفسه.
+- **عمال الميدان** (اسم مستخدم + كلمة مرور) يُنشئون عبر دالة الحافة `admin-workers` من تبويب «الفريق»: إنشاء، إعادة تعيين كلمة مرور، تعطيل/تفعيل، حذف. اسم المستخدم يُحوَّل إلى `<username>@workers.nfc-studio.internal`، والتطبيق يبني نفس العنوان عند الدخول باسم المستخدم.
+
+## عدّاد المشاهدات (Scans)
+
+- جدول `public.nfc_scans` يسجّل كل فتح لبطاقة منشورة: `profile_id`, `tenant_id`, `source` (`link`/`qr`/`nfc`), `user_agent`, `created_at`.
+- الزائر المجهول لا يملك أي صلاحية قراءة أو كتابة على الجداول؛ يمر عبر دالة واحدة فقط: `public.nfc_track_scan(target_slug, scan_source, agent)` التي تتحقق من أن الاسم المخصص **منشور** ومن طوله المسموح، وتتجاهل التكرار من المتصفح نفسه خلال 5 ثوانٍ.
+- صفحة Vercel العامة تستدعي هذه الدالة بعد نجاح تحميل البطاقة فقط (في `web_profiles/app.js`)، ورمز QR الذي يولّده التطبيق يضيف `?src=qr` لتمييز مصدر الزيارة.
+- في التطبيق: `nfc_scan_overview(workspace_id)` تعطي مشاهدات كل بطاقة (الإجمالي و7 أيام)، و`nfc_team_overview` أصبحت تعيد `scans` لكل عضو.
+
+## التعتيم والحماية الثنائية
+
+- بناء APK في GitHub Actions يستخدم `--obfuscate --split-debug-info=build/debug-symbols`، أي إعادة تسمية كل رموز Dart وحذف التعليقات؛ لا يمكن استرجاع الكود المقروء من الملف. **ملفات الرموز تُحفظ كأثر منفصل** (`nfc-admin-debug-symbols`) ولا تُضمَّن في APK — احتفظ بها لفك رموز تقارير الأعطال.
+- `android/app/build.gradle.kts` يفعّل `isMinifyEnabled` و`isShrinkResources` مع `android/app/proguard-rules.pro` (R8) لإزالة الكود غير المستخدم وتقصير أسماء أصناف Java/Kotlin.
+- `AndroidManifest.xml`: `allowBackup=false`، `usesCleartextTraffic=false` (كل الاتصالات HTTPS)، وقواعد `data_extraction_rules.xml` تمنع نسخ بيانات التطبيق.
+- **قبل التوزيع العام**: يُوقّع APK الحالي بمفتاح debug (قابل للاستبدال). أنشئ keystore للإصدار واحفظه في GitHub Secrets ثم اضبط `signingConfigs.release`، لأن مفتاح debug يسمح لأي شخص بتوقيع نسخة معدّلة باسم الحزمة نفسه.
+
+## صلاحيات قاعدة البيانات (RLS)
+
+- جميع جداول `public` الثمانية + `nfc_scans` عليها RLS مفعّل، و`anon` لا يملك أي صلاحية على أي جدول (تحقق آلي: `select public.nfc_security_self_check();`).
+- كل قراءة/كتابة للجداول تمر عبر `nfc_private.has_role(tenant_id, roles)`، أي عضو في مساحة العمل فقط، بينما المدير العام يعبر كل الفحوص.
+- `nfc_activity` و`nfc_super_admins` غير قابلة للكتابة من التطبيق إطلاقاً (`revoke insert/update/delete`)، ونفس الشيء لـ`nfc_workers` بعد إنشائها عبر دالة الحافة.
+- قراءة البطاقات العامة تمر عبر `nfc_public_profile_by_slug(slug)` فقط، وهي تعيد `null` لأي بطاقة غير منشورة أو محذوفة، وتقبل أسماء بطول 3–63 حرفاً مطابقة لقيد الصيغة على الجدول. لا توجد دالة عامة تقبل `uuid` للبطاقات.

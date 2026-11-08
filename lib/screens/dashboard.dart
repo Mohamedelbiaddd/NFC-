@@ -11,6 +11,7 @@ import 'activity_tab.dart';
 import 'people_tab.dart';
 import 'person_form.dart';
 import 'qr_screen.dart';
+import 'users_tab.dart';
 import 'workers_tab.dart';
 import 'writer_screen.dart';
 
@@ -28,6 +29,9 @@ class _DashboardState extends State<Dashboard> {
   String role = 'viewer';
   bool isSuper = false, loading = true, _loggedLogin = false;
   int page = 0, request = 0, tick = 0;
+  Map<String, int> profileScans = const {};
+  int totalScans = 0;
+  int get tabCount => isSuper ? 4 : 3;
 
   bool get canEdit => {'owner', 'admin', 'editor'}.contains(role);
   bool get canDelete => {'owner', 'admin'}.contains(role);
@@ -75,6 +79,21 @@ class _DashboardState extends State<Dashboard> {
           ? <Json>[]
           : await repo.rows('nfc_profiles', tenant: active);
       ps.sort((a, b) => '${b['created_at']}'.compareTo('${a['created_at']}'));
+      var scans = <String, int>{};
+      var scanTotal = 0;
+      if (active != null) {
+        try {
+          final rows = await workers.scanOverview(active);
+          for (final row in rows) {
+            final count = row['scans'];
+            final value = count is int ? count : int.tryParse('$count') ?? 0;
+            scans['${row['profile_id']}'] = value;
+            scanTotal += value;
+          }
+        } catch (_) {
+          // Scan counters are informative; never block the workspace load.
+        }
+      }
       var superAdmin = false;
       var current = 'viewer';
       if (active != null) {
@@ -101,9 +120,10 @@ class _DashboardState extends State<Dashboard> {
         profiles = ps;
         role = current;
         isSuper = superAdmin;
-        if (page == 1 || page == 2) {
-          if (!canManage) page = 0;
-        }
+        profileScans = scans;
+        totalScans = scanTotal;
+        if (page > 0 && !canManage) page = 0;
+        if (page == 3 && !superAdmin) page = 0;
       });
       if (active != null && !_loggedLogin) {
         _loggedLogin = true;
@@ -210,7 +230,9 @@ class _DashboardState extends State<Dashboard> {
       context,
       MaterialPageRoute<void>(
         builder: (_) => QrScreen(
-          url: profileLink(profile).toString(),
+          url: profileLink(profile)
+              .replace(queryParameters: {'src': 'qr'})
+              .toString(),
           title: personName(profile),
           business: match.isEmpty ? '' : '${match.first['name']}',
           slug: slug,
@@ -551,10 +573,12 @@ class _DashboardState extends State<Dashboard> {
       onWrite: openWriter,
       onPreview: openProfile,
       onRefresh: refresh,
+      scans: profileScans,
+      totalScans: totalScans,
     );
     if (!canManage) return people;
     return IndexedStack(
-      index: page.clamp(0, 2).toInt(),
+      index: page.clamp(0, tabCount - 1).toInt(),
       children: [
         people,
         ActivityTab(
@@ -570,6 +594,12 @@ class _DashboardState extends State<Dashboard> {
           tenant: tenant!,
           onChanged: refresh,
         ),
+        if (isSuper)
+          UsersTab(
+            key: ValueKey('users-$tick'),
+            service: workers,
+            currentUserId: repo.client.auth.currentUser?.id,
+          ),
       ],
     );
   }
@@ -638,24 +668,30 @@ class _DashboardState extends State<Dashboard> {
       ),
       bottomNavigationBar: canManage && tenant != null
           ? NavigationBar(
-              selectedIndex: page.clamp(0, 2).toInt(),
+              selectedIndex: page.clamp(0, tabCount - 1).toInt(),
               onDestinationSelected: (index) => setState(() => page = index),
-              destinations: const [
-                NavigationDestination(
+              destinations: [
+                const NavigationDestination(
                   icon: Icon(Icons.people_alt_outlined),
                   selectedIcon: Icon(Icons.people_alt_rounded),
                   label: 'الأشخاص',
                 ),
-                NavigationDestination(
+                const NavigationDestination(
                   icon: Icon(Icons.insights_outlined),
                   selectedIcon: Icon(Icons.insights_rounded),
                   label: 'المتابعة',
                 ),
-                NavigationDestination(
+                const NavigationDestination(
                   icon: Icon(Icons.badge_outlined),
                   selectedIcon: Icon(Icons.badge_rounded),
                   label: 'الفريق',
                 ),
+                if (isSuper)
+                  const NavigationDestination(
+                    icon: Icon(Icons.shield_outlined),
+                    selectedIcon: Icon(Icons.shield_rounded),
+                    label: 'المستخدمون',
+                  ),
               ],
             )
           : null,

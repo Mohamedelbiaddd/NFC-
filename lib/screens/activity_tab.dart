@@ -233,16 +233,33 @@ class _ActivityTabState extends State<ActivityTab> {
               children: [
                 _metric('أضاف', '$created', AppColors.success),
                 _metric('كتب بطاقة', '$written', AppColors.primarySoft),
-                _metric('قفل', '$locked', AppColors.warning),
-                _metric('نشاطات', '$actions', AppColors.accent),
+                _metric('مشاهدات', '${member['scans'] ?? 0}', AppColors.accent),
+                _metric('نشاطات', '$actions', AppColors.warning),
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              last == null
-                  ? 'لا نشاط بعد'
-                  : 'آخر نشاط ${relativeTime(last)} · ${shortDate(last)}',
-              style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    last == null
+                        ? 'لا نشاط بعد'
+                        : 'آخر نشاط ${relativeTime(last)} · ${shortDate(last)}',
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ),
+                if (locked > 0)
+                  Pill('$locked مقفلة', color: AppColors.muted),
+                if (member['banned_until'] is String &&
+                    DateTime.tryParse('${member['banned_until']}')?.isAfter(
+                          DateTime.now(),
+                        ) ==
+                        true)
+                  const Pill('محظور', color: AppColors.danger),
+              ],
             ),
           ],
         ),

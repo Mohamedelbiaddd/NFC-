@@ -29,6 +29,33 @@ class WorkersService {
     ),
   );
 
+  /// Every account in the project. Super administrators only (the server
+  /// raises 'Not authorized' for anybody else).
+  Future<List<Json>> allUsers({String? term}) async => _rows(
+    await client.rpc('nfc_all_users', params: {'term': term}),
+  );
+
+  /// Per-profile scan counters for one workspace.
+  Future<List<Json>> scanOverview(String tenant) async => _rows(
+    await client.rpc('nfc_scan_overview', params: {'workspace_id': tenant}),
+  );
+
+  /// Ban or unban any account (super administrator only).
+  Future<void> setUserBanned({
+    required String userId,
+    required bool banned,
+  }) async {
+    try {
+      await client.rpc(
+        'nfc_admin_set_user_state',
+        params: {'target_id': userId, 'banned': banned},
+      );
+    } catch (e) {
+      final match = RegExp(r'message\W+(.+)').firstMatch(e.toString());
+      throw WorkerException(match?.group(1)?.trim() ?? userError(e));
+    }
+  }
+
   Future<void> createWorker({
     required String tenant,
     required String username,
