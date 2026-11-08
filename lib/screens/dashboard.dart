@@ -13,9 +13,10 @@ import 'person_form.dart';
 import 'qr_screen.dart';
 import 'users_tab.dart';
 import 'link_writer_screen.dart';
+import 'network_tab.dart';
 import 'shops_tab.dart';
+import '../core/network_service.dart';
 import '../core/shops_service.dart';
-import 'workers_tab.dart';
 import 'writer_screen.dart';
 
 class Dashboard extends StatefulWidget {
@@ -28,6 +29,9 @@ class _DashboardState extends State<Dashboard> {
   late final Repository repo;
   late final WorkersService workers;
   late final ShopsService shops;
+  late final NetworkService network;
+  String staffRole = '';
+  bool allowed = true;
   List<Json> tenants = const [], businesses = const [], profiles = const [];
   String? tenant, error;
   String role = 'viewer';
@@ -35,7 +39,8 @@ class _DashboardState extends State<Dashboard> {
   int page = 0, request = 0, tick = 0;
   Map<String, int> profileScans = const {};
   int totalScans = 0;
-  int get tabCount => canManage ? (isSuper ? 5 : 4) : (canEdit ? 2 : 1);
+  bool get seesNetwork => isSuper || staffRole == 'agent';
+  int get tabCount => !canEdit ? 1 : 2 + (seesNetwork ? 1 : 0) + (isSuper ? 2 : 0);
 
   bool get canEdit => {'owner', 'admin', 'editor'}.contains(role);
   bool get canDelete => {'owner', 'admin'}.contains(role);
@@ -47,6 +52,7 @@ class _DashboardState extends State<Dashboard> {
     repo = Repository(Supabase.instance.client);
     workers = WorkersService(repo.client);
     shops = ShopsService(repo.client);
+    network = NetworkService(repo.client);
     load();
   }
 
@@ -101,6 +107,13 @@ class _DashboardState extends State<Dashboard> {
       }
       var superAdmin = false;
       var current = 'viewer';
+      var account = <String, dynamic>{};
+      try {
+        account = await network.myAccount();
+      } catch (_) {
+        // Older databases: treat as allowed; RLS still protects the data.
+        account = {'allowed': true};
+      }
       if (active != null) {
         superAdmin = await repo.amSuperAdmin();
         try {
@@ -125,10 +138,12 @@ class _DashboardState extends State<Dashboard> {
         profiles = ps;
         role = current;
         isSuper = superAdmin;
+        allowed = account['allowed'] != false;
+        final staff = account['staff'];
+        staffRole = staff is Map ? '${staff['role'] ?? ''}' : '';
         profileScans = scans;
         totalScans = scanTotal;
         if (page >= tabCount) page = 0;
-        if (page == 3 && !superAdmin) page = 0;
       });
       if (active != null && !_loggedLogin) {
         _loggedLogin = true;
@@ -539,6 +554,19 @@ class _DashboardState extends State<Dashboard> {
   );
 
   Widget _body() {
+    if (!allowed && !loading) {
+      return EmptyState(
+        icon: Icons.lock_outline_rounded,
+        title: 'هذا الحساب غير مفعّل',
+        text: 'الحسابات تُنشأ فقط من طرف الإدارة أو الوكيل المسؤول. '
+            'إذا كان حسابك موقوفاً تواصل مع المسؤول عنك.',
+        action: FilledButton.icon(
+          onPressed: signOut,
+          icon: const Icon(Icons.logout_rounded),
+          label: const Text('تسجيل الخروج'),
+        ),
+      );
+    }
     if (error != null) {
       return EmptyState(
         icon: Icons.cloud_off_rounded,
@@ -581,39 +609,31 @@ class _DashboardState extends State<Dashboard> {
       scans: profileScans,
       totalScans: totalScans,
     );
-    final shopsTab = ShopsTab(
-      key: ValueKey('shops-$tick-${tenant!}'),
-      service: shops,
-      tenant: tenant!,
-      currentUserId: repo.client.auth.currentUser?.id,
-      seeAll: canManage || isSuper,
-      canDisable: canManage || isSuper,
-    );
     if (!canEdit) return people;
-    if (!canManage) {
-      return IndexedStack(
-        index: page.clamp(0, 1).toInt(),
-        children: [people, shopsTab],
-      );
-    }
     return IndexedStack(
       index: page.clamp(0, tabCount - 1).toInt(),
       children: [
         people,
-        shopsTab,
-        ActivityTab(
-          key: ValueKey('activity-$tick-${tenant!}'),
-          service: workers,
+        ShopsTab(
+          key: ValueKey('shops-$tick-${tenant!}'),
+          service: shops,
+          network: network,
           tenant: tenant!,
-          currentUserId: repo.client.auth.currentUser?.id,
+          seeAll: seesNetwork,
         ),
-        WorkersTab(
-          key: ValueKey('workers-$tick-${tenant!}'),
-          service: workers,
-          repo: repo,
-          tenant: tenant!,
-          onChanged: refresh,
-        ),
+        if (seesNetwork)
+          NetworkTab(
+            key: ValueKey('network-$tick'),
+            service: network,
+            isSuper: isSuper,
+          ),
+        if (isSuper)
+          ActivityTab(
+            key: ValueKey('activity-$tick-${tenant!}'),
+            service: workers,
+            tenant: tenant!,
+            currentUserId: repo.client.auth.currentUser?.id,
+          ),
         if (isSuper)
           UsersTab(
             key: ValueKey('users-$tick'),
@@ -698,7 +718,7 @@ class _DashboardState extends State<Dashboard> {
           Expanded(child: _body()),
         ],
       ),
-      bottomNavigationBar: canEdit && tenant != null
+      bottomNavigationBar: canEdit && allowed && tenant != null
           ? NavigationBar(
               selectedIndex: page.clamp(0, tabCount - 1).toInt(),
               onDestinationSelected: (index) => setState(() => page = index),
@@ -713,19 +733,19 @@ class _DashboardState extends State<Dashboard> {
                   selectedIcon: Icon(Icons.storefront_rounded),
                   label: 'المحلات',
                 ),
-                if (canManage)
-                const NavigationDestination(
-                  icon: Icon(Icons.insights_outlined),
-                  selectedIcon: Icon(Icons.insights_rounded),
-                  label: 'المتابعة',
-                ),
-                if (canManage)
-                const NavigationDestination(
-                  icon: Icon(Icons.badge_outlined),
-                  selectedIcon: Icon(Icons.badge_rounded),
-                  label: 'الفريق',
-                ),
-                if (canManage && isSuper)
+                if (seesNetwork)
+                  const NavigationDestination(
+                    icon: Icon(Icons.hub_outlined),
+                    selectedIcon: Icon(Icons.hub_rounded),
+                    label: 'الشبكة',
+                  ),
+                if (isSuper)
+                  const NavigationDestination(
+                    icon: Icon(Icons.insights_outlined),
+                    selectedIcon: Icon(Icons.insights_rounded),
+                    label: 'المتابعة',
+                  ),
+                if (isSuper)
                   const NavigationDestination(
                     icon: Icon(Icons.shield_outlined),
                     selectedIcon: Icon(Icons.shield_rounded),

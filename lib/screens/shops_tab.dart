@@ -3,9 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'dart:async';
+
+import '../core/network_service.dart';
 import '../core/repository.dart';
 import '../core/shops_service.dart';
 import '../core/theme.dart';
+import 'network_tab.dart' show statusColor;
 
 /// Loyalty shops of the workspace. Field agents see the shops they created;
 /// owners / admins see all of them. One simple form creates a shop.
@@ -13,17 +17,15 @@ class ShopsTab extends StatefulWidget {
   const ShopsTab({
     super.key,
     required this.service,
+    required this.network,
     required this.tenant,
-    required this.currentUserId,
     required this.seeAll,
-    required this.canDisable,
   });
 
   final ShopsService service;
+  final NetworkService network;
   final String tenant;
-  final String? currentUserId;
   final bool seeAll;
-  final bool canDisable;
 
   @override
   State<ShopsTab> createState() => _ShopsTabState();
@@ -33,28 +35,64 @@ class _ShopsTabState extends State<ShopsTab> {
   List<Json> shops = const [];
   bool loading = true;
   String? error;
+  Timer? timer;
 
   @override
   void initState() {
     super.initState();
     load();
+    timer = Timer.periodic(const Duration(seconds: 30), (_) => load(quiet: true));
   }
 
-  Future<void> load() async {
-    setState(() {
-      loading = true;
-      error = null;
-    });
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  // Shops of the caller's network only (strict isolation is enforced by the
+  // database: an agent never receives another agent's shops).
+  Future<void> load({bool quiet = false}) async {
+    if (!quiet) {
+      setState(() {
+        loading = true;
+        error = null;
+      });
+    }
     try {
-      var rows = await widget.service.overview(widget.tenant);
-      if (!widget.seeAll) {
-        rows = rows.where((s) => s['created_by'] == widget.currentUserId).toList();
-      }
+      final rows = await widget.network.shops();
       if (mounted) setState(() => shops = rows);
     } catch (e) {
-      if (mounted) setState(() => error = userError(e));
+      if (mounted && !quiet) setState(() => error = userError(e));
     } finally {
-      if (mounted) setState(() => loading = false);
+      if (mounted && !quiet) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _togglePaid(Json shop) async {
+    final id = '${shop['id']}';
+    try {
+      if (shop['status'] == 'paid') {
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('إلغاء آخر دفعة؟'),
+            content: const Text('سيرجع تاريخ الاشتراك كما كان قبل آخر علامة ✓.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('لا')),
+              FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('نعم')),
+            ],
+          ),
+        );
+        if (ok != true) return;
+        await widget.network.undoPayment('shop', id);
+      } else {
+        await widget.network.markPaid('shop', id);
+        _snack('✓ تم تسجيل دفع شهر لـ ${shop['name']}');
+      }
+      await load(quiet: true);
+    } catch (e) {
+      _snack(userError(e), bad: true);
     }
   }
 
@@ -194,11 +232,11 @@ class _ShopsTabState extends State<ShopsTab> {
   }
 
   Future<void> _toggle(Json shop) async {
-    final enabled = shop['loyalty_enabled'] == true;
+    final suspended = shop['suspended'] == true;
     try {
-      await widget.service.setDisabled('${shop['id']}', enabled);
-      await load();
-      _snack(enabled ? 'تم إيقاف المحل' : 'تم تفعيل المحل');
+      await widget.network.setShopSuspended('${shop['id']}', !suspended);
+      await load(quiet: true);
+      _snack(suspended ? 'تم تفعيل المحل وروابطه' : 'تم إيقاف المحل وكل روابطه');
     } catch (e) {
       _snack(userError(e), bad: true);
     }
@@ -206,17 +244,30 @@ class _ShopsTabState extends State<ShopsTab> {
 
   Widget _card(Json shop) {
     final (icon, label) = ShopsService.industries['${shop['industry']}'] ?? ('⭐', '');
-    final enabled = shop['loyalty_enabled'] == true;
+    final enabled = shop['suspended'] != true;
     final slug = '${shop['shop_slug']}';
+    final status = '${shop['status']}';
+    final color = statusColor(status);
+    final paidUntil = DateTime.tryParse('${shop['paid_until'] ?? ''}');
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: SurfaceCard(
-        padding: const EdgeInsets.all(14),
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.7), width: 1.4),
+        ),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
+                Checkbox(
+                  value: status == 'paid',
+                  activeColor: AppColors.success,
+                  onChanged: (_) => _togglePaid(shop),
+                ),
                 Container(
                   width: 46,
                   height: 46,
@@ -232,7 +283,10 @@ class _ShopsTabState extends State<ShopsTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${shop['name']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                      Text(
+                        '${shop['name']}',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: color == AppColors.muted ? null : color),
+                      ),
                       Text(
                         [label, if ('${shop['address'] ?? ''}'.isNotEmpty) '${shop['address']}'].join(' · '),
                         style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
@@ -261,8 +315,7 @@ class _ShopsTabState extends State<ShopsTab> {
                     const PopupMenuItem(value: 'open', child: Text('🖥️ فتح لوحة المحل')),
                     const PopupMenuItem(value: 'join', child: Text('📱 رابط و QR الزبائن')),
                     const PopupMenuItem(value: 'edit', child: Text('✏️ تعديل المحل')),
-                    if (widget.canDisable)
-                      PopupMenuItem(value: 'toggle', child: Text(enabled ? '⛔ إيقاف المحل' : '✅ تفعيل المحل')),
+                    PopupMenuItem(value: 'toggle', child: Text(enabled ? '⛔ إيقاف المحل وروابطه' : '✅ تفعيل المحل')),
                   ],
                 ),
               ],
@@ -272,6 +325,14 @@ class _ShopsTabState extends State<ShopsTab> {
               spacing: 6,
               runSpacing: 6,
               children: [
+                Pill(
+                  status == 'paid' && paidUntil != null
+                      ? 'مدفوع حتى ${shortDate(paidUntil)}'
+                      : status == 'expired' && paidUntil != null
+                      ? 'انتهى ${shortDate(paidUntil)}'
+                      : statusLabel(status),
+                  color: color,
+                ),
                 Pill('${shop['customers']} زبون', icon: Icons.people_alt_rounded),
                 Pill('${shop['visits']} زيارة', color: AppColors.accent),
                 Pill('${shop['visits_7d']} هذا الأسبوع', color: AppColors.accent),

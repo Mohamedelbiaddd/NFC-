@@ -103,6 +103,8 @@ class ShopsService {
     return (id: '${row['id']}', slug: slug, password: password);
   }
 
+  /// Edits shop details through an RPC so managers higher in the network
+  /// (whose shops live in another workspace) can edit them too.
   Future<void> update({
     required String businessId,
     required String name,
@@ -113,16 +115,22 @@ class ShopsService {
     (double, double)? location,
     int radius = 200,
   }) async {
-    await client.from('nfc_businesses').update({
-      'name': name,
-      'industry': industry,
-      'phone': _blank(phone),
-      'address': _blank(address),
-      'hours': _blank(hours),
-      'latitude': location?.$1,
-      'longitude': location?.$2,
-      'geofence_radius_m': radius,
-    }).eq('id', businessId);
+    await client.rpc(
+      'nfc_shop_edit',
+      params: {
+        'target': businessId,
+        'settings': {
+          'name': name,
+          'industry': industry,
+          'phone': phone ?? '',
+          'address': address ?? '',
+          'hours': hours ?? '',
+          'radius_m': '$radius',
+          if (location != null) 'latitude': '${location.$1}',
+          if (location != null) 'longitude': '${location.$2}',
+        },
+      },
+    );
   }
 
   Future<void> setup({

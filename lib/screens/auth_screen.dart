@@ -273,19 +273,12 @@ class _AuthScreenState extends State<AuthScreen> {
                                       : 'دخول',
                                 ),
                         ),
-                        TextButton(
-                          onPressed: busy
-                              ? null
-                              : () => setState(() {
-                                  signup = !signup;
-                                  verify = false;
-                                  message = null;
-                                }),
-                          child: Text(
-                            signup
-                                ? 'لديك حساب؟ تسجيل الدخول'
-                                : 'إنشاء حساب جديد',
-                          ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'الحسابات تُنشأ فقط من طرف الإدارة أو الوكيل المسؤول. '
+                          'اطلب بريدك وكلمة المرور من المسؤول عنك.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 11.5, color: AppColors.muted, height: 1.5),
                         ),
                       ],
                     ),
