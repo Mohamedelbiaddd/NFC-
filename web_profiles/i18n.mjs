@@ -2,6 +2,7 @@
 // Italian strings are kept for a later European launch; add 'it' to LANGS to enable them.
 const DICT = {
   ar: {
+    goalNote: 'تغيير عدد الزيارات أو الهدية يُطبَّق على الزبائن الجدد فوراً. الزبائن الحاليون يكملون بالشرط الذي بدأوا به حتى يحصلوا على هديتهم، ثم تبدأ دورتهم الجديدة بالشرط الجديد.', oldRule: 'يكمل بالشرط القديم: {n} زيارات',
     noticeTitle: '⚠️ تنبيه من الإدارة', suspendedTitle: '⛔ الخدمة موقوفة مؤقتاً', suspendedText: 'تم إيقاف بطاقة الولاء ولوحة المحل مؤقتاً لعدم دفع الاشتراك الشهري الذي يغطي تكاليف الخادم. بعد الدفع تعود الخدمة فوراً وتبقى كل بيانات زبائنك محفوظة. تواصل مع المسؤول عنك.',
     location: '📍 موقع المحل', useLocation: '📍 استخدم موقعي الحالي (وأنت داخل المحل)', noLocation: 'لم يُحدَّد الموقع بعد', locationSet: 'تم تحديد الموقع، اضغط حفظ', noGeo: 'تعذّر تحديد الموقع، فعّل GPS واسمح للمتصفح', radius: 'نطاق التذكير بالأمتار (50 - 1000)', radiusNote: 'يستعمل لتذكير الزبائن القريبين من المحل عبر المحفظة. في Google Wallet تحدد جوجل المسافة الفعلية بنفسها.',
     loading: 'جارٍ التحميل…', unavailable: 'هذا المحل غير متاح', unavailableText: 'تأكد من الرابط أو اسأل صاحب المحل.',
@@ -25,6 +26,7 @@ const DICT = {
     minutesAgo: 'قبل {n} د', hoursAgo: 'قبل {n} س', daysAgo: 'قبل {n} يوم', privacy: 'الخصوصية', terms: 'الشروط',
   },
   fr: {
+    goalNote: 'Le nouveau nombre de visites ou cadeau s’applique tout de suite aux nouveaux clients. Les clients actuels terminent avec la règle de départ jusqu’à leur cadeau, puis leur nouveau cycle suit la nouvelle règle.', oldRule: 'Termine avec l’ancienne règle : {n} visites',
     noticeTitle: '⚠️ Message de l’administration', suspendedTitle: '⛔ Service suspendu temporairement', suspendedText: 'Votre carte de fidélité et votre tableau de bord sont suspendus car l’abonnement mensuel (frais du serveur) n’a pas été réglé. Le service reprend dès le paiement et tous vos clients restent enregistrés. Contactez votre responsable.',
     location: '📍 Emplacement du magasin', useLocation: '📍 Utiliser ma position (dans le magasin)', noLocation: 'Emplacement non défini', locationSet: 'Emplacement défini, appuyez sur Enregistrer', noGeo: 'Position introuvable : activez le GPS et autorisez le navigateur', radius: 'Rayon de rappel en mètres (50 - 1000)', radiusNote: 'Sert à rappeler le magasin aux clients proches via le wallet. Dans Google Wallet, Google choisit lui-même la distance réelle.',
     loading: 'Chargement…', unavailable: 'Ce magasin n’est pas disponible', unavailableText: 'Vérifiez le lien ou demandez au magasin.',
@@ -48,6 +50,7 @@ const DICT = {
     minutesAgo: 'il y a {n} min', hoursAgo: 'il y a {n} h', daysAgo: 'il y a {n} j', privacy: 'Confidentialité', terms: 'Conditions',
   },
   en: {
+    goalNote: 'A new visit count or reward applies to new customers right away. Current customers finish with the rule they started with until they get their reward; their next cycle then follows the new rule.', oldRule: 'Finishing on the old rule: {n} visits',
     noticeTitle: '⚠️ Notice from the management', suspendedTitle: '⛔ Service temporarily suspended', suspendedText: 'Your loyalty card and dashboard are paused because the monthly subscription (server costs) has not been paid. Service returns immediately after payment and all your customers are kept. Please contact your agent.',
     location: '📍 Shop location', useLocation: '📍 Use my current location (inside the shop)', noLocation: 'Location not set yet', locationSet: 'Location set, press Save', noGeo: 'Could not get location; turn on GPS and allow the browser', radius: 'Reminder radius in metres (50 - 1000)', radiusNote: 'Used to remind nearby customers through the wallet. In Google Wallet, Google decides the actual distance itself.',
     loading: 'Loading…', unavailable: 'This shop is not available', unavailableText: 'Check the link or ask the shop.',
@@ -71,6 +74,7 @@ const DICT = {
     minutesAgo: '{n} min ago', hoursAgo: '{n} h ago', daysAgo: '{n} d ago', privacy: 'Privacy', terms: 'Terms',
   },
   it: {
+    goalNote: 'Il nuovo numero di visite o premio vale subito per i nuovi clienti. I clienti attuali completano con la regola iniziale fino al premio, poi il nuovo ciclo segue la nuova regola.', oldRule: 'Completa con la vecchia regola: {n} visite',
     noticeTitle: '⚠️ Avviso dalla gestione', suspendedTitle: '⛔ Servizio sospeso temporaneamente', suspendedText: 'La carta fedeltà e il pannello sono sospesi perché l\'abbonamento mensile (costi del server) non è stato pagato. Dopo il pagamento il servizio torna subito attivo e tutti i tuoi clienti restano salvati. Contatta il tuo referente.',
     location: '📍 Posizione del negozio', useLocation: '📍 Usa la mia posizione (dentro il negozio)', noLocation: 'Posizione non impostata', locationSet: 'Posizione impostata, premi Salva', noGeo: 'Posizione non disponibile; attiva il GPS e consenti al browser', radius: 'Raggio promemoria in metri (50 - 1000)', radiusNote: 'Serve a ricordare il negozio ai clienti vicini tramite il wallet. In Google Wallet la distanza effettiva la decide Google.',
     loading: 'Caricamento…', unavailable: 'Negozio non disponibile', unavailableText: 'Controlla il link o chiedi al negozio.',

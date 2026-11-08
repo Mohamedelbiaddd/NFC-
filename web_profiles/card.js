@@ -77,9 +77,10 @@ function cardView() {
   const out = [];
   out.push(el('p', `${t('welcome')} ${customer.name} 👋`, 'eyebrow'));
   const card = el('div', undefined, 'loyalty-card' + (customer.next_free ? ' free' : ''));
-  card.append(el('div', `${customer.stamps} / ${shop.goal} ${unit(shop)}`, 'count'));
-  card.append(stampRow(shop, customer.stamps, customer.next_free));
-  card.append(el('p', customer.next_free ? t('freeNext') : t('goalText', {n: shop.goal, reward: shop.reward}), 'goal-text'));
+  const goal = customer.goal ?? shop.goal, reward = customer.reward ?? shop.reward;
+  card.append(el('div', `${customer.stamps} / ${goal} ${unit(shop)}`, 'count'));
+  card.append(stampRow(shop, customer.stamps, customer.next_free, goal));
+  card.append(el('p', customer.next_free ? `${t('freeNext')} ${reward}` : t('goalText', {n: goal, reward}), 'goal-text'));
   out.push(card);
   const stats = el('div', undefined, 'mini-stats');
   stats.append(el('span', `${t('totalVisits')}: ${customer.total_visits}`), el('span', `${t('rewards')}: ${customer.rewards}`));

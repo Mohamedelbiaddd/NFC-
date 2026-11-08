@@ -144,7 +144,8 @@ function customerRow(c) {
   const meta = el('div', undefined, 'cust-meta');
   const phone = el('a', c.phone); phone.href = 'tel:' + c.phone; phone.dir = 'ltr';
   meta.append(phone, el('span', `${t('lastVisit')}: ${ago(c.last_visit_at)}`));
-  row.append(meta, stampRow(data.shop, c.stamps, c.next_free));
+  row.append(meta, stampRow(data.shop, c.stamps, c.next_free, c.goal));
+  if (c.old_rule) row.append(el('p', t('oldRule', {n: c.goal}), 'muted small'));
   return row;
 }
 
@@ -190,6 +191,7 @@ function settingsView() {
   const hours = field('🕒', s.hours);
   const goal = field(t('goal'), s.goal, 'number'); goal.input.min = 1; goal.input.max = 50;
   const reward = field(t('reward'), s.reward);
+  const goalNote = el('p', t('goalNote'), 'muted small');
   let geo = s.latitude != null ? {lat: s.latitude, lng: s.longitude} : null;
   const geoInfo = el('p', '', 'muted small');
   const drawGeo = () => { geoInfo.textContent = geo ? `📍 ${geo.lat.toFixed(5)}, ${geo.lng.toFixed(5)}` : t('noLocation'); };
@@ -255,7 +257,7 @@ function settingsView() {
     try { await rpc(config, 'nfc_shop_logout', {target_slug: slug, session: session()}); } catch { /* ignore */ }
     storage(sessionKey, null); loginView();
   });
-  return [name.wrap, phone.wrap, address.wrap, hours.wrap, goal.wrap, reward.wrap,
+  return [name.wrap, phone.wrap, address.wrap, hours.wrap, goal.wrap, reward.wrap, goalNote,
     el('h2', t('location'), 'section'), geoInfo, locate, radius.wrap, el('p', t('radiusNote'), 'muted small'),
     el('h2', t('banners'), 'section'), gallery, save, out];
 }

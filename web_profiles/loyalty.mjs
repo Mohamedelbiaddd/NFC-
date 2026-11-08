@@ -83,8 +83,9 @@ export function storage(key, value) {
 }
 
 // Stamp row: `goal` paid stamps + one green reward slot.
-export function stampRow(shop, stamps, nextFree) {
-  const goal = Number(shop.goal) || 5;
+// `goal` is the customer's own (locked) goal; the shop's goal is a fallback.
+export function stampRow(shop, stamps, nextFree, customerGoal) {
+  const goal = Number(customerGoal) || Number(shop.goal) || 5;
   const row = el('div', undefined, 'stamps');
   const icon = industry(shop).icon;
   for (let i = 0; i < goal; i++) {
