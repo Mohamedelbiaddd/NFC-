@@ -3,13 +3,13 @@
 import {lang} from '/i18n.mjs';
 
 export const INDUSTRIES = {
-  barber: {icon: '✂️', unit: {ar: 'زيارة', en: 'visit', it: 'visita'}},
-  beauty: {icon: '💅', unit: {ar: 'زيارة', en: 'visit', it: 'visita'}},
-  carwash: {icon: '🚗', unit: {ar: 'غسلة', en: 'wash', it: 'lavaggio'}},
-  bakery: {icon: '🥐', unit: {ar: 'شراء', en: 'purchase', it: 'acquisto'}},
-  cafe: {icon: '☕', unit: {ar: 'كوب', en: 'cup', it: 'caffè'}},
-  snack: {icon: '🍕', unit: {ar: 'طلب', en: 'order', it: 'ordine'}},
-  other: {icon: '⭐', unit: {ar: 'زيارة', en: 'visit', it: 'visita'}},
+  barber: {icon: '✂️', unit: {ar: 'زيارة', en: 'visit', fr: 'visite', it: 'visita'}},
+  beauty: {icon: '💅', unit: {ar: 'زيارة', en: 'visit', fr: 'visite', it: 'visita'}},
+  carwash: {icon: '🚗', unit: {ar: 'غسلة', en: 'wash', fr: 'lavage', it: 'lavaggio'}},
+  bakery: {icon: '🥐', unit: {ar: 'شراء', en: 'purchase', fr: 'achat', it: 'acquisto'}},
+  cafe: {icon: '☕', unit: {ar: 'كوب', en: 'cup', fr: 'café', it: 'caffè'}},
+  snack: {icon: '🍕', unit: {ar: 'طلب', en: 'order', fr: 'commande', it: 'ordine'}},
+  other: {icon: '⭐', unit: {ar: 'زيارة', en: 'visit', fr: 'visite', it: 'visita'}},
 };
 export function industry(shop) {
   return INDUSTRIES[shop?.industry] ?? INDUSTRIES.other;

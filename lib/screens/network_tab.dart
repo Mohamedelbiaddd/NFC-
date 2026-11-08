@@ -23,10 +23,6 @@ const noticeTemplates = <String, String>{
       'Petit rappel 🌟\nL’abonnement de ce mois n’a pas encore été réglé. Il couvre les frais du serveur '
       'et le fonctionnement de la carte de fidélité de vos clients.\nMerci de régler le montant rapidement '
       'pour éviter une suspension temporaire du compte.\nMerci de votre confiance 🙏',
-  'Italiano':
-      'Promemoria 🌟\nL’abbonamento di questo mese non risulta ancora pagato. Copre i costi del server '
-      'e il funzionamento della carta fedeltà dei tuoi clienti.\nTi chiediamo di saldare al più presto '
-      'per evitare la sospensione temporanea dell’account.\nGrazie per la fiducia 🙏',
   'English':
       'Friendly reminder 🌟\nThis month’s subscription has not been paid yet. It covers the server costs '
       'and keeps your customers’ loyalty card running.\nPlease settle the amount soon to avoid a temporary '

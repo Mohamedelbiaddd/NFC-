@@ -1,4 +1,5 @@
-// Tiny translation helper for the public pages: Arabic, English, Italian.
+// Tiny translation helper for the public pages: Arabic, French, English.
+// Italian strings are kept for a later European launch; add 'it' to LANGS to enable them.
 const DICT = {
   ar: {
     noticeTitle: '⚠️ تنبيه من الإدارة', suspendedTitle: '⛔ الخدمة موقوفة مؤقتاً', suspendedText: 'تم إيقاف بطاقة الولاء ولوحة المحل مؤقتاً لعدم دفع الاشتراك الشهري الذي يغطي تكاليف الخادم. بعد الدفع تعود الخدمة فوراً وتبقى كل بيانات زبائنك محفوظة. تواصل مع المسؤول عنك.',
@@ -22,6 +23,29 @@ const DICT = {
     banners: 'صور إعلانية (حتى 5)', addImage: '+ إضافة صورة', save: 'حفظ', saved: 'تم الحفظ ✓', saveError: 'تعذّر الحفظ',
     uploadError: 'تعذّر رفع الصورة', remove: 'حذف', sessionExpired: 'انتهت الجلسة، ادخل من جديد.', justNow: 'الآن',
     minutesAgo: 'قبل {n} د', hoursAgo: 'قبل {n} س', daysAgo: 'قبل {n} يوم', privacy: 'الخصوصية', terms: 'الشروط',
+  },
+  fr: {
+    noticeTitle: '⚠️ Message de l’administration', suspendedTitle: '⛔ Service suspendu temporairement', suspendedText: 'Votre carte de fidélité et votre tableau de bord sont suspendus car l’abonnement mensuel (frais du serveur) n’a pas été réglé. Le service reprend dès le paiement et tous vos clients restent enregistrés. Contactez votre responsable.',
+    location: '📍 Emplacement du magasin', useLocation: '📍 Utiliser ma position (dans le magasin)', noLocation: 'Emplacement non défini', locationSet: 'Emplacement défini, appuyez sur Enregistrer', noGeo: 'Position introuvable : activez le GPS et autorisez le navigateur', radius: 'Rayon de rappel en mètres (50 - 1000)', radiusNote: 'Sert à rappeler le magasin aux clients proches via le wallet. Dans Google Wallet, Google choisit lui-même la distance réelle.',
+    loading: 'Chargement…', unavailable: 'Ce magasin n’est pas disponible', unavailableText: 'Vérifiez le lien ou demandez au magasin.',
+    network: 'Connexion impossible, vérifiez internet.', join: 'Rejoindre la carte de fidélité', joinText: 'Saisissez votre nom et votre téléphone une seule fois ; ensuite chaque visite est comptée automatiquement.',
+    name: 'Nom', phone: 'Téléphone', joinBtn: 'Rejoindre', badName: 'Saisissez votre nom', badPhone: 'Numéro invalide',
+    welcome: 'Bonjour', visits: 'visites', goalText: 'Après {n} visites vous recevez : {reward}', freeNext: '🎉 Votre prochaine visite est gratuite !',
+    free: 'Gratuite', stamped: '✅ Visite enregistrée', stampedFree: '🎉 Cette visite est gratuite ! Une nouvelle carte commence',
+    codeExpired: 'Le code a expiré. Scannez à nouveau le code sur l’écran du magasin.', tooSoon: 'Une visite a été enregistrée récemment ; la prochaine comptera plus tard.',
+    scanHint: 'À chaque visite, scannez le code affiché sur l’écran du magasin.', coming: '🚶 J’arrive', comingSent: '✅ Le magasin sait que vous arrivez',
+    addHome: '📲 Enregistrer la carte sur l’écran d’accueil', iosHelp: '1) Touchez Partager ⬆️ dans Safari\n2) Choisissez « Sur l’écran d’accueil »',
+    androidHelp: '1) Ouvrez le menu du navigateur ⋮\n2) Choisissez « Ajouter à l’écran d’accueil » ou « Installer l’application »', ok: 'OK',
+    gallery: 'Du magasin', call: 'Appeler', totalVisits: 'Visites au total', rewards: 'Cadeaux obtenus',
+    shopLogin: 'Tableau de bord du magasin', password: 'Mot de passe', login: 'Connexion', wrongPass: 'Mot de passe incorrect', locked: 'Trop de tentatives, réessayez dans 15 minutes.',
+    tabCode: 'Code', tabCustomers: 'Clients', tabSettings: 'Réglages', logout: 'Déconnexion',
+    customers: 'clients', today: 'visites aujourd’hui', gifts: 'cadeaux', scanMe: 'Scannez pour enregistrer votre visite', refreshIn: 'Renouvelé dans {s} s',
+    fullscreen: 'Plein écran', search: 'Rechercher nom ou téléphone', noCustomers: 'Aucun client pour l’instant. Demandez à un client de scanner le code.',
+    comingBadge: 'Arrive', lastVisit: 'Dernière visite', never: '—', recent: 'Dernières visites', void: 'Annuler', voided: 'Annulée',
+    voidConfirm: 'Annuler cette visite ?', shopName: 'Nom du magasin', address: 'Adresse', goal: 'Visites avant le cadeau', reward: 'Cadeau',
+    banners: 'Photos publicitaires (5 max)', addImage: '+ Ajouter une photo', save: 'Enregistrer', saved: 'Enregistré ✓', saveError: 'Enregistrement impossible',
+    uploadError: 'Échec de l’envoi', remove: 'Supprimer', sessionExpired: 'Session expirée, reconnectez-vous.', justNow: 'à l’instant',
+    minutesAgo: 'il y a {n} min', hoursAgo: 'il y a {n} h', daysAgo: 'il y a {n} j', privacy: 'Confidentialité', terms: 'Conditions',
   },
   en: {
     noticeTitle: '⚠️ Notice from the management', suspendedTitle: '⛔ Service temporarily suspended', suspendedText: 'Your loyalty card and dashboard are paused because the monthly subscription (server costs) has not been paid. Service returns immediately after payment and all your customers are kept. Please contact your agent.',
@@ -71,7 +95,7 @@ const DICT = {
   },
 };
 
-const LANGS = ['ar', 'en', 'it'];
+const LANGS = ['ar', 'fr', 'en'];
 function store(key, value) {
   try { if (value === undefined) return localStorage.getItem(key); localStorage.setItem(key, value); } catch { return null; }
   return null;
