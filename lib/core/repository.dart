@@ -27,12 +27,19 @@ class Repository {
             .eq('tenant_id', tenant)
             .single(),
       );
-  Future<void> save(String table, Json fields, {String? id}) async {
+  /// Inserts or updates [fields]. Returns the row id so callers can upload an
+  /// image right after a new profile is created.
+  Future<String?> save(String table, Json fields, {String? id}) async {
     if (id == null) {
-      await client.from(table).insert(fields);
-    } else {
-      await client.from(table).update(fields).eq('id', id);
+      final inserted = await client
+          .from(table)
+          .insert(fields)
+          .select('id')
+          .single();
+      return inserted['id'] as String?;
     }
+    await client.from(table).update(fields).eq('id', id);
+    return id;
   }
 
   Future<void> delete(String table, String id) async {
@@ -54,6 +61,10 @@ String userError(Object e) {
   if (e is AuthException) return e.message;
   if (e is PostgrestException && e.code == '23505') {
     return 'هذا الاسم المخصص مستخدم أو محجوز سابقاً.';
+  }
+  if (e is PostgrestException && (e.code == '42703' || e.code == 'PGRST204')) {
+    return 'قاعدة البيانات لا تحتوي الحقل المطلوب. طبّق ملفات '
+        'supabase/migrations على مشروع Supabase أولاً.';
   }
   if (e is PostgrestException) return 'تعذّر حفظ/قراءة البيانات: ${e.message}';
   return e.toString();

@@ -7,6 +7,11 @@ class AppConfig {
   );
   // Origin only, e.g. https://cards.customer-domain.com. Never an index.html URL.
   static const profileBase = String.fromEnvironment('PUBLIC_PROFILE_BASE_URL');
+  // Storage bucket that holds profile images. Leave empty to auto-detect the
+  // bucket at runtime and fall back to 'profile-images'.
+  static const storageBucket = String.fromEnvironment('SUPABASE_STORAGE_BUCKET');
+  // Hard limit enforced by the app; keep it in sync with the bucket limit.
+  static const imageMaxBytes = 5 * 1024 * 1024;
   static const reservedSlugs = {
     'admin',
     'api',

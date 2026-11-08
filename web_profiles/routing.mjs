@@ -7,6 +7,19 @@ export function slugFromPath(path) {
  try{const slug=decodeURIComponent(match[1]);return validSlug(slug)&&encodeURIComponent(slug)===match[1]?slug:null;}catch{return null;}
 }
 export function safeHttps(value){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null;}catch{return null;}}
+// Only objects served from the project's public Storage endpoint may be used
+// as a profile image, so a crafted image_url cannot leak visitors' requests to
+// a third party host.
+export function safeImageUrl(value, supabaseUrl) {
+ const href=safeHttps(value);
+ if(!href)return null;
+ try{
+  const url=new URL(href), base=new URL(supabaseUrl);
+  if(url.origin!==base.origin)return null;
+  if(!url.pathname.startsWith('/storage/v1/object/public/'))return null;
+  return url.href;
+ }catch{return null;}
+}
 export function vcardEscape(value){return String(value??'').replace(/\\/g,'\\\\').replace(/\r\n|\r|\n/g,'\\n').replace(/;/g,'\\;').replace(/,/g,'\\,');}
 export async function fetchProfile(config,slug,fetcher=fetch){
  if(!validSlug(slug))throw new Error('Invalid slug');

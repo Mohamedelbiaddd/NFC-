@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/repository.dart';
 import '../core/app_config.dart';
 import 'profile_editor.dart';
+import 'qr_screen.dart';
 import 'writer_screen.dart';
 
 class Dashboard extends StatefulWidget {
@@ -255,6 +256,57 @@ class _DashboardState extends State<Dashboard> {
     if (changed == true) await load();
   }
 
+  Widget profileThumb() => Container(
+    width: 64,
+    height: 64,
+    color: const Color(0xFF232941),
+    child: const Icon(
+      Icons.image_not_supported_outlined,
+      color: Color(0xFF7C87A8),
+    ),
+  );
+
+  Uri profileLink(Json p) =>
+      AppConfig.profileUrl(AppConfig.profileBase, p['custom_slug'] as String);
+
+  Future<void> openProfile(Json p) async {
+    try {
+      if (!await launchUrl(
+        profileLink(p),
+        mode: LaunchMode.externalApplication,
+      )) {
+        throw StateError('تعذّر فتح الرابط');
+      }
+    } catch (e) {
+      notify(e);
+    }
+  }
+
+  void openQr(Json p) {
+    final slug = p['custom_slug'] as String?;
+    if (slug == null || slug.isEmpty) {
+      notify('لا يوجد رابط مخصص لهذا الملف.');
+      return;
+    }
+    try {
+      final match = businesses.where((b) => b['id'] == p['business_id']);
+      Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => QrScreen(
+            url: profileLink(p).toString(),
+            title: '${p['title'] ?? ''}',
+            business: match.isEmpty ? '' : '${match.first['name']}',
+            slug: slug,
+            published: p['published'] == true,
+          ),
+        ),
+      );
+    } catch (e) {
+      notify(e);
+    }
+  }
+
   Future<void> remove(String table, Json x) async {
     if (!await confirm(
       table == 'nfc_businesses'
@@ -457,73 +509,87 @@ class _DashboardState extends State<Dashboard> {
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        p['title'],
-                        style: const TextStyle(
-                          fontSize: 19,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '${kindNames[p['kind']]} · ${p['published'] ? 'منشور' : 'مسودة'}',
-                      ),
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        '/p/${p['custom_slug']}',
-                        textDirection: TextDirection.ltr,
-                      ),
-                      Wrap(
-                        children: [
-                          if (canEdit)
-                            TextButton.icon(
-                              onPressed: () => profileForm(p),
-                              icon: const Icon(Icons.edit_outlined),
-                              label: const Text('تعديل'),
+                      if (p['image_url'] is String &&
+                          (p['image_url'] as String).startsWith('https://'))
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 14),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Image.network(
+                              p['image_url'] as String,
+                              width: 64,
+                              height: 64,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => profileThumb(),
+                              loadingBuilder: (_, child, progress) =>
+                                  progress == null ? child : profileThumb(),
                             ),
-                          TextButton.icon(
-                            onPressed: () async {
-                              try {
-                                final url = AppConfig.profileUrl(
-                                  AppConfig.profileBase,
-                                  p['custom_slug'],
-                                );
-                                if (!await launchUrl(
-                                  url,
-                                  mode: LaunchMode.externalApplication,
-                                )) {
-                                  throw StateError('تعذّر فتح الرابط');
-                                }
-                              } catch (e) {
-                                notify(e);
-                              }
-                            },
-                            icon: const Icon(Icons.open_in_new),
-                            label: const Text('معاينة'),
                           ),
-                          if (canEdit)
-                            TextButton.icon(
-                              onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (_) => WriterScreen(
-                                    repo: repo,
-                                    tenant: tenant!,
-                                    profileId: p['id'],
+                        ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              p['title'],
+                              style: const TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              '${kindNames[p['kind']]} · ${p['published'] ? 'منشور' : 'مسودة'}',
+                            ),
+                            const SizedBox(height: 8),
+                            SelectableText(
+                              '/p/${p['custom_slug']}',
+                              textDirection: TextDirection.ltr,
+                            ),
+                            Wrap(
+                              children: [
+                                if (canEdit)
+                                  TextButton.icon(
+                                    onPressed: () => profileForm(p),
+                                    icon: const Icon(Icons.edit_outlined),
+                                    label: const Text('تعديل'),
                                   ),
+                                TextButton.icon(
+                                  onPressed: () => openProfile(p),
+                                  icon: const Icon(Icons.open_in_new),
+                                  label: const Text('معاينة'),
                                 ),
-                              ).then((_) => load()),
-                              icon: const Icon(Icons.nfc),
-                              label: const Text('برمجة البطاقة'),
+                                TextButton.icon(
+                                  onPressed: () => openQr(p),
+                                  icon: const Icon(Icons.qr_code_2),
+                                  label: const Text('رمز QR للطباعة'),
+                                ),
+                                if (canEdit)
+                                  TextButton.icon(
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => WriterScreen(
+                                          repo: repo,
+                                          tenant: tenant!,
+                                          profileId: p['id'],
+                                        ),
+                                      ),
+                                    ).then((_) => load()),
+                                    icon: const Icon(Icons.nfc),
+                                    label: const Text('برمجة البطاقة'),
+                                  ),
+                                if (canDelete)
+                                  IconButton(
+                                    onPressed: () => remove('nfc_profiles', p),
+                                    icon: const Icon(Icons.delete_outline),
+                                  ),
+                              ],
                             ),
-                          if (canDelete)
-                            IconButton(
-                              onPressed: () => remove('nfc_profiles', p),
-                              icon: const Icon(Icons.delete_outline),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),

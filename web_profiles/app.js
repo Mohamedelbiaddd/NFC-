@@ -1,16 +1,26 @@
-import {slugFromPath,safeHttps,vcardEscape,fetchProfile} from '/routing.mjs';
+import {slugFromPath,safeHttps,safeImageUrl,vcardEscape,fetchProfile} from '/routing.mjs';
 const root=document.getElementById('app');
 function el(tag,text,cls){const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;}
 function link(label,url){const safe=safeHttps(url);if(!safe)return;const a=el('a',label,'button');a.href=safe;a.target='_blank';a.rel='noopener noreferrer';root.append(a);}
 function detail(label,value){if(!value)return;const row=el('div',undefined,'detail');row.append(el('span',label),el('strong',value));root.append(row);}
 function status(title,text){root.replaceChildren(el('h1',title),el('p',text));document.title=title;}
-function render(p){
+function render(p,config){
  if(!p||!p.business||!p.data){status('الملف غير متاح','قد يكون غير منشور أو تم حذفه.');return;}
  const b=p.business,d=p.data;
  for(const key of ['primary_color','accent_color'])if(/^#[0-9a-f]{6}$/i.test(b[key]??''))document.documentElement.style.setProperty(key==='primary_color'?'--primary':'--accent',b[key]);
  document.title=`${p.title} · ${b.name}`;
  const names={vcard:'بطاقة اتصال',menu:'القائمة',review:'رأيك يهمنا',equipment:'بطاقة المعدّة',loyalty:'برنامج الولاء'};
- root.replaceChildren(el('span',names[p.kind]??'ملف رقمي','pill'),el('div',Array.from(b.name)[0]??'','avatar'),el('div',b.name,'eyebrow'),el('h1',p.title));
+ const head=[el('span',names[p.kind]??'ملف رقمي','pill')];
+ const cover=safeImageUrl(p.image_url,config?.supabaseUrl);
+ if(cover){
+  const img=el('img');img.className='cover';img.src=cover;img.alt=`صورة ${b.name}`;
+  img.loading='eager';img.decoding='async';img.referrerPolicy='no-referrer';
+  head.push(img);
+ }else{
+  head.push(el('div',Array.from(b.name)[0]??'','avatar'));
+ }
+ head.push(el('div',b.name,'eyebrow'),el('h1',p.title));
+ root.replaceChildren(...head);
  if(d.description)root.append(el('p',d.description));
  switch(p.kind){
  case 'vcard':{
@@ -32,7 +42,7 @@ function render(p){
 async function start(){
  const slug=slugFromPath(location.pathname);
  if(!slug){status('الرابط غير صحيح','استخدم رابط النشاط بصيغة /p/business-name.');return;}
- try{const res=await fetch('/config.json',{cache:'no-store'});if(!res.ok)throw new Error('Configuration');const config=await res.json();render(await fetchProfile(config,slug));}
+ try{const res=await fetch('/config.json',{cache:'no-store'});if(!res.ok)throw new Error('Configuration');const config=await res.json();render(await fetchProfile(config,slug),config);}
  catch{status('تعذّر تحميل الملف','تحقق من الاتصال ثم أعد تحميل الصفحة.');}
 }
 start();
