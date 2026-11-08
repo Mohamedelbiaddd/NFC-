@@ -109,3 +109,39 @@ export function bannerStrip(shop, config) {
   }
   return strip;
 }
+
+// Customer card: round numbered slots + a gift slot. `fresh` animates the
+// slot that was just stamped.
+export function slotsGrid(goal, stamps, nextFree, fresh = -1) {
+  const grid = el('div', undefined, 'slots');
+  const n = Math.max(1, Number(goal) || 5);
+  for (let i = 0; i < n; i++) {
+    const on = i < stamps;
+    const slot = el('div', on ? '✓' : String(i + 1), 'slot' + (on ? ' on' : '') + (i === fresh ? ' new' : ''));
+    slot.dataset.n = String(i + 1);
+    grid.append(slot);
+  }
+  grid.append(el('div', '🎁', 'slot gift' + (nextFree ? ' ready' : '')));
+  return grid;
+}
+
+// Owner list: numbered circles 1..goal filled up to `stamps`, then the gift.
+export function numbersRow(goal, stamps, nextFree) {
+  const row = el('div', undefined, 'nums');
+  const n = Math.max(1, Number(goal) || 5);
+  for (let i = 0; i < n; i++) row.append(el('span', String(i + 1), 'num' + (i < stamps ? ' on' : '')));
+  row.append(el('span', '🎁', 'num gift' + (nextFree ? ' ready' : '')));
+  return row;
+}
+
+export function initials(name) {
+  return Array.from(String(name ?? '').trim())[0]?.toUpperCase() ?? '•';
+}
+
+export function formatDate(iso, lang) {
+  try {
+    return new Date(iso + 'T12:00:00').toLocaleDateString(lang === 'ar' ? 'ar-MA' : lang, {weekday: 'long', day: 'numeric', month: 'long'});
+  } catch {
+    return iso;
+  }
+}

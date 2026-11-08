@@ -350,6 +350,8 @@ class _ShopsTabState extends State<ShopsTab> {
                 Pill('${shop['goal']}+1 · ${shop['reward']}', color: AppColors.success),
                 if (!enabled) const Pill('موقوف', color: AppColors.danger),
                 if (shop['notice'] != null) const Pill('📩 تنبيه مُرسل', color: AppColors.warning),
+                if (shop['reset_requested'] == true)
+                  const Pill('🔑 يطلب كلمة مرور جديدة', color: AppColors.danger),
                 if (shop['has_password'] != true) const Pill('بدون كلمة مرور', color: AppColors.warning),
                 if (widget.seeAll && '${shop['creator'] ?? ''}'.isNotEmpty)
                   Pill('أضافه: ${shop['creator']}', color: AppColors.muted),

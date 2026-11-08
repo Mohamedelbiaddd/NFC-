@@ -507,6 +507,8 @@ class _NetworkTabState extends State<NetworkTab> {
     'shop_resumed': 'فعّل محل',
     'notice_sent': '📩 أرسل تنبيه دفع إلى',
     'notice_cleared': 'أزال التنبيه عن',
+    'owner_reset_requested': '🔑 طلب كلمة مرور جديدة لمحل',
+    'owner_password_changed': 'غيّر كلمة مرور محل',
   };
 
   Widget _eventsList() => Column(

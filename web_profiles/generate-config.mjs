@@ -32,6 +32,7 @@ const STATIC_FILES = [
   'i18n.mjs',
   'loyalty.mjs',
   'qrcode.mjs',
+  'loyalty.css',
 ];
 
 function fail(message) {
