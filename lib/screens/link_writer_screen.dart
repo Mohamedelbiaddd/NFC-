@@ -8,10 +8,14 @@ import '../core/theme.dart';
 /// Writes any web address directly on an NFC card (no profile page): scanning
 /// the card opens that website straight away.
 class LinkWriterScreen extends StatefulWidget {
-  const LinkWriterScreen({super.key, required this.repo, this.tenant});
+  const LinkWriterScreen({super.key, required this.repo, this.tenant, this.initialUrl, this.title});
 
   final Repository repo;
   final String? tenant;
+
+  /// Pre-filled link, e.g. a shop's loyalty page.
+  final String? initialUrl;
+  final String? title;
 
   @override
   State<LinkWriterScreen> createState() => _LinkWriterScreenState();
@@ -23,6 +27,12 @@ class _LinkWriterScreenState extends State<LinkWriterScreen> {
   bool busy = false;
   String message = tr('اكتب الرابط، ثم اضغط «كتابة» وقرّب البطاقة من الهاتف.');
   String? written;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialUrl != null) url.text = widget.initialUrl!;
+  }
 
   @override
   void dispose() {
@@ -81,7 +91,7 @@ class _LinkWriterScreenState extends State<LinkWriterScreen> {
     return PopScope(
       canPop: !busy,
       child: Scaffold(
-        appBar: AppBar(title: Text(tr('رابط مباشر على البطاقة'))),
+        appBar: AppBar(title: Text(widget.title ?? tr('رابط مباشر على البطاقة'))),
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),

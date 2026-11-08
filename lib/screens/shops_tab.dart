@@ -10,6 +10,7 @@ import '../core/network_service.dart';
 import '../core/repository.dart';
 import '../core/shops_service.dart';
 import '../core/theme.dart';
+import 'link_writer_screen.dart';
 import 'network_tab.dart' show statusColor, editNotice;
 
 /// Loyalty shops of the workspace. Field agents see the shops they created;
@@ -120,7 +121,7 @@ class _ShopsTabState extends State<ShopsTab> {
     final slug = '${shop['shop_slug']}';
     final link = ShopsService.ownerLink(slug);
     final message =
-        trf('لوحة محلك «{0}»:\n{1}\nكلمة المرور: {2}\n\nافتح الرابط من متصفح هاتفك، ومنه يظهر الكود المتحرك وقائمة زبائنك.', [shop['name'], link, password]);
+        shopAccessMessage('${shop['name']}', slug, password);
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -129,8 +130,12 @@ class _ShopsTabState extends State<ShopsTab> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(tr('أرسل هذه المعلومات لصاحب المحل:'), style: TextStyle(color: AppColors.muted)),
-            const SizedBox(height: 10),
+            Text(tr('🔗 رابط الولاء (للزبائن وبطاقة NFC):'), style: TextStyle(color: AppColors.muted)),
+            const SizedBox(height: 4),
+            SelectableText(ShopsService.customerLink(slug), textDirection: TextDirection.ltr, style: const TextStyle(color: AppColors.success)),
+            const SizedBox(height: 12),
+            Text(tr('🔑 لوحة صاحب المحل:'), style: TextStyle(color: AppColors.muted)),
+            const SizedBox(height: 4),
             SelectableText(link, textDirection: TextDirection.ltr, style: const TextStyle(color: AppColors.accent)),
             const SizedBox(height: 8),
             SelectableText(
@@ -241,6 +246,134 @@ class _ShopsTabState extends State<ShopsTab> {
     }
   }
 
+  Future<void> _writeNfc(Json shop) => Navigator.push<void>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => LinkWriterScreen(
+        repo: Repository(widget.service.client),
+        tenant: widget.tenant,
+        initialUrl: ShopsService.customerLink('${shop['shop_slug']}'),
+        title: trf('بطاقة NFC · {0}', [shop['name']]),
+      ),
+    ),
+  );
+
+  Future<void> _notice(Json shop) async {
+    try {
+      final changed = await editNotice(context, widget.network, 'shop', '${shop['id']}', '${shop['name']}', shop['notice'] as String?);
+      if (changed) {
+        await load(quiet: true);
+        _snack(tr('تم'));
+      }
+    } catch (e) {
+      _snack(userError(e), bad: true);
+    }
+  }
+
+  /// Everything about one shop on one sheet: loyalty link, NFC, owner
+  /// password, edit, notice and suspension.
+  Future<void> _details(Json shop) async {
+    final slug = '${shop['shop_slug']}';
+    final loyalty = ShopsService.customerLink(slug);
+    final enabled = shop['suspended'] != true;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        Widget tile(String value, IconData icon, String title, [String? sub, Color? color]) => ListTile(
+          leading: Icon(icon, color: color ?? AppColors.primarySoft),
+          title: Text(title, style: TextStyle(fontWeight: FontWeight.w700, color: color)),
+          subtitle: sub == null ? null : Text(sub, style: const TextStyle(fontSize: 11.5)),
+          onTap: () => Navigator.pop(context, value),
+        );
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: Text('${shop['name']}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.success.withValues(alpha: 0.5)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(tr('🔗 رابط الولاء'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 4),
+                      SelectableText(loyalty, textDirection: TextDirection.ltr, style: const TextStyle(color: AppColors.success)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: () => Navigator.pop(context, 'copy'),
+                            icon: const Icon(Icons.copy_rounded, size: 16),
+                            label: Text(tr('نسخ')),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () => Navigator.pop(context, 'join'),
+                            icon: const Icon(Icons.qr_code_2_rounded, size: 16),
+                            label: Text(tr('QR')),
+                          ),
+                          FilledButton.icon(
+                            onPressed: () => Navigator.pop(context, 'nfc'),
+                            icon: const Icon(Icons.nfc_rounded, size: 16),
+                            label: Text(tr('كتابة على NFC')),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                tile('owner', Icons.key_rounded, tr('🔑 كلمة مرور جديدة لصاحب المحل'),
+                    tr('تنشئ كلمة مرور وترسلها مع الروابط عبر واتساب؛ وهو يغيّرها بنفسه بعد الدخول.'),
+                    shop['reset_requested'] == true ? AppColors.danger : null),
+                tile('open', Icons.dashboard_rounded, tr('🖥️ فتح لوحة المحل'), ShopsService.ownerLink(slug)),
+                tile('edit', Icons.edit_rounded, tr('✏️ تعديل المعلومات'), tr('الاسم، النوع، الهاتف، العنوان، الأوقات، الزيارات والهدية، الموقع')),
+                tile('notice', Icons.mark_email_unread_rounded, shop['notice'] == null ? tr('📩 إرسال تنبيه دفع') : tr('📩 تعديل / إزالة التنبيه')),
+                tile('toggle', enabled ? Icons.block_rounded : Icons.check_circle_rounded,
+                    enabled ? tr('⛔ إيقاف المحل وروابطه') : tr('✅ تفعيل المحل'), null,
+                    enabled ? AppColors.danger : AppColors.success),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (!mounted || action == null) return;
+    switch (action) {
+      case 'copy':
+        await Clipboard.setData(ClipboardData(text: loyalty));
+        _snack(tr('تم نسخ الرابط'));
+      case 'join':
+        await _joinQr(shop);
+      case 'nfc':
+        await _writeNfc(shop);
+      case 'owner':
+        await _resetPassword(shop);
+      case 'open':
+        await launchUrl(Uri.parse(ShopsService.ownerLink(slug)), mode: LaunchMode.externalApplication);
+      case 'edit':
+        await _form(shop);
+      case 'notice':
+        await _notice(shop);
+      case 'toggle':
+        await _toggle(shop);
+    }
+  }
+
   Widget _card(Json shop) {
     final (icon, label) = ShopsService.industries['${shop['industry']}'] ?? ('⭐', '');
     final enabled = shop['suspended'] != true;
@@ -250,7 +383,10 @@ class _ShopsTabState extends State<ShopsTab> {
     final paidUntil = DateTime.tryParse('${shop['paid_until'] ?? ''}');
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => _details(shop),
+        child: Container(
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(20),
@@ -293,40 +429,10 @@ class _ShopsTabState extends State<ShopsTab> {
                     ],
                   ),
                 ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
-                  onSelected: (value) async {
-                    switch (value) {
-                      case 'owner':
-                        await _resetPassword(shop);
-                      case 'open':
-                        await launchUrl(Uri.parse(ShopsService.ownerLink(slug)), mode: LaunchMode.externalApplication);
-                      case 'join':
-                        await _joinQr(shop);
-                      case 'edit':
-                        await _form(shop);
-                      case 'toggle':
-                        await _toggle(shop);
-                      case 'notice':
-                        try {
-                          final changed = await editNotice(context, widget.network, 'shop', '${shop['id']}', '${shop['name']}', shop['notice'] as String?);
-                          if (changed) {
-                            await load(quiet: true);
-                            _snack(tr('تم'));
-                          }
-                        } catch (e) {
-                          _snack(userError(e), bad: true);
-                        }
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    PopupMenuItem(value: 'owner', child: Text(tr('🔑 رابط وكلمة مرور صاحب المحل'))),
-                    PopupMenuItem(value: 'open', child: Text(tr('🖥️ فتح لوحة المحل'))),
-                    PopupMenuItem(value: 'join', child: Text(tr('📱 رابط و QR الزبائن'))),
-                    PopupMenuItem(value: 'edit', child: Text(tr('✏️ تعديل المحل'))),
-                    PopupMenuItem(value: 'notice', child: Text(shop['notice'] == null ? tr('📩 إرسال تنبيه دفع') : tr('📩 تعديل / إزالة التنبيه'))),
-                    PopupMenuItem(value: 'toggle', child: Text(enabled ? tr('⛔ إيقاف المحل وروابطه') : tr('✅ تفعيل المحل'))),
-                  ],
+                IconButton(
+                  tooltip: tr('كل ميزات المحل'),
+                  onPressed: () => _details(shop),
+                  icon: const Icon(Icons.edit_rounded),
                 ),
               ],
             ),
@@ -356,8 +462,37 @@ class _ShopsTabState extends State<ShopsTab> {
                   Pill(trf('أضافه: {0}', [shop['creator']]), color: AppColors.muted),
               ],
             ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _joinQr(shop),
+                    icon: const Icon(Icons.link_rounded, size: 16),
+                    label: Text(tr('رابط الولاء'), overflow: TextOverflow.ellipsis),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _writeNfc(shop),
+                    icon: const Icon(Icons.nfc_rounded, size: 16),
+                    label: Text(tr('NFC'), overflow: TextOverflow.ellipsis),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _resetPassword(shop),
+                    icon: const Icon(Icons.key_rounded, size: 16),
+                    label: Text(tr('كلمة المرور'), overflow: TextOverflow.ellipsis),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -493,7 +628,7 @@ class _ShopFormState extends State<ShopForm> {
       final password = created.password;
       final link = ShopsService.ownerLink(created.slug);
       final message =
-          trf('لوحة محلك «{0}»:\n{1}\nكلمة المرور: {2}\n\nافتح الرابط من متصفح هاتفك، ومنه يظهر الكود المتحرك وقائمة زبائنك.', [name.text.trim(), link, password]);
+          shopAccessMessage(name.text.trim(), created.slug, password);
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
@@ -503,14 +638,18 @@ class _ShopFormState extends State<ShopForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(tr('أرسل لصاحب المحل:'), style: TextStyle(color: AppColors.muted)),
-              const SizedBox(height: 8),
+              Text(tr('🔗 رابط الولاء (للزبائن وبطاقة NFC):'), style: TextStyle(color: AppColors.muted)),
+              const SizedBox(height: 4),
+              SelectableText(ShopsService.customerLink(created.slug), textDirection: TextDirection.ltr, style: const TextStyle(color: AppColors.success)),
+              const SizedBox(height: 12),
+              Text(tr('🔑 لوحة صاحب المحل:'), style: TextStyle(color: AppColors.muted)),
+              const SizedBox(height: 4),
               SelectableText(link, textDirection: TextDirection.ltr, style: const TextStyle(color: AppColors.accent)),
               const SizedBox(height: 8),
               SelectableText(trf('كلمة المرور: {0}', [password]), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
               Text(
-                tr('احفظها الآن: لا تُعرض مرة أخرى (يمكن إنشاء واحدة جديدة من قائمة ⋮).'),
+                tr('أرسلها الآن: لا تُعرض مرة أخرى. صاحب المحل يغيّرها بنفسه من «الإعدادات» في لوحته، ويمكنك إنشاء واحدة جديدة بالضغط على المحل.'),
                 style: TextStyle(fontSize: 11.5, color: AppColors.warning),
               ),
             ],
@@ -677,3 +816,9 @@ class _ShopFormState extends State<ShopForm> {
     );
   }
 }
+
+/// WhatsApp message for the shop owner: loyalty link, dashboard and password.
+String shopAccessMessage(String name, String slug, String password) => trf(
+  'محل «{0}» جاهز ✅\n\n🔗 رابط الولاء لزبائنك (ضعه على بطاقة NFC أو QR):\n{1}\n\n🔑 لوحة المحل:\n{2}\nكلمة المرور: {3}\n\nبعد الدخول غيّر كلمة المرور من «الإعدادات».',
+  [name, ShopsService.customerLink(slug), ShopsService.ownerLink(slug), password],
+);

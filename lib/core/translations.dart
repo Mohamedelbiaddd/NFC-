@@ -2,6 +2,19 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 const Map<String, String> frStrings = {
+  '🔗 رابط الولاء (للزبائن وبطاقة NFC):': '🔗 Lien fidélité (clients et carte NFC) :',
+  '🔑 لوحة صاحب المحل:': '🔑 Tableau du propriétaire :',
+  'بطاقة NFC · {0}': 'Carte NFC · {0}',
+  '🔗 رابط الولاء': '🔗 Lien fidélité',
+  'كتابة على NFC': 'Écrire sur NFC',
+  '🔑 كلمة مرور جديدة لصاحب المحل': '🔑 Nouveau mot de passe propriétaire',
+  'تنشئ كلمة مرور وترسلها مع الروابط عبر واتساب؛ وهو يغيّرها بنفسه بعد الدخول.': 'Crée un mot de passe à envoyer avec les liens sur WhatsApp ; il le change lui-même après connexion.',
+  '✏️ تعديل المعلومات': '✏️ Modifier les informations',
+  'الاسم، النوع، الهاتف، العنوان، الأوقات، الزيارات والهدية، الموقع': 'Nom, type, téléphone, adresse, horaires, visites et cadeau, emplacement',
+  'كل ميزات المحل': 'Toutes les options du magasin',
+  'رابط الولاء': 'Lien fidélité',
+  'أرسلها الآن: لا تُعرض مرة أخرى. صاحب المحل يغيّرها بنفسه من «الإعدادات» في لوحته، ويمكنك إنشاء واحدة جديدة بالضغط على المحل.': 'Envoyez-le maintenant : il ne sera plus affiché. Le propriétaire le change lui-même dans « Réglages » ; vous pouvez en créer un nouveau en touchant le magasin.',
+  'محل «{0}» جاهز ✅\n\n🔗 رابط الولاء لزبائنك (ضعه على بطاقة NFC أو QR):\n{1}\n\n🔑 لوحة المحل:\n{2}\nكلمة المرور: {3}\n\nبعد الدخول غيّر كلمة المرور من «الإعدادات».': 'Magasin « {0} » prêt ✅\n\n🔗 Lien fidélité pour vos clients (sur carte NFC ou QR) :\n{1}\n\n🔑 Tableau du magasin :\n{2}\nMot de passe : {3}\n\nAprès connexion, changez le mot de passe dans « Réglages ».',
   'لا توجد محلات بعد. أنشئ محلاً من تبويب «المحلات» ثم ارجع هنا.': 'Aucun magasin pour l’instant. Créez-en un dans l’onglet « Magasins » puis revenez ici.',
   'اختر المحل': 'Choisir le magasin',
   'اختر محلاً من محلاتك (يملأ الرابط تلقائياً)': 'Choisir un de vos magasins (remplit le lien)',
@@ -460,6 +473,19 @@ const Map<String, String> frStrings = {
 };
 
 const Map<String, String> enStrings = {
+  '🔗 رابط الولاء (للزبائن وبطاقة NFC):': '🔗 Loyalty link (customers and NFC card):',
+  '🔑 لوحة صاحب المحل:': '🔑 Owner dashboard:',
+  'بطاقة NFC · {0}': 'NFC card · {0}',
+  '🔗 رابط الولاء': '🔗 Loyalty link',
+  'كتابة على NFC': 'Write on NFC',
+  '🔑 كلمة مرور جديدة لصاحب المحل': '🔑 New owner password',
+  'تنشئ كلمة مرور وترسلها مع الروابط عبر واتساب؛ وهو يغيّرها بنفسه بعد الدخول.': 'Creates a password to send with the links on WhatsApp; the owner changes it after signing in.',
+  '✏️ تعديل المعلومات': '✏️ Edit details',
+  'الاسم، النوع، الهاتف، العنوان، الأوقات، الزيارات والهدية، الموقع': 'Name, type, phone, address, hours, visits and reward, location',
+  'كل ميزات المحل': 'All shop options',
+  'رابط الولاء': 'Loyalty link',
+  'أرسلها الآن: لا تُعرض مرة أخرى. صاحب المحل يغيّرها بنفسه من «الإعدادات» في لوحته، ويمكنك إنشاء واحدة جديدة بالضغط على المحل.': 'Send it now: it is not shown again. The owner changes it in “Settings”; you can create a new one by tapping the shop.',
+  'محل «{0}» جاهز ✅\n\n🔗 رابط الولاء لزبائنك (ضعه على بطاقة NFC أو QR):\n{1}\n\n🔑 لوحة المحل:\n{2}\nكلمة المرور: {3}\n\nبعد الدخول غيّر كلمة المرور من «الإعدادات».': 'Shop “{0}” is ready ✅\n\n🔗 Loyalty link for your customers (NFC card or QR):\n{1}\n\n🔑 Shop dashboard:\n{2}\nPassword: {3}\n\nAfter signing in, change the password in “Settings”.',
   'لا توجد محلات بعد. أنشئ محلاً من تبويب «المحلات» ثم ارجع هنا.': 'No shops yet. Create one in the “Shops” tab, then come back here.',
   'اختر المحل': 'Choose the shop',
   'اختر محلاً من محلاتك (يملأ الرابط تلقائياً)': 'Pick one of your shops (fills the link)',
