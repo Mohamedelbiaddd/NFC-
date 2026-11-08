@@ -2,7 +2,9 @@ name: Build Flutter APK
 
 on:
   push:
-    branches: [main, master]
+    # main/master for releases; arena/** so a feature branch can produce a
+    # testable APK artifact without merging first.
+    branches: [main, master, 'arena/**']
   workflow_dispatch:
 
 permissions:
