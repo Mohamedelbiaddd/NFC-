@@ -25,6 +25,13 @@ const STATIC_FILES = [
   'icon-192.png',
   'icon-512.png',
   'apple-touch-icon.png',
+  'card.html',
+  'card.js',
+  'shop.html',
+  'shop.js',
+  'i18n.mjs',
+  'loyalty.mjs',
+  'qrcode.mjs',
 ];
 
 function fail(message) {

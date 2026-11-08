@@ -13,6 +13,8 @@ import 'person_form.dart';
 import 'qr_screen.dart';
 import 'users_tab.dart';
 import 'link_writer_screen.dart';
+import 'shops_tab.dart';
+import '../core/shops_service.dart';
 import 'workers_tab.dart';
 import 'writer_screen.dart';
 
@@ -25,6 +27,7 @@ class Dashboard extends StatefulWidget {
 class _DashboardState extends State<Dashboard> {
   late final Repository repo;
   late final WorkersService workers;
+  late final ShopsService shops;
   List<Json> tenants = const [], businesses = const [], profiles = const [];
   String? tenant, error;
   String role = 'viewer';
@@ -32,7 +35,7 @@ class _DashboardState extends State<Dashboard> {
   int page = 0, request = 0, tick = 0;
   Map<String, int> profileScans = const {};
   int totalScans = 0;
-  int get tabCount => isSuper ? 4 : 3;
+  int get tabCount => canManage ? (isSuper ? 5 : 4) : (canEdit ? 2 : 1);
 
   bool get canEdit => {'owner', 'admin', 'editor'}.contains(role);
   bool get canDelete => {'owner', 'admin'}.contains(role);
@@ -43,6 +46,7 @@ class _DashboardState extends State<Dashboard> {
     super.initState();
     repo = Repository(Supabase.instance.client);
     workers = WorkersService(repo.client);
+    shops = ShopsService(repo.client);
     load();
   }
 
@@ -123,7 +127,7 @@ class _DashboardState extends State<Dashboard> {
         isSuper = superAdmin;
         profileScans = scans;
         totalScans = scanTotal;
-        if (page > 0 && !canManage) page = 0;
+        if (page >= tabCount) page = 0;
         if (page == 3 && !superAdmin) page = 0;
       });
       if (active != null && !_loggedLogin) {
@@ -577,11 +581,26 @@ class _DashboardState extends State<Dashboard> {
       scans: profileScans,
       totalScans: totalScans,
     );
-    if (!canManage) return people;
+    final shopsTab = ShopsTab(
+      key: ValueKey('shops-$tick-${tenant!}'),
+      service: shops,
+      tenant: tenant!,
+      currentUserId: repo.client.auth.currentUser?.id,
+      seeAll: canManage || isSuper,
+      canDisable: canManage || isSuper,
+    );
+    if (!canEdit) return people;
+    if (!canManage) {
+      return IndexedStack(
+        index: page.clamp(0, 1).toInt(),
+        children: [people, shopsTab],
+      );
+    }
     return IndexedStack(
       index: page.clamp(0, tabCount - 1).toInt(),
       children: [
         people,
+        shopsTab,
         ActivityTab(
           key: ValueKey('activity-$tick-${tenant!}'),
           service: workers,
@@ -679,7 +698,7 @@ class _DashboardState extends State<Dashboard> {
           Expanded(child: _body()),
         ],
       ),
-      bottomNavigationBar: canManage && tenant != null
+      bottomNavigationBar: canEdit && tenant != null
           ? NavigationBar(
               selectedIndex: page.clamp(0, tabCount - 1).toInt(),
               onDestinationSelected: (index) => setState(() => page = index),
@@ -690,16 +709,23 @@ class _DashboardState extends State<Dashboard> {
                   label: 'الأشخاص',
                 ),
                 const NavigationDestination(
+                  icon: Icon(Icons.storefront_outlined),
+                  selectedIcon: Icon(Icons.storefront_rounded),
+                  label: 'المحلات',
+                ),
+                if (canManage)
+                const NavigationDestination(
                   icon: Icon(Icons.insights_outlined),
                   selectedIcon: Icon(Icons.insights_rounded),
                   label: 'المتابعة',
                 ),
+                if (canManage)
                 const NavigationDestination(
                   icon: Icon(Icons.badge_outlined),
                   selectedIcon: Icon(Icons.badge_rounded),
                   label: 'الفريق',
                 ),
-                if (isSuper)
+                if (canManage && isSuper)
                   const NavigationDestination(
                     icon: Icon(Icons.shield_outlined),
                     selectedIcon: Icon(Icons.shield_rounded),

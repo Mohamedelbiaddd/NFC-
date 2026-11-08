@@ -5,6 +5,14 @@
     {
       "source": "/p/:slug",
       "destination": "/index.html"
+    },
+    {
+      "source": "/c/:slug",
+      "destination": "/card.html"
+    },
+    {
+      "source": "/s/:slug",
+      "destination": "/shop.html"
     }
   ],
   "headers": [
@@ -19,6 +27,24 @@
     },
     {
       "source": "/p/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/c/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/s/:slug",
       "headers": [
         {
           "key": "Cache-Control",
