@@ -1,0 +1,17 @@
+export const reserved = new Set(['admin','api','assets','auth','login','logout','settings','www','new']);
+export function validSlug(s) {return typeof s==='string'&&s.length>=3&&s.length<=63&&/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s)&&!reserved.has(s);}
+export function slugFromPath(path) {
+ const match=/^\/p\/([^/]+)\/?$/.exec(path);
+ if(!match)return null;
+ // Reject encoded slashes, double decoding, upper case aliases and traversal.
+ try{const slug=decodeURIComponent(match[1]);return validSlug(slug)&&encodeURIComponent(slug)===match[1]?slug:null;}catch{return null;}
+}
+export function safeHttps(value){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null;}catch{return null;}}
+export function vcardEscape(value){return String(value??'').replace(/\\/g,'\\\\').replace(/\r\n|\r|\n/g,'\\n').replace(/;/g,'\\;').replace(/,/g,'\\,');}
+export async function fetchProfile(config,slug,fetcher=fetch){
+ if(!validSlug(slug))throw new Error('Invalid slug');
+ const response=await fetcher(`${config.supabaseUrl}/rest/v1/rpc/nfc_public_profile_by_slug`,{
+ method:'POST',headers:{'Content-Type':'application/json',apikey:config.publishableKey},body:JSON.stringify({slug}),cache:'no-store'});
+ if(!response.ok)throw new Error('Profile lookup failed');
+ return response.json();
+}

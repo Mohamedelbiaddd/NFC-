@@ -1,0 +1,95 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+typedef Json = Map<String, dynamic>;
+
+class Repository {
+  Repository(this.client);
+  final SupabaseClient client;
+  Future<List<Json>> rows(String table, {String? tenant}) async {
+    final output = <Json>[];
+    for (var offset = 0; ; offset += 500) {
+      var q = client.from(table).select();
+      if (tenant != null) q = q.eq('tenant_id', tenant);
+      final page = await q
+          .order(table == 'nfc_memberships' ? 'user_id' : 'id')
+          .range(offset, offset + 499);
+      output.addAll(page.map((e) => Map<String, dynamic>.from(e)));
+      if (page.length < 500) return output;
+    }
+  }
+
+  Future<Json> profile(String id, String tenant) async =>
+      Map<String, dynamic>.from(
+        await client
+            .from('nfc_profiles')
+            .select()
+            .eq('id', id)
+            .eq('tenant_id', tenant)
+            .single(),
+      );
+  Future<void> save(String table, Json fields, {String? id}) async {
+    if (id == null) {
+      await client.from(table).insert(fields);
+    } else {
+      await client.from(table).update(fields).eq('id', id);
+    }
+  }
+
+  Future<void> delete(String table, String id) async {
+    await client.from(table).delete().eq('id', id);
+  }
+
+  Future<int> count(String table, String tenant) async =>
+      await client.from(table).count(CountOption.exact).eq('tenant_id', tenant);
+  Future<void> log(String tenant, String profile, String action) async {
+    await client.from('nfc_write_events').insert({
+      'tenant_id': tenant,
+      'profile_id': profile,
+      'action': action,
+    });
+  }
+}
+
+String userError(Object e) {
+  if (e is AuthException) return e.message;
+  if (e is PostgrestException && e.code == '23505') {
+    return 'هذا الاسم المخصص مستخدم أو محجوز سابقاً.';
+  }
+  if (e is PostgrestException) return 'تعذّر حفظ/قراءة البيانات: ${e.message}';
+  return e.toString();
+}
+
+const kindNames = {
+  'vcard': 'بطاقة اتصال · vCard',
+  'menu': 'قائمة · Menu',
+  'review': 'تقييم Google',
+  'equipment': 'معدّة · Equipment',
+  'loyalty': 'ولاء · Loyalty',
+};
+const fieldsByKind = {
+  'vcard': {
+    'full_name': 'الاسم الكامل *',
+    'phone': 'الهاتف',
+    'email': 'البريد',
+    'website': 'الموقع HTTPS',
+  },
+  'menu': {'menu_url': 'رابط القائمة HTTPS *'},
+  'review': {'review_url': 'رابط التقييم HTTPS *'},
+  'equipment': {
+    'equipment_name': 'اسم المعدّة *',
+    'serial': 'الرقم التسلسلي',
+    'manual_url': 'دليل التشغيل HTTPS',
+  },
+  'loyalty': {
+    'loyalty_url': 'رابط برنامج الولاء HTTPS *',
+    'terms': 'الشروط العامة',
+  },
+};
+bool validHttps(String value) {
+  final u = Uri.tryParse(value);
+  return u != null &&
+      u.scheme == 'https' &&
+      u.host.isNotEmpty &&
+      u.userInfo.isEmpty &&
+      !RegExp(r'\s').hasMatch(value);
+}
