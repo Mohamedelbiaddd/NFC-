@@ -13,6 +13,7 @@ import '../core/repository.dart';
 import '../core/storage_service.dart';
 import '../core/theme.dart';
 import 'catalog_editor.dart';
+import 'shops_tab.dart' show ShopForm;
 
 /// One clear form for adding or editing a person (vCard) or another card kind.
 /// Image picking/uploads, slug suggestion and publishing live here so the
@@ -444,8 +445,28 @@ class _PersonFormState extends State<PersonForm> {
     ),
   );
 
-  /// Lets the operator fill the loyalty link from one of their shops instead
-  /// of typing it: the link is the shop's customer page /c/<slug>.
+  void _useShop(String slug) => setState(() {
+    extra.putIfAbsent('loyalty_url', TextEditingController.new).text =
+        ShopsService.customerLink(slug);
+  });
+
+  /// Creates a new loyalty programme (a shop) right here; its link fills the
+  /// field and the owner password is shown to send on WhatsApp.
+  Future<void> _createShop() async {
+    final slug = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ShopForm(
+          service: ShopsService(widget.repo.client),
+          tenant: widget.tenant,
+          initialName: name.text.trim().isEmpty ? null : name.text.trim(),
+        ),
+      ),
+    );
+    if (slug != null && mounted) _useShop(slug);
+  }
+
+  /// Fills the loyalty link from an existing shop, or creates a new one.
   Future<void> _pickShop() async {
     List<Json> shops;
     try {
@@ -457,23 +478,21 @@ class _PersonFormState extends State<PersonForm> {
       return;
     }
     if (!mounted) return;
-    if (shops.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(tr('لا توجد محلات بعد. أنشئ محلاً من تبويب «المحلات» ثم ارجع هنا.'))),
-      );
-      return;
-    }
+    if (shops.isEmpty) return _createShop();
     final slug = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text(tr('اختر المحل'), style: const TextStyle(fontWeight: FontWeight.w800)),
+            ListTile(
+              leading: const Icon(Icons.add_business_rounded, color: AppColors.success),
+              title: Text(tr('➕ إنشاء برنامج ولاء جديد'), style: const TextStyle(fontWeight: FontWeight.w800)),
+              onTap: () => Navigator.pop(context, ''),
             ),
+            const Divider(),
             for (final shop in shops)
               ListTile(
                 leading: const Icon(Icons.storefront_rounded),
@@ -490,10 +509,8 @@ class _PersonFormState extends State<PersonForm> {
       ),
     );
     if (slug == null || !mounted) return;
-    setState(() {
-      extra.putIfAbsent('loyalty_url', TextEditingController.new).text =
-          ShopsService.customerLink(slug);
-    });
+    if (slug.isEmpty) return _createShop();
+    _useShop(slug);
   }
 
   Widget _kindField(String key, String label) => key == 'loyalty_url'
@@ -502,10 +519,16 @@ class _PersonFormState extends State<PersonForm> {
           children: [
             _plainKindField(key, label),
             const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: busy ? null : _createShop,
+              icon: const Icon(Icons.add_business_rounded, size: 18),
+              label: Text(tr('➕ إنشاء برنامج ولاء جديد (الرابط يُنشأ تلقائياً)')),
+            ),
+            const SizedBox(height: 6),
             OutlinedButton.icon(
               onPressed: busy ? null : _pickShop,
               icon: const Icon(Icons.storefront_rounded, size: 18),
-              label: Text(tr('اختر محلاً من محلاتك (يملأ الرابط تلقائياً)')),
+              label: Text(tr('أو اختر محلاً موجوداً')),
             ),
           ],
         )

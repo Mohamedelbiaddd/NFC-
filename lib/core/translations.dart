@@ -2,6 +2,9 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 const Map<String, String> frStrings = {
+  '➕ إنشاء برنامج ولاء جديد': '➕ Créer un programme de fidélité',
+  '➕ إنشاء برنامج ولاء جديد (الرابط يُنشأ تلقائياً)': '➕ Créer un programme de fidélité (lien automatique)',
+  'أو اختر محلاً موجوداً': 'ou choisir un magasin existant',
   '🔗 رابط الولاء (للزبائن وبطاقة NFC):': '🔗 Lien fidélité (clients et carte NFC) :',
   '🔑 لوحة صاحب المحل:': '🔑 Tableau du propriétaire :',
   'بطاقة NFC · {0}': 'Carte NFC · {0}',
@@ -473,6 +476,9 @@ const Map<String, String> frStrings = {
 };
 
 const Map<String, String> enStrings = {
+  '➕ إنشاء برنامج ولاء جديد': '➕ Create a loyalty programme',
+  '➕ إنشاء برنامج ولاء جديد (الرابط يُنشأ تلقائياً)': '➕ Create a loyalty programme (link made automatically)',
+  'أو اختر محلاً موجوداً': 'or pick an existing shop',
   '🔗 رابط الولاء (للزبائن وبطاقة NFC):': '🔗 Loyalty link (customers and NFC card):',
   '🔑 لوحة صاحب المحل:': '🔑 Owner dashboard:',
   'بطاقة NFC · {0}': 'NFC card · {0}',

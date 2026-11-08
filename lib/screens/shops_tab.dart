@@ -536,13 +536,16 @@ class _ShopsTabState extends State<ShopsTab> {
   }
 }
 
-/// One-screen form to create or edit a shop. Pops with the business id.
+/// One-screen form to create or edit a shop. Pops with the shop slug.
 class ShopForm extends StatefulWidget {
-  const ShopForm({super.key, required this.service, required this.tenant, this.shop});
+  const ShopForm({super.key, required this.service, required this.tenant, this.shop, this.initialName});
 
   final ShopsService service;
   final String tenant;
   final Json? shop;
+
+  /// Pre-filled shop name when created from a loyalty card form.
+  final String? initialName;
 
   @override
   State<ShopForm> createState() => _ShopFormState();
@@ -550,7 +553,7 @@ class ShopForm extends StatefulWidget {
 
 class _ShopFormState extends State<ShopForm> {
   final formKey = GlobalKey<FormState>();
-  late final name = TextEditingController(text: '${widget.shop?['name'] ?? ''}');
+  late final name = TextEditingController(text: '${widget.shop?['name'] ?? widget.initialName ?? ''}');
   late final phone = TextEditingController(text: '${widget.shop?['phone'] ?? ''}');
   late final address = TextEditingController(text: '${widget.shop?['address'] ?? ''}');
   late final hours = TextEditingController(text: '${widget.shop?['hours'] ?? ''}');
@@ -609,7 +612,7 @@ class _ShopFormState extends State<ShopForm> {
           goal: goal,
           reward: reward.text.trim(),
         );
-        if (mounted) Navigator.pop(context, id);
+        if (mounted) Navigator.pop(context, '${widget.shop!['shop_slug']}');
         return;
       }
       final created = await widget.service.create(
@@ -674,7 +677,7 @@ class _ShopFormState extends State<ShopForm> {
           ],
         ),
       );
-      if (mounted) Navigator.pop(context, created.id);
+      if (mounted) Navigator.pop(context, created.slug);
     } catch (e) {
       if (mounted) setState(() => error = userError(e));
     } finally {
