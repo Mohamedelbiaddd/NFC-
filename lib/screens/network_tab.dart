@@ -285,7 +285,7 @@ class _NetworkTabState extends State<NetworkTab> {
     }
   }
 
-  Future<bool> _confirm(String title, String text, {String yes = tr('تأكيد')}) async {
+  Future<bool> _confirm(String title, String text, {String? yes}) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -293,7 +293,7 @@ class _NetworkTabState extends State<NetworkTab> {
         content: Text(text),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('إلغاء'))),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(yes)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(yes ?? tr('تأكيد'))),
         ],
       ),
     );
