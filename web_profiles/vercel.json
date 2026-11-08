@@ -1,1 +1,30 @@
-{"rewrites":[{"source":"/p/:slug","destination":"/index.html"}],"headers":[{"source":"/p/:slug","headers":[{"key":"Cache-Control","value":"no-store"}]}]}
+{
+  "buildCommand": "node generate-config.mjs",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/p/:slug",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/config.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/p/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ]
+}

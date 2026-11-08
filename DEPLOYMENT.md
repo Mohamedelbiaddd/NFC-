@@ -14,10 +14,15 @@
 
 ## الويب
 
-- أنشئ مشروع Vercel من المستودع واجعل Root Directory هو `web_profiles` وFramework Preset هو Other، دون أمر بناء، مع نشر ملفات هذا المجلد مباشرة. `vercel.json` يعيد كتابة `/p/:slug` داخلياً إلى `index.html` دون تغيير عنوان المتصفح.
-- بدلاً من ذلك، يمكن نشر `web_profiles` على Netlify أو Cloudflare Pages، مع استخدام `_redirects` المرفق. اختبر الروابط الحقيقية على المضيف بعد النشر؛ هذا الإعداد وحده لا ينشئ خدمة سحابية.
-- `web_profiles/config.json` يحتوي إعداد اتصال العرض العام. `config.json` في جذر المشروع يستخدم للبناء Flutter؛ يجب أن يشيرا إلى مشروع Supabase المراد استخدامه.
+- أنشئ مشروع Vercel من المستودع واجعل **Root Directory = `web_profiles`** و**Framework Preset = Other**. لا تضع جذر المستودع كـ Root Directory: عندها لا يُقرأ `web_profiles/vercel.json` ولا يعمل المسار `/p/<slug>`.
+- `vercel.json` يضبط `buildCommand: node generate-config.mjs` و`outputDirectory: dist`، إضافة إلى إعادة كتابة `/p/:slug` داخلياً إلى `index.html` دون تغيير عنوان المتصفح.
+- إعداد اتصال العرض العام له مصدران بالترتيب:
+  1. **متغيرات بيئة Vercel** (Production وPreview): `SUPABASE_URL` = أصل HTTPS للمشروع، و`SUPABASE_ANON_KEY` = المفتاح **publishable** (`sb_publishable_…`) أو مفتاح anon القديم. ينشئها سكربت البناء في `dist/config.json`، ويُرفض أي مفتاح service/secret أثناء البناء. تغيير المتغيرات يتطلب **إعادة نشر** (Redeploy) لأنها تُقرأ وقت البناء لا وقت الزيارة.
+  2. **ملف `web_profiles/config.json`** عند عدم وجود المتغيرات (هذا هو السلوك الافتراضي الحالي). `config.json` في جذر المشروع يخص بناء Flutter فقط.
+- لتغيير مشروع Supabase من لوحة Vercel: حدّث `SUPABASE_URL` و`SUPABASE_ANON_KEY` ثم Redeploy؛ لا حاجة لتعديل أي ملف.
 - اختبر بعد النشر ملفاً منشوراً، مثال `https://YOUR-DOMAIN/p/ahmad-electric`، وكذلك ملفاً غير منشور وتحديث الصفحة المباشر. أسماء الملفات المنشورة ثابتة، ولا يعاد تخصيص الأسماء المحجوزة لملف آخر.
+- صفحة الخطأ الآن تشرح السبب: «الرابط غير صحيح» تعني أن المسار ليس `/p/<slug>` (غالباً Root Directory أو إعداد rewrites خاطئ)، و«إعدادات الموقع غير متاحة» تعني أن `config.json` لم يُنشأ (متغيرات بيئة ناقصة)، و«تعذّر الاتصال بقاعدة البيانات» تعني أن `supabaseUrl`/`publishableKey` غير صحيحين.
+- بدلاً من ذلك، يمكن نشر `web_profiles` على Netlify أو Cloudflare Pages، مع استخدام `_redirects` المرفق ونشر الملفات مباشرة (بدون سكربت البناء، أي عبر `config.json`). اختبر الروابط الحقيقية على المضيف بعد النشر؛ هذا الإعداد وحده لا ينشئ خدمة سحابية.
 - إذا كان الموقع على نطاق مختلف عن النطاق الموجود في APK، عدّل الأصل ثم أعد إصدار التطبيق **قبل** برمجة بطاقات حقيقية.
 
 ## صور الملفات وQR للطباعة

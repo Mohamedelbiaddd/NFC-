@@ -41,8 +41,27 @@ function render(p,config){
 }
 async function start(){
  const slug=slugFromPath(location.pathname);
- if(!slug){status('الرابط غير صحيح','استخدم رابط النشاط بصيغة /p/business-name.');return;}
- try{const res=await fetch('/config.json',{cache:'no-store'});if(!res.ok)throw new Error('Configuration');const config=await res.json();render(await fetchProfile(config,slug),config);}
- catch{status('تعذّر تحميل الملف','تحقق من الاتصال ثم أعد تحميل الصفحة.');}
+ if(!slug){
+  status('الرابط غير صحيح',`المسار الحالي (${location.pathname}) ليس بصيغة /p/business-name. تأكد أن مشروع Vercel ينشر مجلد web_profiles كـ Root Directory وأن vercel.json موجود فيه.`);
+  return;
+ }
+ let config;
+ try{
+  const res=await fetch('/config.json',{cache:'no-store'});
+  if(!res.ok)throw new Error('config '+res.status);
+  config=await res.json();
+ }catch{
+  status('إعدادات الموقع غير متاحة','لم يُعثر على config.json صالح. اضبط SUPABASE_URL وSUPABASE_ANON_KEY في متغيرات بيئة Vercel ثم أعد النشر، أو ارفع web_profiles/config.json.');
+  return;
+ }
+ if(!safeHttps(config?.supabaseUrl)||typeof config?.publishableKey!=='string'||!config.publishableKey){
+  status('إعدادات الموقع غير صالحة','يجب أن يحتوي config.json على supabaseUrl (https) وpublishableKey.');
+  return;
+ }
+ try{
+  render(await fetchProfile(config,slug),config);
+ }catch{
+  status('تعذّر الاتصال بقاعدة البيانات','تحقق من الإنترنت ومن عنوان مشروع Supabase ومفتاح publishable ثم أعد التحميل.');
+ }
 }
 start();
