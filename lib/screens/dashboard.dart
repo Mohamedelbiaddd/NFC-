@@ -615,8 +615,9 @@ class _DashboardState extends State<Dashboard> {
 
   /// Delete the selected workspace (owner or super admin; refused while its
   /// loyalty shops have customers).
-  Future<void> deleteWorkspace() async {
-    final current = tenants.where((t) => '${t['id']}' == tenant).firstOrNull;
+  Future<void> deleteWorkspace([String? id]) async {
+    final target = id ?? tenant;
+    final current = tenants.where((t) => '${t['id']}' == target).firstOrNull;
     if (current == null) return;
     final name = '${current['name']}';
     final typed = TextEditingController();
@@ -648,11 +649,11 @@ class _DashboardState extends State<Dashboard> {
     );
     if (ok != true || !mounted) return;
     try {
-      final r = await repo.client.rpc('nfc_delete_workspace', params: {'target': tenant});
+      final r = await repo.client.rpc('nfc_delete_workspace', params: {'target': target});
       final res = r is Map ? r : const {};
       if (res['ok'] == true) {
-        tenant = null;
-        await load();
+        if (target == tenant) tenant = null;
+        await load(selected: tenant);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('تم حذف مساحة العمل.'))));
         }
@@ -698,9 +699,27 @@ class _DashboardState extends State<Dashboard> {
                     .map(
                       (t) => DropdownMenuItem<String>(
                         value: '${t['id']}',
-                        child: Text(
-                          '${t['name']}',
-                          overflow: TextOverflow.ellipsis,
+                        child: Builder(
+                          builder: (itemContext) {
+                            // Inside the open menu: name + a trash icon to remove it.
+                            final inMenu = ModalRoute.of(itemContext) is PopupRoute;
+                            final name = Text('${t['name']}', overflow: TextOverflow.ellipsis);
+                            if (!inMenu) return name;
+                            return Row(
+                              children: [
+                                Expanded(child: name),
+                                IconButton(
+                                  tooltip: tr('حذف مساحة العمل'),
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.danger),
+                                  onPressed: () {
+                                    Navigator.of(itemContext).pop();
+                                    deleteWorkspace('${t['id']}');
+                                  },
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     )
@@ -720,7 +739,7 @@ class _DashboardState extends State<Dashboard> {
           ),
           IconButton(
             tooltip: tr('حذف مساحة العمل'),
-            onPressed: tenant == null ? null : deleteWorkspace,
+            onPressed: tenant == null ? null : () => deleteWorkspace(),
             icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.danger),
           ),
           IconButton(
