@@ -474,3 +474,22 @@ a.bc-phone { color: inherit; text-decoration: none; }
 .how-ico { font-size: 24px; flex: none; }
 .how-arrow { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 40px; animation: bob 1s ease-in-out infinite alternate; z-index: 70; pointer-events: none; }
 @keyframes bob { to { transform: translate(-50%, 10px); } }
+
+/* Shop photos and flyers playing like an ad */
+.ad-panel { padding: 0; overflow: hidden; }
+.ad { position: relative; overflow: hidden; aspect-ratio: 4 / 5; max-height: 72vh; width: 100%; border-radius: inherit; background: #000; cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.ad-track { display: flex; height: 100%; transition: transform .7s cubic-bezier(.65, 0, .35, 1); }
+.ad-slide { position: relative; flex: 0 0 100%; height: 100%; overflow: hidden; }
+.ad-back { position: absolute; inset: -20px; width: calc(100% + 40px); height: calc(100% + 40px); object-fit: cover; filter: blur(22px) brightness(.55); }
+.ad-front { position: relative; width: 100%; height: 100%; object-fit: contain; pointer-events: none; -webkit-user-drag: none; }
+.ad-bars { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; gap: 5px; z-index: 2; }
+.ad-bars span { flex: 1; height: 3px; border-radius: 3px; background: #ffffff55; overflow: hidden; }
+.ad-bars i { display: block; height: 100%; width: 0; background: #fff; }
+.ad-bars .done i { width: 100%; }
+.ad-bars .run i { animation: adfill linear forwards; }
+@keyframes adfill { from { width: 0; } to { width: 100%; } }
+.ad-view { position: fixed; inset: 0; z-index: 80; background: #000; display: grid; place-items: center; }
+.ad-full { aspect-ratio: auto; max-height: none; height: 100%; border-radius: 0; }
+.ad-full .ad-bars { top: max(12px, env(safe-area-inset-top)); }
+.ad-close { position: fixed; top: max(26px, calc(env(safe-area-inset-top) + 16px)); right: 14px; z-index: 81; width: 40px; height: 40px; border-radius: 50%; border: 0; background: #0008; color: #fff; font-size: 20px; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .ad-track { transition: none; } }

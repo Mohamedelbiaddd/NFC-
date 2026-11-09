@@ -6,6 +6,9 @@
 // bucket under shops/<business id>/ and the page saves the returned URL in the
 // shop's banners through public.nfc_shop_update.
 //
+// action=cleanup (sent after every save) deletes the shop's pictures that
+// are no longer used anywhere on its page, so removed photos leave storage.
+//
 // Deploy with verify_jwt = false: visitors only hold the publishable key.
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -63,8 +66,9 @@ Deno.serve(async (req: Request) => {
   if (!SLUG.test(slug) || slug.length < 3 || slug.length > 63 || !SESSION.test(session)) {
     return json({error: 'انتهت الجلسة'}, 403);
   }
-  if (!(file instanceof File)) return json({error: 'اختر صورة'}, 400);
-  if (file.size > MAX_BYTES) return json({error: 'الصورة أكبر من 5 ميغابايت'}, 413);
+  const cleanup = form.get('action') === 'cleanup';
+  if (!cleanup && !(file instanceof File)) return json({error: 'اختر صورة'}, 400);
+  if (file instanceof File && file.size > MAX_BYTES) return json({error: 'الصورة أكبر من 5 ميغابايت'}, 413);
 
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: {persistSession: false, autoRefreshToken: false},
@@ -76,7 +80,27 @@ Deno.serve(async (req: Request) => {
   if (checkError) return json({error: 'تعذّر التحقق'}, 500);
   if (!businessId) return json({error: 'انتهت الجلسة'}, 403);
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (cleanup) {
+    // Everything the shop still shows (banners, logo, cover, background...).
+    const {data: row, error: rowError} = await admin
+      .from('nfc_businesses').select('*').eq('id', businessId).single();
+    if (rowError || !row) return json({error: 'تعذّر التحقق'}, 500);
+    const used = JSON.stringify(row);
+    const folder = `shops/${businessId}`;
+    const {data: files, error: listError} = await admin.storage
+      .from('profile-images').list(folder, {limit: 1000});
+    if (listError) return json({error: 'تعذّر الحذف'}, 500);
+    const unused = (files ?? [])
+      .filter((f) => f.id && !used.includes(`${folder}/${f.name}`))
+      .map((f) => `${folder}/${f.name}`);
+    if (unused.length) {
+      const {error: removeError} = await admin.storage.from('profile-images').remove(unused);
+      if (removeError) return json({error: 'تعذّر الحذف'}, 500);
+    }
+    return json({ok: true, removed: unused.length});
+  }
+
+  const bytes = new Uint8Array(await (file as File).arrayBuffer());
   const kind = sniff(bytes);
   if (!kind) return json({error: 'الصيغ المسموحة: JPG وPNG وWEBP'}, 415);
 

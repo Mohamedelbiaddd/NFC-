@@ -438,6 +438,12 @@ async function upload(file) {
   return body.url;
 }
 
+// After a save, pictures the owner removed are deleted from storage too.
+function cleanupImages() {
+  const form = new FormData(); form.append('slug', slug); form.append('session', session()); form.append('action', 'cleanup');
+  fetch(`${config.supabaseUrl}/functions/v1/shop-upload`, {method: 'POST', headers: {apikey: config.publishableKey}, body: form}).catch(() => {});
+}
+
 function settingsView() {
   editing = true;
   const s = data.shop;
@@ -701,6 +707,7 @@ function settingsView() {
         ...(geo ? {latitude: String(geo.lat), longitude: String(geo.lng)} : {}),
       }});
       if (!r?.ok) { applyTheme(s.theme); toast(r?.error === 'email' ? t('badEmail') : r?.error === 'socials' ? t('badLink') : r?.error === 'hours' ? t('badHours') : t('saveError'), true); return; }
+      cleanupImages();
       const bv = bookingValue();
       const rb = await rpc(config, 'nfc_shop_booking_settings', {target_slug: slug, session: session(), settings: bv});
       if (!rb?.ok) { toast(rb?.error === 'services' ? t('badServices') : t('saveError'), true); return; }
