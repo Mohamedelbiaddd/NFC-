@@ -17,6 +17,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const out = join(root, 'dist');
 const STATIC_FILES = [
   'themes.mjs',
+  'sw.js',
   'privacy.html',
   'terms.html',
   'legal.css',

@@ -16,6 +16,7 @@ let config = null, shop = null, customer = null, notice = null, fresh = -1;
 let myBooking = null; // the customer's current appointment (nfc_booking_mine)
 let installEvent = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvent = e; });
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
 function status(title, text) {
   root.replaceChildren(el('div', undefined, 'panel'));
@@ -333,15 +334,20 @@ function render() {
   if (customer) {
     parts.push(actions());
     if (canWallet()) parts.push(walletButton());
-    const home = el('button', t('addHome'), 'btn ghost'); home.type = 'button';
-    home.addEventListener('click', addToHome);
-    parts.push(home);
+    if (!installed()) {
+      const home = el('button', t('addHome'), 'btn ghost'); home.type = 'button';
+      home.addEventListener('click', addToHome);
+      parts.push(home);
+    }
   } else if (pendingCode) {
     parts.push(joinPanel());
   } else {
-    const home = el('button', t('saveShop'), 'btn ghost'); home.type = 'button';
-    home.addEventListener('click', addToHome);
-    parts.push(home);
+    if (canWallet()) parts.push(walletButton());
+    if (!installed()) {
+      const home = el('button', t('saveShop'), 'btn ghost'); home.type = 'button';
+      home.addEventListener('click', addToHome);
+      parts.push(home);
+    }
   }
   const pics = gallery(); if (pics) parts.push(pics);
   const info = infoPanel(); if (info) parts.push(info);
@@ -379,7 +385,7 @@ function walletPrompt() {
 
 function walletButton() {
   const btn = el('button', t('wallet'), 'btn wallet'); btn.type = 'button';
-  btn.addEventListener('click', async () => {
+  const save = async () => {
     btn.disabled = true;
     try {
       const r = await wallet('save');
@@ -387,10 +393,15 @@ function walletButton() {
       toast(r?.error === 'not_configured' ? t('walletSoon') : t('walletError'));
     } catch { toast(t('walletError')); }
     btn.disabled = false;
+  };
+  btn.addEventListener('click', () => {
+    if (storage(tokenKey)) { save(); return; }
+    // Not a member yet: name + phone in one small step, then straight to Wallet.
+    const {box, panel} = sheet();
+    detailsStep(panel, () => { box.remove(); render(); save(); }, t('wallet'), t('walletDetails'));
   });
   return btn;
 }
-
 
 // "زيارة واحدة من أصل خمس" / "1 visit of 5"
 const AR_NUM = ['', 'واحدة', 'اثنتين', 'ثلاث', 'أربع', 'خمس', 'ست', 'سبع', 'ثماني', 'تسع', 'عشر'];
@@ -420,8 +431,8 @@ async function loadMyBooking() {
 }
 
 // Name + phone before the first booking (joins the shop without a visit).
-function detailsStep(panel, done) {
-  panel.replaceChildren(el('h2', `📅 ${t('bookBtn')}`), el('p', t('yourDetails'), 'muted small'));
+function detailsStep(panel, done, title = `📅 ${t('bookBtn')}`, note = t('yourDetails')) {
+  panel.replaceChildren(el('h2', title), el('p', note, 'muted small'));
   const name = el('input'); name.className = 'field'; name.placeholder = t('name'); name.autocomplete = 'name'; name.maxLength = 80;
   const phone = el('input'); phone.className = 'field'; phone.placeholder = t('phone'); phone.type = 'tel'; phone.inputMode = 'tel'; phone.dir = 'ltr';
   const go = el('button', t('continue'), 'btn'); go.type = 'button';
@@ -604,16 +615,37 @@ function sheet() {
   return {box, panel};
 }
 
-function addToHome() {
-  if (installEvent) { installEvent.prompt(); installEvent = null; return; }
-  const {box, panel} = sheet();
+const installed = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+// One tap on Android (the browser's own install window); on iPhone Apple
+// allows no button, so we show the two taps with pictures.
+async function addToHome() {
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  // iPhone: the icon opens exactly this address, so it must carry the card.
   const token = storage(tokenKey);
-  if (ios && token) history.replaceState(null, '', `${location.pathname}#k=${token}`);
+  // The icon opens exactly this address, so it must carry the card.
+  if (token) history.replaceState(null, '', `${location.pathname}#k=${token}`);
+  if (installEvent) {
+    const ev = installEvent; installEvent = null;
+    try {
+      await ev.prompt();
+      const choice = await ev.userChoice;
+      if (choice?.outcome === 'accepted') toast(t('installed'));
+    } catch { /* fall back to the guide below */ }
+    return;
+  }
+  const {box, panel} = sheet();
+  panel.append(el('h2', t('addHome')));
+  const steps = el('div', undefined, 'how');
+  const step = (n, icon, text) => { const r = el('div', undefined, 'how-step'); r.append(el('span', String(n), 'how-n'), el('span', icon, 'how-ico'), el('p', text)); return r; };
+  if (ios) {
+    steps.append(step(1, '⬆️', t('iosStep1')), step(2, '➕', t('iosStep2')), step(3, '✅', t('iosStep3')));
+  } else {
+    steps.append(step(1, '⋮', t('androidStep1')), step(2, '📲', t('androidStep2')), step(3, '✅', t('iosStep3')));
+  }
   const ok = el('button', t('ok'), 'btn'); ok.type = 'button';
   ok.addEventListener('click', () => box.remove());
-  panel.append(el('h2', t('addHome')), el('p', ios ? t('iosHelp') : t('androidHelp')), ok);
+  panel.append(steps, ok);
+  if (ios) { const arrow = el('div', '⬇️', 'how-arrow'); box.append(arrow); }
 }
 
 // Owner login from the customer page (hidden entry) → dashboard.
