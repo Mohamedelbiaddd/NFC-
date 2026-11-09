@@ -168,6 +168,45 @@ class _ShopsTabState extends State<ShopsTab> {
     );
   }
 
+  Future<void> _deleteShop(Json shop) async {
+    final typed = TextEditingController();
+    final name = '${shop['name']}';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocal) => AlertDialog(
+          title: Text(trf('حذف المحل «{0}»؟', [name])),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(tr('سيُحذف المحل نهائياً مع زبائنه ونقاطهم وحجوزاتهم وبطاقته. لا يمكن التراجع.')),
+              const SizedBox(height: 10),
+              Text(tr('للتأكيد اكتب اسم المحل:'), style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+              TextField(controller: typed, onChanged: (_) => setLocal(() {})),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('إلغاء'))),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+              onPressed: typed.text.trim() == name.trim() ? () => Navigator.pop(context, true) : null,
+              child: Text(tr('حذف')),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await widget.network.deleteShop('${shop['id']}');
+      await load(quiet: true);
+      _snack(tr('تم حذف المحل.'));
+    } catch (e) {
+      _snack('$e', bad: true);
+    }
+  }
+
   Future<void> _toggle(Json shop) async {
     final suspended = shop['suspended'] == true;
     try {
@@ -279,6 +318,8 @@ class _ShopsTabState extends State<ShopsTab> {
                 tile('toggle', enabled ? Icons.block_rounded : Icons.check_circle_rounded,
                     enabled ? tr('⛔ إيقاف المحل وروابطه') : tr('✅ تفعيل المحل'), null,
                     enabled ? AppColors.danger : AppColors.success),
+                tile('delete', Icons.delete_forever_rounded, tr('🗑️ حذف المحل نهائياً'),
+                    tr('مع زبائنه ونقاطهم وحجوزاتهم وبطاقته. لا يمكن التراجع.'), AppColors.danger),
               ],
             ),
           ),
@@ -287,6 +328,8 @@ class _ShopsTabState extends State<ShopsTab> {
     );
     if (!mounted || action == null) return;
     switch (action) {
+      case 'delete':
+        await _deleteShop(shop);
       case 'copy':
         await Clipboard.setData(ClipboardData(text: loyalty));
         _snack(tr('تم نسخ الرابط'));

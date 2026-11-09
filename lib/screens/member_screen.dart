@@ -5,7 +5,9 @@ import '../core/network_service.dart';
 import '../core/repository.dart';
 import '../core/shops_service.dart';
 import '../core/theme.dart';
+import '../core/workers_service.dart';
 import 'network_tab.dart' show statusColor;
+import 'user_detail_screen.dart';
 import 'shops_tab.dart';
 
 /// One member of the network (an agent like Saeed or a worker): their details,
@@ -37,11 +39,82 @@ class _MemberScreenState extends State<MemberScreen> {
   String? error;
 
   String get id => '${widget.member['user_id']}';
+  bool isSuper = false;
 
   @override
   void initState() {
     super.initState();
     load();
+    widget.network.client.rpc('nfc_am_super_admin').then((v) {
+      if (mounted) setState(() => isSuper = v == true);
+    }).catchError((_) {});
+  }
+
+  /// Full details (shops, cards, permissions) for the super admin.
+  Future<void> _openDetails() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => UserDetailScreen(
+          service: WorkersService(widget.network.client),
+          user: {'user_id': id, 'email': _fresh['email']},
+          canBan: true,
+        ),
+      ),
+    );
+    if (mounted) load();
+  }
+
+  /// Removes the member with everything they created; asks about their team.
+  Future<void> _deleteMember() async {
+    final hasTeam = _children(id).isNotEmpty;
+    var withTeam = false;
+    if (hasTeam) {
+      final choice = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(tr('لهذا الحساب أشخاص تابعون له')),
+          content: Text(tr('هل تحذف فريقه أيضاً مع كل ما أنشؤوه؟ إن اخترت «أبقِهم» ينتقلون إلى المسؤول الذي فوقه.')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('أبقِهم'))),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(tr('احذف الفريق أيضاً')),
+            ),
+          ],
+        ),
+      );
+      if (choice == null) return;
+      withTeam = choice;
+    }
+    if (!mounted) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(trf('حذف {0} نهائياً؟', [_fresh['name']])),
+        content: Text(tr('سيُحذف الحساب ولن يستطيع الدخول للتطبيق، وتُحذف معه محلاته وزبائنها وبطاقاته ومساحات عمله. لا يمكن التراجع.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('إلغاء'))),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(tr('حذف')),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await widget.network.purge(id, withTeam: withTeam);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('تم حذف الحساب وكل ما أنشأه.'))));
+      Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.danger));
+      }
+    }
   }
 
   Future<void> load() async {
@@ -214,7 +287,20 @@ class _MemberScreenState extends State<MemberScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text('${_fresh['name']}'),
-          actions: [IconButton(onPressed: loading ? null : load, icon: const Icon(Icons.sync_rounded))],
+          actions: [
+            if (isSuper)
+              IconButton(
+                tooltip: tr('الصلاحيات والتفاصيل'),
+                onPressed: _openDetails,
+                icon: const Icon(Icons.admin_panel_settings_rounded),
+              ),
+            IconButton(
+              tooltip: tr('حذف الحساب نهائياً'),
+              onPressed: loading ? null : _deleteMember,
+              icon: const Icon(Icons.person_remove_rounded, color: AppColors.danger),
+            ),
+            IconButton(onPressed: loading ? null : load, icon: const Icon(Icons.sync_rounded)),
+          ],
           bottom: TabBar(
             tabs: [
               Tab(text: trf('المرتبطون ({0})', [subtree.length - 1])),

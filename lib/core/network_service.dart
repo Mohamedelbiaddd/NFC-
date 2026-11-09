@@ -81,6 +81,41 @@ class NetworkService {
   Future<void> delete(String userId) async {
     await _call({'action': 'delete', 'user_id': userId});
   }
+
+  /// Deletes the account with everything it created (shops, cards,
+  /// workspaces) and its login; [withTeam] also removes everyone under it.
+  Future<int> purge(String userId, {bool withTeam = false}) async {
+    final result = await _call({'action': 'purge', 'user_id': userId, 'with_children': withTeam});
+    return (result['removed'] as num?)?.toInt() ?? 0;
+  }
+
+  /// Super admin: may this agent add people / manage them.
+  Future<void> setPermissions(String userId, {bool? canAdd, bool? canManage}) async {
+    await _ok(await client.rpc('nfc_admin_set_staff_perms',
+        params: {'target': userId, 'can_add': canAdd, 'can_manage': canManage}));
+  }
+
+  Future<void> deleteShop(String shopId) async =>
+      _ok(await client.rpc('nfc_admin_delete_shop', params: {'target': shopId}));
+
+  Future<void> deleteProfile(String profileId) async =>
+      _ok(await client.rpc('nfc_admin_delete_profile', params: {'target': profileId}));
+
+  Future<int> deleteProfilesOf(String userId) async {
+    final r = await client.rpc('nfc_admin_delete_profiles_of', params: {'owner': userId});
+    _ok(r);
+    return r is Map ? ((r['deleted'] as num?)?.toInt() ?? 0) : 0;
+  }
+
+  void _ok(dynamic r) {
+    if (r is Map && r['ok'] == true) return;
+    final error = r is Map ? '${r['error']}' : '';
+    throw NetworkException(switch (error) {
+      'forbidden' => tr('لا تملك صلاحية هذه العملية.'),
+      'not_found' => tr('غير موجود (ربما حُذف من قبل).'),
+      _ => tr('تعذّر تنفيذ الطلب. تحقق من الاتصال.'),
+    });
+  }
 }
 
 /// green = paid this month, red = expired, grey = never paid.

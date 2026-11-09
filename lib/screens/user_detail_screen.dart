@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/i18n.dart';
+import '../core/network_service.dart';
 
 import '../core/repository.dart';
 import '../core/theme.dart';
@@ -52,6 +53,122 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
   bool loading = true, busy = false;
   String? error;
   late bool banned;
+  late final NetworkService network = NetworkService(widget.service.client);
+
+  bool get _isAdmin => widget.user['is_admin'] == true;
+
+  Future<bool> _confirm(String title, String body, {String? typeToConfirm, String action = 'حذف'}) async {
+    final typed = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocal) => AlertDialog(
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(body),
+              if (typeToConfirm != null) ...[
+                const SizedBox(height: 10),
+                Text(tr('للتأكيد اكتب:'), style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                SelectableText(typeToConfirm, textDirection: TextDirection.ltr, style: const TextStyle(fontWeight: FontWeight.w800)),
+                TextField(controller: typed, textDirection: TextDirection.ltr, onChanged: (_) => setLocal(() {})),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('إلغاء'))),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+              onPressed: typeToConfirm == null || typed.text.trim() == typeToConfirm.trim()
+                  ? () => Navigator.pop(context, true)
+                  : null,
+              child: Text(tr(action)),
+            ),
+          ],
+        ),
+      ),
+    );
+    return ok == true;
+  }
+
+  Future<void> _run(Future<void> Function() job, String done) async {
+    setState(() => busy = true);
+    try {
+      await job();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(done)));
+      await load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.danger));
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _deleteShop(Json shop) async {
+    final customers = (shop['customers'] as num?)?.toInt() ?? 0;
+    if (!await _confirm(
+      trf('حذف المحل «{0}»؟', [shop['name']]),
+      trf('سيُحذف المحل نهائياً مع {0} زبون ونقاطهم وحجوزاتهم وبطاقته. لا يمكن التراجع.', [customers]),
+    )) return;
+    await _run(() => network.deleteShop('${shop['id']}'), tr('تم حذف المحل.'));
+  }
+
+  Future<void> _deleteProfile(Json p) async {
+    if (!await _confirm(trf('حذف البطاقة «{0}»؟', [p['title']]), tr('ستُحذف البطاقة ورابطها نهائياً.'))) return;
+    await _run(() => network.deleteProfile('${p['id']}'), tr('تم حذف البطاقة.'));
+  }
+
+  Future<void> _deleteAllProfiles(int count) async {
+    if (!await _confirm(trf('حذف كل البطاقات ({0})؟', [count]), tr('ستُحذف كل البطاقات التي أنشأها هذا الحساب نهائياً. المحلات تبقى.'))) return;
+    await _run(() async => await network.deleteProfilesOf('${widget.user['user_id']}'), tr('تم حذف البطاقات.'));
+  }
+
+  Future<void> _purge(bool hasTeam) async {
+    final email = '${widget.user['email'] ?? ''}';
+    var withTeam = false;
+    if (hasTeam) {
+      final choice = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(tr('لهذا الحساب أشخاص تابعون له')),
+          content: Text(tr('هل تحذف فريقه أيضاً مع كل ما أنشؤوه؟ إن اخترت «أبقِهم» ينتقلون إلى المسؤول الذي فوقه.')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('أبقِهم'))),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(tr('احذف الفريق أيضاً')),
+            ),
+          ],
+        ),
+      );
+      if (choice == null) return;
+      withTeam = choice;
+    }
+    if (!mounted) return;
+    if (!await _confirm(
+      tr('حذف الحساب نهائياً؟'),
+      tr('سيُحذف الحساب ولن يستطيع الدخول للتطبيق، وتُحذف معه محلاته وزبائنها وبطاقاته ومساحات عمله. لا يمكن التراجع.'),
+      typeToConfirm: email,
+    )) return;
+    setState(() => busy = true);
+    try {
+      await network.purge('${widget.user['user_id']}', withTeam: withTeam);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('تم حذف الحساب وكل ما أنشأه.'))));
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        setState(() => busy = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.danger));
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -138,6 +255,9 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     final profiles = _list('profiles');
     final activity = _list('activity');
     final workspaces = _list('workspaces');
+    final shops = _list('shops');
+    final members = _list('members');
+    final staff = detail['staff'] is Map ? Map<String, dynamic>.from(detail['staff'] as Map) : null;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -201,8 +321,108 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                       ],
                     ),
                   ),
+                  if (staff != null && staff['role'] == 'agent' && widget.canBan) ...[
+                    const SizedBox(height: 18),
+                    SectionTitle(tr('صلاحياته')),
+                    SurfaceCard(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        children: [
+                          SwitchListTile(
+                            value: staff['can_add_members'] != false,
+                            title: Text(tr('يستطيع إضافة أشخاص تابعين له')),
+                            onChanged: busy ? null : (v) => _run(
+                              () => network.setPermissions('${widget.user['user_id']}', canAdd: v),
+                              tr('تم الحفظ.'),
+                            ),
+                          ),
+                          SwitchListTile(
+                            value: staff['can_manage_members'] != false,
+                            title: Text(tr('يستطيع إدارة فريقه (كلمات المرور، الإيقاف، الحذف)')),
+                            onChanged: busy ? null : (v) => _run(
+                              () => network.setPermissions('${widget.user['user_id']}', canManage: v),
+                              tr('تم الحفظ.'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (members.isNotEmpty) ...[
+                    const SizedBox(height: 18),
+                    SectionTitle(trf('الأشخاص الذين أضافهم ({0})', [members.length])),
+                    for (final m in members)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(m['active'] == false ? Icons.person_off_rounded : Icons.person_rounded,
+                            color: m['active'] == false ? AppColors.danger : AppColors.primarySoft),
+                        title: Text('${m['name']}'),
+                        subtitle: Text('${m['email']}', textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 11)),
+                        trailing: const Icon(Icons.chevron_left_rounded),
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => UserDetailScreen(
+                                service: widget.service,
+                                user: {'user_id': m['user_id'], 'email': m['email']},
+                                canBan: widget.canBan,
+                              ),
+                            ),
+                          );
+                          if (mounted) load();
+                        },
+                      ),
+                  ],
                   const SizedBox(height: 18),
-                  SectionTitle(tr('البطاقات التي أنشأها')),
+                  SectionTitle(trf('المحلات التي أنشأها ({0})', [shops.length])),
+                  if (shops.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(tr('لا محلات.'), style: const TextStyle(color: AppColors.muted)),
+                    ),
+                  for (final shop in shops)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: SurfaceCard(
+                        padding: const EdgeInsets.fromLTRB(14, 6, 4, 6),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.storefront_rounded, color: AppColors.accent),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${shop['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                                  Text(
+                                    '/c/${shop['slug']} · ${trf('{0} زبون', [shop['customers']])}',
+                                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: tr('حذف'),
+                              onPressed: busy ? null : () => _deleteShop(shop),
+                              icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(child: SectionTitle(tr('البطاقات التي أنشأها'))),
+                      if (profiles.isNotEmpty)
+                        TextButton.icon(
+                          onPressed: busy ? null : () => _deleteAllProfiles(profiles.length),
+                          icon: const Icon(Icons.delete_sweep_rounded, color: AppColors.danger, size: 18),
+                          label: Text(tr('حذف الكل'), style: const TextStyle(color: AppColors.danger)),
+                        ),
+                    ],
+                  ),
                   if (profiles.isEmpty)
                     Padding(
                       padding: EdgeInsets.all(12),
@@ -238,10 +458,28 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                                 Text(tr('مسح'), style: TextStyle(fontSize: 10, color: AppColors.muted)),
                               ],
                             ),
+                            IconButton(
+                              tooltip: tr('حذف'),
+                              onPressed: busy ? null : () => _deleteProfile(p),
+                              icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+                            ),
                           ],
                         ),
                       ),
                     ),
+                  if (widget.canBan && !_isAdmin) ...[
+                    const SizedBox(height: 18),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.danger,
+                        side: const BorderSide(color: AppColors.danger),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: busy ? null : () => _purge(members.isNotEmpty),
+                      icon: const Icon(Icons.person_remove_rounded),
+                      label: Text(tr('حذف الحساب نهائياً مع كل ما أنشأه')),
+                    ),
+                  ],
                   const SizedBox(height: 18),
                   SectionTitle(tr('كل ما فعله في التطبيق')),
                   if (activity.isEmpty)

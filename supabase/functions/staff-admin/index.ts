@@ -5,6 +5,9 @@
 //   reset_password {user_id}            anyone above the target in the tree
 //   delete         {user_id}            only when the account has no shops and
 //                                       no members under it (suspend otherwise)
+//   purge          {user_id, with_children}  deletes the account with everything
+//                                       it created (nfc_admin_purge_user), then the
+//                                       login(s); with_children: its whole team too
 // The generated password is returned once so the creator can send it.
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -101,6 +104,23 @@ Deno.serve(async (req: Request) => {
 
     const target = String(body.user_id ?? '');
     if (!UUID.test(target)) return json({error: 'حساب غير صالح'}, 400);
+
+    if (action === 'purge') {
+      const {data: result, error: purgeError} = await asCaller.rpc('nfc_admin_purge_user', {
+        target, with_children: body.with_children === true,
+      });
+      if (purgeError) return json({error: 'تعذّر الحذف'}, 500);
+      if (!result?.ok) {
+        const msg = result?.error === 'super' ? 'لا يمكن حذف حساب المدير العام' : 'هذا الحساب ليس ضمن شبكتك';
+        return json({error: msg}, 403);
+      }
+      let removed = 0;
+      for (const id of (result.users ?? []) as string[]) {
+        const {error} = await admin.auth.admin.deleteUser(id);
+        if (!error) removed++;
+      }
+      return json({ok: true, removed});
+    }
     const {data: manages, error: manageError} = await asCaller.rpc('nfc_can_manage_staff', {target});
     if (manageError) return json({error: 'تعذّر التحقق من الصلاحية'}, 500);
     if (!manages) return json({error: 'هذا الحساب ليس ضمن شبكتك'}, 403);

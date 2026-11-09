@@ -670,6 +670,84 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
+  /// Workspaces in a sheet: search, "mine / everyone's" (super admin) and a
+  /// delete button next to each one.
+  bool showAllWorkspaces = false;
+  Future<void> _pickWorkspace() async {
+    final me = repo.client.auth.currentUser?.id;
+    var query = '';
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheet) {
+          final list = tenants.where((t) {
+            final mine = '${t['owner_id']}' == me || '${t['id']}' == tenant;
+            if (isSuper && !showAllWorkspaces && !mine) return false;
+            return query.isEmpty || '${t['name']}'.toLowerCase().contains(query.toLowerCase());
+          }).toList();
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.of(sheetContext).viewInsets.bottom),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(tr('مساحات العمل'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 10),
+                  TextField(
+                    decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: tr('بحث')),
+                    onChanged: (v) => setSheet(() => query = v.trim()),
+                  ),
+                  if (isSuper)
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: showAllWorkspaces,
+                      title: Text(tr('عرض مساحات كل المستخدمين')),
+                      onChanged: (v) => setSheet(() => showAllWorkspaces = v),
+                    ),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: MediaQuery.of(sheetContext).size.height * 0.5),
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        if (list.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(tr('لا شيء هنا.'), textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted)),
+                          ),
+                        for (final t in list)
+                          ListTile(
+                            selected: '${t['id']}' == tenant,
+                            leading: Icon('${t['owner_id']}' == me ? Icons.workspaces_rounded : Icons.workspaces_outline),
+                            title: Text('${t['name']}', overflow: TextOverflow.ellipsis),
+                            subtitle: '${t['owner_id']}' == me ? Text(tr('مساحتي'), style: const TextStyle(fontSize: 11)) : null,
+                            onTap: () => Navigator.pop(sheetContext, '${t['id']}'),
+                            trailing: IconButton(
+                              tooltip: tr('حذف مساحة العمل'),
+                              icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+                              onPressed: () {
+                                Navigator.pop(sheetContext);
+                                deleteWorkspace('${t['id']}');
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    if (picked == null || picked == tenant || !mounted) return;
+    setState(() => page = 0);
+    load(selected: picked);
+  }
+
   Widget _workspaceBar() => Padding(
     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
     child: SurfaceCard(
@@ -683,52 +761,23 @@ class _DashboardState extends State<Dashboard> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: tenant,
-                isExpanded: true,
-                hint: Text(tr('اختر مساحة عمل')),
-                borderRadius: BorderRadius.circular(16),
-                dropdownColor: AppColors.surfaceHigh,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text,
-                ),
-                items: tenants
-                    .map(
-                      (t) => DropdownMenuItem<String>(
-                        value: '${t['id']}',
-                        child: Builder(
-                          builder: (itemContext) {
-                            // Inside the open menu: name + a trash icon to remove it.
-                            final inMenu = ModalRoute.of(itemContext) is PopupRoute;
-                            final name = Text('${t['name']}', overflow: TextOverflow.ellipsis);
-                            if (!inMenu) return name;
-                            return Row(
-                              children: [
-                                Expanded(child: name),
-                                IconButton(
-                                  tooltip: tr('حذف مساحة العمل'),
-                                  visualDensity: VisualDensity.compact,
-                                  icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.danger),
-                                  onPressed: () {
-                                    Navigator.of(itemContext).pop();
-                                    deleteWorkspace('${t['id']}');
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: tenants.isEmpty ? null : _pickWorkspace,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${tenants.where((t) => '${t['id']}' == tenant).firstOrNull?['name'] ?? tr('اختر مساحة عمل')}',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.text),
                       ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null || value == tenant) return;
-                  setState(() => page = 0);
-                  load(selected: value);
-                },
+                    ),
+                    const Icon(Icons.arrow_drop_down_rounded, color: AppColors.muted),
+                  ],
+                ),
               ),
             ),
           ),
