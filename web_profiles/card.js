@@ -291,7 +291,7 @@ function joinPanel() {
       const r = await rpc(config, 'nfc_customer_join', {
         target_slug: slug, customer_name: name.value.trim(), customer_phone: phone.value, code: pendingCode,
       });
-      if (!r?.ok) { toast(r?.error === 'phone' ? t('badPhone') : t('badName'), true); return; }
+      if (!r?.ok) { toast(r?.error === 'phone' ? t('badPhone') : r?.error === 'name_mismatch' ? t('nameMismatch') : t('badName'), true); return; }
       storage(tokenKey, r.token);
       customer = r.customer;
       if (r.visit) { notice = {kind: 'green', text: r.visit.free ? t('stampedFree') : t('stamped')}; fresh = customer.stamps - 1; }
@@ -396,6 +396,12 @@ function render() {
       home.addEventListener('click', addToHome);
       parts.push(home);
     }
+    const back = el('button', t('haveCard'), 'link-btn'); back.type = 'button';
+    back.addEventListener('click', () => {
+      const {box, panel} = sheet();
+      detailsStep(panel, () => { box.remove(); render(); toast(t('cardBack')); }, `🔑 ${t('haveCardTitle')}`, t('haveCardNote'));
+    });
+    parts.push(back);
   }
   const info = infoPanel(); if (info) parts.push(info);
   const legal = el('p', undefined, 'legal');
@@ -445,7 +451,7 @@ function walletButton() {
     if (storage(tokenKey)) { save(); return; }
     // Not a member yet: name + phone in one small step, then straight to Wallet.
     const {box, panel} = sheet();
-    detailsStep(panel, () => { box.remove(); render(); save(); }, t('wallet'), t('walletDetails'));
+    detailsStep(panel, () => { box.remove(); render(); save(); }, t('wallet'), `${t('walletDetails')} ${t('sameDetails')}`);
   });
   return btn;
 }
@@ -478,7 +484,7 @@ async function loadMyBooking() {
 }
 
 // Name + phone before the first booking (joins the shop without a visit).
-function detailsStep(panel, done, title = `📅 ${t('bookBtn')}`, note = t('yourDetails')) {
+function detailsStep(panel, done, title = `📅 ${t('bookBtn')}`, note = `${t('yourDetails')} ${t('sameDetails')}`) {
   panel.replaceChildren(el('h2', title), el('p', note, 'muted small'));
   const name = el('input'); name.className = 'field'; name.placeholder = t('name'); name.autocomplete = 'name'; name.maxLength = 80;
   const phone = el('input'); phone.className = 'field'; phone.placeholder = t('phone'); phone.type = 'tel'; phone.inputMode = 'tel'; phone.dir = 'ltr';
@@ -489,7 +495,7 @@ function detailsStep(panel, done, title = `📅 ${t('bookBtn')}`, note = t('your
     go.disabled = true;
     try {
       const r = await rpc(config, 'nfc_customer_join', {target_slug: slug, customer_name: name.value.trim(), customer_phone: phone.value, code: null});
-      if (!r?.ok) { toast(r?.error === 'phone' ? t('badPhone') : t('badName'), true); return; }
+      if (!r?.ok) { toast(r?.error === 'phone' ? t('badPhone') : r?.error === 'name_mismatch' ? t('nameMismatch') : t('badName'), true); return; }
       storage(tokenKey, r.token);
       customer = r.customer;
       done();
@@ -600,9 +606,19 @@ function bookingSheet() {
     const ok = el('div', undefined, 'book-ok');
     ok.append(el('div', '✓', 'book-check'), el('h2', t('booked')), el('p', svcLabel(k.service), 'book-big'),
       el('p', `${fmtDay(k.day)} · ${k.time}`, 'book-big'));
-    const close = el('button', t('ok'), 'btn'); close.type = 'button';
+    panel.append(ok);
+    // Keep the card like an app: Google Wallet first (Android), or the home screen.
+    const keep = [];
+    if (canWallet() && !storage(walletKey)) keep.push(walletButton());
+    if (!installed()) {
+      const home = el('button', t('addHome'), 'btn ghost'); home.type = 'button';
+      home.addEventListener('click', addToHome);
+      keep.push(home);
+    }
+    if (keep.length) panel.append(el('p', t('keepCard'), 'keep-note'), ...keep);
+    const close = el('button', keep.length ? t('later') : t('ok'), keep.length ? 'btn ghost small' : 'btn'); close.type = 'button';
     close.addEventListener('click', () => { box.remove(); render(); });
-    panel.append(ok, close);
+    panel.append(close);
   }
 }
 
