@@ -198,6 +198,16 @@ class _PersonFormState extends State<PersonForm> {
       setState(() => error = tr('أضف نشاطاً تجارياً أولاً.'));
       return;
     }
+    // A loyalty card always opens a shop page (/c/…): without one, create the
+    // shop now (name prefilled) instead of saving a card that leads nowhere.
+    if (kind == 'loyalty' && _shopSlug == null) {
+      await _createShop();
+      if (!mounted) return;
+      if (_shopSlug == null) {
+        setState(() => error = tr('أنشئ برنامج الولاء (المحل) أولاً ليعمل الرابط.'));
+        return;
+      }
+    }
     setState(() {
       busy = true;
       error = null;
