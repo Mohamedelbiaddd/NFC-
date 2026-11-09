@@ -1,5 +1,7 @@
 import 'dart:async';
 import '../core/i18n.dart';
+import '../core/shops_service.dart';
+import 'member_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -88,10 +90,18 @@ Future<bool> editNotice(
 /// subscription (green / red), suspension and password resets, plus a live
 /// feed of everything that happened in the network.
 class NetworkTab extends StatefulWidget {
-  const NetworkTab({super.key, required this.service, required this.isSuper});
+  const NetworkTab({
+    super.key,
+    required this.service,
+    required this.isSuper,
+    required this.shops,
+    required this.tenant,
+  });
 
   final NetworkService service;
   final bool isSuper;
+  final ShopsService shops;
+  final String tenant;
 
   @override
   State<NetworkTab> createState() => _NetworkTabState();
@@ -408,7 +418,18 @@ class _NetworkTabState extends State<NetworkTab> {
     final paidUntil = DateTime.tryParse('${m['paid_until'] ?? ''}');
     return Padding(
       padding: EdgeInsetsDirectional.only(start: depth * 18.0, bottom: 8),
-      child: Container(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => MemberScreen(network: widget.service, shops: widget.shops, tenant: widget.tenant, member: m),
+            ),
+          );
+          await load(quiet: true);
+        },
+        child: Container(
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(18),
@@ -483,11 +504,13 @@ class _NetworkTabState extends State<NetworkTab> {
                   if (m['notice'] != null) Pill(tr('📩 تنبيه مُرسل'), color: AppColors.warning),
                   if (widget.isSuper && '${m['parent_name'] ?? ''}'.isNotEmpty) Pill(trf('تابع لـ {0}', [m['parent_name']]), color: AppColors.muted),
                   Pill(trf('آخر دخول: {0}', [relativeTime(DateTime.tryParse('${m['last_sign_in'] ?? ''}'))]), color: AppColors.muted),
+                  Pill(tr('اضغط للتفاصيل ›'), color: AppColors.primarySoft),
                 ],
               ),
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -22,12 +22,18 @@ class ShopsTab extends StatefulWidget {
     required this.network,
     required this.tenant,
     required this.seeAll,
+    this.onlyCreators,
+    this.allowCreate = true,
   });
 
   final ShopsService service;
   final NetworkService network;
   final String tenant;
   final bool seeAll;
+
+  /// When set, only shops registered by these accounts (a member's network).
+  final Set<String>? onlyCreators;
+  final bool allowCreate;
 
   @override
   State<ShopsTab> createState() => _ShopsTabState();
@@ -62,7 +68,10 @@ class _ShopsTabState extends State<ShopsTab> {
       });
     }
     try {
-      final rows = await widget.network.shops();
+      final only = widget.onlyCreators;
+      final rows = (await widget.network.shops())
+          .where((s) => only == null || only.contains('${s['created_by']}'))
+          .toList();
       if (mounted) setState(() => shops = rows);
     } catch (e) {
       if (mounted && !quiet) setState(() => error = userError(e));
@@ -501,12 +510,14 @@ class _ShopsTabState extends State<ShopsTab> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'add-shop',
-        onPressed: () => _form(),
-        icon: const Icon(Icons.add_business_rounded),
-        label: Text(tr('محل جديد')),
-      ),
+      floatingActionButton: !widget.allowCreate
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'add-shop',
+              onPressed: () => _form(),
+              icon: const Icon(Icons.add_business_rounded),
+              label: Text(tr('محل جديد')),
+            ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(

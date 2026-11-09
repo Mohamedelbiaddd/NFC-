@@ -2,6 +2,15 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 const Map<String, String> frStrings = {
+  'مرتبطون به مباشرة': 'Liés directement',
+  'كل شبكته': 'Tout son réseau',
+  'الزبائن': 'Clients',
+  '{0} مرتبط': '{0} liés',
+  'المرتبطون ({0})': 'Liés ({0})',
+  'المحلات ({0})': 'Magasins ({0})',
+  'الأشخاص المرتبطون به': 'Personnes liées',
+  'لا يوجد أشخاص مرتبطون به بعد.': 'Personne n’est encore lié.',
+  'اضغط للتفاصيل ›': 'Touchez pour les détails ›',
   '➕ إنشاء برنامج ولاء جديد': '➕ Créer un programme de fidélité',
   '➕ إنشاء برنامج ولاء جديد (الرابط يُنشأ تلقائياً)': '➕ Créer un programme de fidélité (lien automatique)',
   'أو اختر محلاً موجوداً': 'ou choisir un magasin existant',
@@ -476,6 +485,15 @@ const Map<String, String> frStrings = {
 };
 
 const Map<String, String> enStrings = {
+  'مرتبطون به مباشرة': 'Directly linked',
+  'كل شبكته': 'Whole network',
+  'الزبائن': 'Customers',
+  '{0} مرتبط': '{0} linked',
+  'المرتبطون ({0})': 'Linked ({0})',
+  'المحلات ({0})': 'Shops ({0})',
+  'الأشخاص المرتبطون به': 'Linked people',
+  'لا يوجد أشخاص مرتبطون به بعد.': 'No linked people yet.',
+  'اضغط للتفاصيل ›': 'Tap for details ›',
   '➕ إنشاء برنامج ولاء جديد': '➕ Create a loyalty programme',
   '➕ إنشاء برنامج ولاء جديد (الرابط يُنشأ تلقائياً)': '➕ Create a loyalty programme (link made automatically)',
   'أو اختر محلاً موجوداً': 'or pick an existing shop',

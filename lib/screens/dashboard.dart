@@ -627,6 +627,8 @@ class _DashboardState extends State<Dashboard> {
             key: ValueKey('network-$tick'),
             service: network,
             isSuper: isSuper,
+            shops: shops,
+            tenant: tenant!,
           ),
         if (isSuper)
           ActivityTab(
