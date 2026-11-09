@@ -11,7 +11,18 @@ export const THEMES = {
   crimson: {name: {ar: 'أحمر قرمزي', fr: 'Pourpre', en: 'Crimson'},                bg: '#130409', card: '#21070f', card2: '#2f0b16', line: '#61192c', text: '#fff1f2', muted: '#e3a4ae', gold: '#f43f5e', ink: '#ffffff'},
   ivory:   {name: {ar: 'عاجي فاتح', fr: 'Ivoire', en: 'Ivory light'},              bg: '#f3eee4', card: '#ffffff', card2: '#f8f4ec', line: '#e2d9c8', text: '#1f1a12', muted: '#71685a', gold: '#b8860b', ink: '#ffffff'},
   mint:    {name: {ar: 'نعناعي فاتح', fr: 'Menthe', en: 'Mint light'},             bg: '#ecf6f2', card: '#ffffff', card2: '#f1f9f6', line: '#cfe6dc', text: '#0e2a21', muted: '#557268', gold: '#0f9f6e', ink: '#ffffff'},
+  // Sector themes (picked automatically from the shop's sector).
+  coffee:  {name: {ar: 'قهوة: بني وذهبي', fr: 'Café : brun et or', en: 'Coffee: brown & gold'}, bg: '#140c07', card: '#21140c', card2: '#2c1b10', line: '#5a3a22', text: '#fbf3e6', muted: '#cdb59a', gold: '#d6a15a', ink: '#1e1208'},
+  aqua:    {name: {ar: 'غسيل: سماوي ومعدني', fr: 'Lavage : bleu ciel et acier', en: 'Wash: sky & steel'}, bg: '#0a1520', card: '#122230', card2: '#1a2d3d', line: '#3a5468', text: '#f4f9fc', muted: '#a9bccb', gold: '#4cc9f0', ink: '#04202c'},
+  pizza:   {name: {ar: 'مطعم: أحمر وبرتقالي', fr: 'Pizzeria : rouge et orange', en: 'Pizzeria: red & orange'}, bg: '#0d0807', card: '#1a0f0c', card2: '#241510', line: '#5c2a1d', text: '#fff4ec', muted: '#e0b8a3', gold: '#ff7a2f', ink: '#2a0d02'},
+  neon:    {name: {ar: 'رياضة: أسود ونيون', fr: 'Sport : noir et néon', en: 'Gym: black & neon'}, bg: '#070807', card: '#101210', card2: '#171a17', line: '#2f3a2c', text: '#f4fff0', muted: '#a7b8a2', gold: '#b6ff3b', ink: '#0d1a00'},
 };
+
+// Icon drawn in a filled loyalty circle, by sector.
+export const STAMP = {barber: 'scissors', cafe: 'cup', bakery: 'cup', carwash: 'car', snack: 'pizza', gym: 'dumbbell', beauty: 'sparkle'};
+export function stampIcon(shop) {
+  return ICONS[STAMP[shop?.industry]] ?? ICONS.check;
+}
 
 export function themeOf(shop) {
   return THEMES[shop?.theme] ?? THEMES.navy;
@@ -58,6 +69,12 @@ export const ICONS = {
   sparkle: S('<path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z" fill="currentColor" stroke="none"/>'),
   gift: S('<rect x="3" y="9" width="18" height="12" rx="2"/><path d="M12 9v12M3 13h18M12 9s-1.5-5-4.5-5a2.2 2.2 0 0 0 0 4.4C10 8.4 12 9 12 9zM12 9s1.5-5 4.5-5a2.2 2.2 0 0 1 0 4.4C14 8.4 12 9 12 9z"/>'),
   check: S('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 'stroke-width="3"'),
+  // Stamp icons per sector (a filled loyalty circle shows the sector's icon).
+  scissors: S('<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>', 'stroke-width="2.4"'),
+  cup: S('<path d="M4 8h13v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 2.5c0 1 1 1.5 1 2.5M12 2.5c0 1 1 1.5 1 2.5"/>', 'stroke-width="2.4"'),
+  car: S('<path d="M5.5 18H3v-5l2-5.5A2 2 0 0 1 6.9 6h10.2a2 2 0 0 1 1.9 1.5L21 13v5h-2.5M3 13h18M9.5 18h5"/><circle cx="7.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/>', 'stroke-width="2.2"'),
+  pizza: S('<path d="M12 21 3.5 5.5a14 14 0 0 1 17 0z"/><path d="M5.6 9.3a11 11 0 0 1 12.8 0"/><circle cx="12" cy="12" r="1.2"/><circle cx="9.6" cy="14.6" r="1"/><circle cx="14.2" cy="15.4" r="1"/>', 'stroke-width="2.2"'),
+  dumbbell: S('<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>', 'stroke-width="2.6"'),
   leaf: `<svg viewBox="0 0 24 24"><path fill="#22c55e" d="M20 4c-9 0-15 4-15 11 0 1.6.5 3 1.2 4.1C8 14 11 11 16 9c-4 2.6-7 6-8.4 10.4C8.8 20.4 10.3 21 12 21c6 0 9-6 8-17z"/></svg>`,
   whatsapp: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#25d366"/><path fill="#25d366" d="M3.5 21 5 16l4 3z"/><path fill="#fff" d="M9.2 7.4c.3-.1.6 0 .8.3l.9 2c.1.3 0 .6-.2.8l-.6.6c.6 1.3 1.6 2.3 2.9 2.9l.6-.6c.2-.2.5-.3.8-.2l2 .9c.3.2.4.5.3.8-.3 1-1.2 1.7-2.3 1.6-3.5-.4-6.3-3.2-6.7-6.7-.1-1.1.6-2 1.5-2.4z"/></svg>`,
   instagram: `<svg viewBox="0 0 24 24"><defs><linearGradient id="ig" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f9a825"/><stop offset=".5" stop-color="#e91e63"/><stop offset="1" stop-color="#7b1fa2"/></linearGradient></defs><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" fill="none" stroke="url(#ig)" stroke-width="2.4"/><circle cx="12" cy="12" r="4.3" fill="none" stroke="url(#ig)" stroke-width="2.4"/><circle cx="17.4" cy="6.6" r="1.4" fill="url(#ig)"/></svg>`,

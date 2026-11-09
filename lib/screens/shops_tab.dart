@@ -519,6 +519,7 @@ class _ShopFormState extends State<ShopForm> {
     'bakery' => tr('منتج مجاني'),
     'cafe' => tr('قهوة مجانية'),
     'snack' => tr('طلب مجاني'),
+    'gym' => tr('حصة مجانية'),
     _ => tr('زيارة مجانية'),
   };
 

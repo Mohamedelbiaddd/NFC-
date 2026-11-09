@@ -1,5 +1,5 @@
 import {t, lang, applyLang, langSwitcher} from '/i18n.mjs';
-import {applyTheme, ICONS} from '/themes.mjs';
+import {applyTheme, ICONS, stampIcon} from '/themes.mjs';
 import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage, bannerStrip, industry, unit,
   slotsGrid, safeImage, formatDate, dayName, todayIndex, validWeek, openNow, socialLink, industryLabel, dayText} from '/loyalty.mjs';
 
@@ -152,7 +152,7 @@ function points() {
   row.style.setProperty('--cols', String(Math.min(goal + 1, 7)));
   for (let i = 0; i < goal; i++) {
     const d = el('span', undefined, 'bc-dot' + (i < stamps ? ' on' : '') + (i === fresh ? ' pop' : ''));
-    if (i < stamps) d.innerHTML = ICONS.check;
+    if (i < stamps) d.innerHTML = stampIcon(shop);
     else d.append(el('i', String(i + 1)));
     row.append(d);
   }

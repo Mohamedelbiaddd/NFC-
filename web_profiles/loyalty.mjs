@@ -9,6 +9,7 @@ export const INDUSTRIES = {
   bakery: {icon: '🥐', label: {ar: 'مخبزة', fr: 'Boulangerie', en: 'Bakery', it: 'Panetteria'}, unit: {ar: 'شراء', en: 'purchase', fr: 'achat', it: 'acquisto'}},
   cafe: {icon: '☕', label: {ar: 'مقهى', fr: 'Café', en: 'Café', it: 'Caffè'}, unit: {ar: 'كوب', en: 'cup', fr: 'café', it: 'caffè'}},
   snack: {icon: '🍕', label: {ar: 'سناك / بيتزاريا', fr: 'Snack / Pizzeria', en: 'Snack / Pizzeria', it: 'Snack / Pizzeria'}, unit: {ar: 'طلب', en: 'order', fr: 'commande', it: 'ordine'}},
+  gym: {icon: '🏋️', label: {ar: 'قاعة رياضة', fr: 'Salle de sport', en: 'Gym', it: 'Palestra'}, unit: {ar: 'حصة', en: 'session', fr: 'séance', it: 'sessione'}},
   other: {icon: '⭐', label: {ar: 'محل', fr: 'Commerce', en: 'Shop', it: 'Negozio'}, unit: {ar: 'زيارة', en: 'visit', fr: 'visite', it: 'visita'}},
 };
 export function industry(shop) {

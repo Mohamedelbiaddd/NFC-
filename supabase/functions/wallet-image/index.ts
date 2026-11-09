@@ -212,7 +212,8 @@ Deno.serve(async (req) => {
   } else if (name) {
     try {
       const fontBuffers = await engine();
-      const svg = heroSvg({name, stamps, goal, bg, accent, ink, rtl, lang});
+      const sector = (url.searchParams.get('i') ?? '').replace(/[^a-z]/g, '').slice(0, 12);
+      const svg = heroSvg({name, stamps, goal, bg, accent, ink, rtl, lang, sector});
       body = new Resvg(svg, {font: {fontBuffers, loadSystemFonts: false, defaultFontFamily: 'Cairo'}}).render().asPng();
     } catch (e) {
       console.error('hero render failed', String(e).slice(0, 200));

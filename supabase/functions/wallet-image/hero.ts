@@ -11,7 +11,28 @@ export interface Hero {
   ink: string;    // colour drawn on the gold
   rtl: boolean;
   lang: 'ar' | 'fr' | 'en';
+  sector?: string; // shop industry: picks the stamp icon and the word used
 }
+
+// Stamp icons (24-unit line drawings) by sector; same shapes as the shop page.
+const ICON: Record<string, string> = {
+  barber: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>',
+  cafe: '<path d="M4 8h13v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 2.5c0 1 1 1.5 1 2.5M12 2.5c0 1 1 1.5 1 2.5"/>',
+  carwash: '<path d="M5.5 18H3v-5l2-5.5A2 2 0 0 1 6.9 6h10.2a2 2 0 0 1 1.9 1.5L21 13v5h-2.5M3 13h18M9.5 18h5"/><circle cx="7.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/>',
+  snack: '<path d="M12 21 3.5 5.5a14 14 0 0 1 17 0z"/><path d="M5.6 9.3a11 11 0 0 1 12.8 0"/><circle cx="12" cy="12" r="1.2"/><circle cx="9.6" cy="14.6" r="1"/><circle cx="14.2" cy="15.4" r="1"/>',
+  gym: '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
+};
+ICON.bakery = ICON.cafe;
+
+// Word for one stamp, by sector: [singular, dual, plural (3-10), feminine?] + fr/en.
+const NOUN: Record<string, {ar: [string, string, string, boolean]; fr: [string, string]; en: [string, string]}> = {
+  cafe: {ar: ['كوب', 'كوبان', 'أكواب', false], fr: ['café', 'cafés'], en: ['coffee', 'coffees']},
+  bakery: {ar: ['زيارة', 'زيارتان', 'زيارات', true], fr: ['visite', 'visites'], en: ['visit', 'visits']},
+  carwash: {ar: ['غسلة', 'غسلتان', 'غسلات', true], fr: ['lavage', 'lavages'], en: ['wash', 'washes']},
+  snack: {ar: ['طلب', 'طلبان', 'طلبات', false], fr: ['commande', 'commandes'], en: ['order', 'orders']},
+  gym: {ar: ['حصة', 'حصتان', 'حصص', true], fr: ['séance', 'séances'], en: ['session', 'sessions']},
+};
+const VISIT = {ar: ['زيارة', 'زيارتان', 'زيارات', true] as [string, string, string, boolean], fr: ['visite', 'visites'] as [string, string], en: ['visit', 'visits'] as [string, string]};
 
 export const W = 1032, H = 336;
 
@@ -26,11 +47,13 @@ function shade(hex: string, k: number): string {
 
 function bottomLine(h: Hero): string {
   const left = Math.max(0, h.goal - h.stamps);
-  if (h.lang === 'fr') return left === 0 ? 'Votre cadeau est prêt' : `Encore ${left} visite${left > 1 ? 's' : ''} avant le cadeau`;
-  if (h.lang === 'en') return left === 0 ? 'Your gift is ready' : `${left} more visit${left > 1 ? 's' : ''} to your gift`;
+  const w = NOUN[h.sector ?? ''] ?? VISIT;
+  if (h.lang === 'fr') return left === 0 ? 'Votre cadeau est prêt' : `Encore ${left} ${left > 1 ? w.fr[1] : w.fr[0]} avant le cadeau`;
+  if (h.lang === 'en') return left === 0 ? 'Your gift is ready' : `${left} more ${left > 1 ? w.en[1] : w.en[0]} to your gift`;
   if (left === 0) return 'هديتك جاهزة، اطلبها في زيارتك القادمة';
-  const n = left === 1 ? 'زيارة واحدة' : left === 2 ? 'زيارتان' : left <= 10 ? `${left} زيارات` : `${left} زيارة`;
-  return `تبقّت ${n} على الهدية`;
+  const [one, two, many, fem] = w.ar;
+  const n = left === 1 ? `${one} ${fem ? 'واحدة' : 'واحد'}` : left === 2 ? two : left <= 10 ? `${left} ${many}` : `${left} ${one}`;
+  return `${fem || left > 2 ? 'تبقّت' : 'تبقّى'} ${n} على الهدية`;
 }
 
 export function heroSvg(h: Hero): string {
@@ -70,6 +93,10 @@ export function heroSvg(h: Hero): string {
         <rect x="-2.2" y="-11" width="4.4" height="28" fill="${filled ? gold : bg}"/>
         <path d="M0 -11 C -4 -20 -14 -21 -13 -14 C -12 -10 -5 -11 0 -11 Z M0 -11 C 4 -20 14 -21 13 -14 C 12 -10 5 -11 0 -11 Z"/>
       </g>`;
+    } else if (filled && ICON[h.sector ?? '']) {
+      // The sector's icon (cup, car, scissors...) drawn in the ink colour.
+      const k2 = (R * 1.15) / 24;
+      circles += `<g transform="translate(${cx - 12 * k2} ${cy - 12 * k2}) scale(${k2})" fill="none" stroke="${ink}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${ICON[h.sector!]}</g>`;
     } else if (filled) {
       circles += `<path transform="translate(${cx} ${cy}) scale(${s})" d="M-15 1 L-4 12 L16 -10" fill="none" stroke="${ink}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>`;
     } else {

@@ -34,6 +34,13 @@ const THEMES: Record<string, [string, string, string]> = {
   royal: ['#170e33', '#c4b5fd', '#1b0f3d'], rose: ['#2a0c1b', '#f9a8d4', '#3b0a22'], ocean: ['#062234', '#38bdf8', '#032033'],
   sunset: ['#271205', '#fb923c', '#2a1102'], crimson: ['#21070f', '#f43f5e', '#ffffff'], ivory: ['#1f1a12', '#b8860b', '#ffffff'],
   mint: ['#0e2a21', '#0f9f6e', '#ffffff'],
+  coffee: ['#21140c', '#d6a15a', '#1e1208'], aqua: ['#122230', '#4cc9f0', '#04202c'],
+  pizza: ['#1a0f0c', '#ff7a2f', '#2a0d02'], neon: ['#101210', '#b6ff3b', '#0d1a00'],
+};
+// What one stamp is called, by sector (label of the points on the pass).
+const UNITS: Record<string, Record<string, string>> = {
+  cafe: {ar: 'الأكواب', fr: 'Cafés', en: 'Coffees'}, carwash: {ar: 'الغسلات', fr: 'Lavages', en: 'Washes'},
+  snack: {ar: 'الطلبات', fr: 'Commandes', en: 'Orders'}, gym: {ar: 'الحصص', fr: 'Séances', en: 'Sessions'},
 };
 const AR_NUM = ['', 'واحدة', 'اثنتين', 'ثلاث', 'أربع', 'خمس', 'ست', 'سبع', 'ثماني', 'تسع', 'عشر'];
 function visitsText(lang: string, n: number, g: number): string {
@@ -156,7 +163,7 @@ Deno.serve(async (req) => {
 
   const {data: shop} = await db
     .from('nfc_businesses')
-    .select('id, name, shop_slug, primary_color, loyalty_goal, loyalty_reward, loyalty_enabled, suspended, phone, address, card_background, latitude, longitude, logo_url, theme, booking_enabled, services, week_hours, timezone')
+    .select('id, name, shop_slug, primary_color, loyalty_goal, loyalty_reward, loyalty_enabled, suspended, phone, address, card_background, latitude, longitude, logo_url, theme, industry, booking_enabled, services, week_hours, timezone')
     .eq('shop_slug', slug)
     .maybeSingle();
   if (!shop || !shop.loyalty_enabled || shop.suspended) return json({ok: false, error: 'shop'}, 404);
@@ -225,12 +232,12 @@ Deno.serve(async (req) => {
     state: 'ACTIVE',
     accountName: String(customer.name),
     hexBackgroundColor: bg,
-    loyaltyPoints: {label: t.points, balance: {string: `${shown} / ${goal}`}},
+    loyaltyPoints: {label: UNITS[String(shop.industry)]?.[lang] ?? t.points, balance: {string: `${shown} / ${goal}`}},
     secondaryLoyaltyPoints: {label: t.rewards, balance: {int: Number(customer.rewards ?? 0)}},
     // No barcode: the customer scans the shop's live QR, never the other way round.
     heroImage: {
       sourceUri: {
-        uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image?s=${shown}&g=${goal}&c=${bg.slice(1)}&a=${gold.slice(1)}&k=${ink.slice(1)}${lang === 'ar' ? '&r=1' : ''}&l=${lang}&n=${encodeURIComponent(String(shop.name).slice(0, 40))}&v=2`,
+        uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image?s=${shown}&g=${goal}&c=${bg.slice(1)}&a=${gold.slice(1)}&k=${ink.slice(1)}${lang === 'ar' ? '&r=1' : ''}&l=${lang}&n=${encodeURIComponent(String(shop.name).slice(0, 40))}&i=${String(shop.industry ?? '')}&v=3`,
       },
       contentDescription: {defaultValue: {language: lang, value: visitsText(lang, shown, goal)}},
     },
