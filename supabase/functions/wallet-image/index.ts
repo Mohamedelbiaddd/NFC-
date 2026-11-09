@@ -10,7 +10,7 @@
 // Deploy with verify_jwt = false: Google fetches it without credentials.
 
 import {initWasm, Resvg} from 'npm:@resvg/resvg-wasm@2.6.2';
-import {heroSvg} from './hero.ts';
+import {heroSvg, wideSvg} from './hero.ts';
 
 const W = 1032, H = 336;
 
@@ -200,7 +200,16 @@ Deno.serve(async (req) => {
   const l = url.searchParams.get('l');
   const lang = l === 'fr' || l === 'en' ? l : 'ar';
   let body: Uint8Array | null = null;
-  if (name) {
+  if (url.searchParams.get('t') === 'wide') {
+    // Front-of-card wide logo; no plain fallback, Google retries later.
+    try {
+      const fontBuffers = await engine();
+      body = new Resvg(wideSvg(name || ' ', accent), {font: {fontBuffers, loadSystemFonts: false, defaultFontFamily: 'Amiri'}}).render().asPng();
+    } catch (e) {
+      console.error('wide render failed', String(e).slice(0, 200));
+      return new Response('busy', {status: 503, headers: {'Retry-After': '60'}});
+    }
+  } else if (name) {
     try {
       const fontBuffers = await engine();
       const svg = heroSvg({name, stamps, goal, bg, accent, ink, rtl, lang});

@@ -127,3 +127,30 @@ export function heroSvg(h: Hero): string {
   ${line}
 </svg>`;
 }
+
+// Wide logo for the front of the card (Wallet home screen): the shop name in
+// the theme gold on a transparent 1280 x 400 canvas (Google's recommended size).
+export const WW = 1280, WH = 400;
+export function wideSvg(nameRaw: string, accent: string): string {
+  const gold = `#${accent}`, light = shade(accent, 0.5), deep = shade(accent, -0.25);
+  const text = nameRaw.trim().slice(0, 40);
+  const size = Math.max(90, Math.min(190, Math.floor(2300 / Math.max(1, text.length))));
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${WW}" height="${WH}" viewBox="0 0 ${WW} ${WH}">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${light}"/>
+      <stop offset="0.55" stop-color="${gold}"/>
+      <stop offset="1" stop-color="${deep}"/>
+    </linearGradient>
+    <filter id="s" x="-10%" y="-30%" width="120%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <text x="${WW / 2}" y="${/[\u0600-\u06FF]/.test(text) ? 190 + size * 0.32 : 262}" font-family="Amiri" font-weight="700" font-size="${size}" fill="url(#g)" text-anchor="middle" filter="url(#s)">${esc(text)}</text>
+  <g stroke="${gold}" stroke-width="3" stroke-linecap="round" stroke-opacity="0.8">
+    <line x1="${WW / 2 - 260}" y1="352" x2="${WW / 2 - 30}" y2="352"/>
+    <line x1="${WW / 2 + 30}" y1="352" x2="${WW / 2 + 260}" y2="352"/>
+  </g>
+  <path d="M${WW / 2} 338 L${WW / 2 + 14} 352 L${WW / 2} 366 L${WW / 2 - 14} 352 Z" fill="${gold}"/>
+</svg>`;
+}

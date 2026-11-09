@@ -204,6 +204,11 @@ Deno.serve(async (req) => {
     // The shop name is drawn large and elegant on the card picture itself.
     programName: lang === 'fr' ? 'Carte de fidélité' : lang === 'en' ? 'Loyalty card' : 'بطاقة الولاء',
     programLogo: {sourceUri: {uri: logo}},
+    // The shop name in the theme's gold and Amiri on the front of the card.
+    wideProgramLogo: {
+      sourceUri: {uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image?t=wide&a=${gold.slice(1)}&n=${encodeURIComponent(String(shop.name).slice(0, 40))}&v=1`},
+      contentDescription: {defaultValue: {language: lang, value: String(shop.name).slice(0, 60)}},
+    },
     hexBackgroundColor: bg,
     reviewStatus: 'UNDER_REVIEW',
     countryCode: 'MA',

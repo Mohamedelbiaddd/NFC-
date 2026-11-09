@@ -228,7 +228,10 @@ label.row > span { font-size: 12.5px; color: var(--muted); font-weight: 600; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
-.btn.wallet{background:#000;color:#fff;border:1px solid #3c4043;font-weight:700}
+.btn.wallet{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--t-card2,#0f2346),var(--t-bg,#06112a));color:var(--t-gold,#f6c232);border:1.5px solid var(--t-gold,#f6c232);font-weight:800;letter-spacing:.2px;box-shadow:0 0 0 4px color-mix(in srgb,var(--t-gold,#f6c232) 12%,transparent),0 10px 26px -10px color-mix(in srgb,var(--t-gold,#f6c232) 55%,transparent)}
+.btn.wallet::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,color-mix(in srgb,var(--t-gold,#f6c232) 22%,transparent) 50%,transparent 70%);transform:translateX(-100%);animation:walletShine 3.5s ease-in-out infinite}
+@keyframes walletShine{60%,100%{transform:translateX(100%)}}
+@media (prefers-reduced-motion:reduce){.btn.wallet::after{animation:none}}
 .btn.wallet:disabled{opacity:.6}
 
 .week{display:flex;flex-direction:column;gap:6px;width:100%}
