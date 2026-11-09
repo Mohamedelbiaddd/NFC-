@@ -114,12 +114,18 @@ Deno.serve(async (req) => {
   if (!SLUG.test(slug) || !TOKEN.test(cardToken)) return json({ok: false, error: 'card'}, 400);
 
   const rawKey = Deno.env.get('GOOGLE_WALLET_KEY');
-  if (!rawKey) return json({ok: false, error: 'not_configured'}, 503);
+  if (!rawKey) {
+    // Names only (never values) so a misspelt secret is easy to spot.
+    const names = Object.keys(Deno.env.toObject()).filter((n) => /WALLET|GOOGLE/i.test(n));
+    console.error(`GOOGLE_WALLET_KEY missing; similar secrets: ${names.join(', ') || 'none'}`);
+    return json({ok: false, error: 'not_configured', similar: names}, 503);
+  }
   let key: ServiceKey;
   try {
-    key = JSON.parse(rawKey);
+    key = JSON.parse(rawKey.trim());
     if (!key.client_email || !key.private_key) throw new Error('fields');
-  } catch {
+  } catch (e) {
+    console.error(`GOOGLE_WALLET_KEY is not valid service-account JSON (${rawKey.length} chars): ${String(e).slice(0, 80)}`);
     return json({ok: false, error: 'bad_key'}, 500);
   }
 

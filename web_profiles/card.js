@@ -101,6 +101,7 @@ function joinPanel() {
       if (r.visit) { notice = {kind: 'green', text: r.visit.free ? t('stampedFree') : t('stamped')}; fresh = customer.stamps - 1; }
       pendingCode = null;
       render();
+      setTimeout(walletPrompt, 900);
     } catch {
       toast(t('network'), true);
     } finally {
@@ -173,7 +174,7 @@ function render() {
   const info = infoPanel(); if (info) parts.push(info);
   const strip = bannerStrip(shop, config);
   if (strip) { const p = el('div', undefined, 'panel'); p.append(el('h2', `📸 ${t('gallery')}`), strip); parts.push(p); }
-  if (customer && !/iPhone|iPad|iPod/i.test(navigator.userAgent)) parts.push(walletButton());
+  if (customer && canWallet()) parts.push(walletButton());
   if (customer) {
     const home = el('button', t('addHome'), 'btn ghost'); home.type = 'button';
     home.addEventListener('click', addToHome);
@@ -194,13 +195,25 @@ async function wallet(action) {
   return res.json().catch(() => ({ok: false}));
 }
 
+const walletKey = `nfc_wallet_${slug}`;
+const canWallet = () => !/iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// Right after joining or a stamped visit, offer Google Wallet once per phone.
+function walletPrompt() {
+  if (!canWallet() || storage(walletKey)) return;
+  const {box, panel} = sheet();
+  const later = el('button', t('later'), 'btn ghost'); later.type = 'button';
+  later.addEventListener('click', () => box.remove());
+  panel.append(el('h2', t('walletTitle')), el('p', t('walletText'), 'muted'), walletButton(), later);
+}
+
 function walletButton() {
   const btn = el('button', t('wallet'), 'btn wallet'); btn.type = 'button';
   btn.addEventListener('click', async () => {
     btn.disabled = true;
     try {
       const r = await wallet('save');
-      if (r?.ok && r.url) { location.href = r.url; return; }
+      if (r?.ok && r.url) { storage(walletKey, '1'); location.href = r.url; return; }
       toast(r?.error === 'not_configured' ? t('walletSoon') : t('walletError'));
     } catch { toast(t('walletError')); }
     btn.disabled = false;
@@ -275,7 +288,7 @@ async function start() {
         if (r?.error === 'card') storage(tokenKey, null);
         else {
           customer = r.customer;
-          if (r.ok) { notice = {kind: 'green', text: r.free ? t('stampedFree') : t('stamped')}; fresh = r.free ? -1 : customer.stamps - 1; wallet('sync').catch(() => {}); }
+          if (r.ok) { notice = {kind: 'green', text: r.free ? t('stampedFree') : t('stamped')}; fresh = r.free ? -1 : customer.stamps - 1; wallet('sync').catch(() => {}); setTimeout(walletPrompt, 1200); }
           else notice = {kind: 'amber', text: r.error === 'too_soon' ? t('tooSoon') : t('codeExpired')};
         }
       }
