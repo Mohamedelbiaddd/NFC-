@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
   const classId = `${ISSUER}.shop_${plain(shop.id)}`;
   const objectId = `${ISSUER}.cust_${plain(customer.id)}`;
   const [bg, gold, ink] = THEMES[String(shop.theme)] ?? THEMES.navy;
-  const canBook = !!shop.booking_enabled && Array.isArray(shop.services) && shop.services.length > 0 && !!shop.week_hours;
+  const canBook = !!shop.booking_enabled && !!shop.week_hours;
   // Next appointment (shown on the pass).
   const {data: nextBooking} = await db
     .from('nfc_bookings')
@@ -201,7 +201,8 @@ Deno.serve(async (req) => {
   const loyaltyClass: Record<string, unknown> = {
     id: classId,
     issuerName: String(shop.name).slice(0, 60),
-    programName: String(shop.name).slice(0, 60),
+    // The shop name is drawn large and elegant on the card picture itself.
+    programName: lang === 'fr' ? 'Carte de fidélité' : lang === 'en' ? 'Loyalty card' : 'بطاقة الولاء',
     programLogo: {sourceUri: {uri: logo}},
     hexBackgroundColor: bg,
     reviewStatus: 'UNDER_REVIEW',
@@ -217,7 +218,6 @@ Deno.serve(async (req) => {
     id: objectId,
     classId,
     state: 'ACTIVE',
-    accountId: String(customer.phone),
     accountName: String(customer.name),
     hexBackgroundColor: bg,
     loyaltyPoints: {label: t.points, balance: {string: `${shown} / ${goal}`}},
@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
     // No barcode: the customer scans the shop's live QR, never the other way round.
     heroImage: {
       sourceUri: {
-        uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image?s=${shown}&g=${goal}&c=${bg.slice(1)}&a=${gold.slice(1)}&k=${ink.slice(1)}${lang === 'ar' ? '&r=1' : ''}`,
+        uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image?s=${shown}&g=${goal}&c=${bg.slice(1)}&a=${gold.slice(1)}&k=${ink.slice(1)}${lang === 'ar' ? '&r=1' : ''}&l=${lang}&n=${encodeURIComponent(String(shop.name).slice(0, 40))}&v=2`,
       },
       contentDescription: {defaultValue: {language: lang, value: visitsText(lang, shown, goal)}},
     },

@@ -2,13 +2,46 @@
 //
 // Draws the stamp circles shown on a Google Wallet loyalty card as a PNG:
 //   GET ?s=<stamps>&g=<goal>&c=<background hex>&a=<accent hex>&k=<ink hex>&r=1 (right to left)
+//       &n=<shop name>&l=<ar|fr|en>  (with a name: the elegant themed banner)
 // One circle per visit of the shop's goal plus a gold gift circle; stamped
 // circles are filled with a check mark. The URL carries the whole state, so
 // Google re-downloads the picture whenever the count changes.
 //
 // Deploy with verify_jwt = false: Google fetches it without credentials.
 
+import {initWasm, Resvg} from 'npm:@resvg/resvg-wasm@2.6.2';
+import {heroSvg} from './hero.ts';
+
 const W = 1032, H = 336;
+
+// The elegant version (shop name in Amiri, theme gold) is rendered with
+// resvg; the fonts and the engine are fetched once per instance. If anything
+// fails the plain circles below are drawn instead.
+// Fonts (Amiri, Cairo: SIL OFL) and the resvg engine are served by our site;
+// jsDelivr is the fallback.
+const SITE = (Deno.env.get('PUBLIC_SITE_URL') ?? 'https://nfc-smart-tags.vercel.app').replace(/\/+$/, '');
+const CDN = 'https://cdn.jsdelivr.net';
+const FILES = {
+  wasm: [`${SITE}/wallet-resvg.wasm`, `${CDN}/npm/@resvg/resvg-wasm@2.6.2/index_bg.wasm`],
+  amiri: [`${SITE}/wallet-amiri.ttf`, `${CDN}/gh/google/fonts@main/ofl/amiri/Amiri-Bold.ttf`],
+  cairo: [`${SITE}/wallet-cairo.ttf`, `${CDN}/gh/google/fonts@main/ofl/cairo/Cairo%5Bslnt,wght%5D.ttf`],
+};
+async function grab(urls: string[]): Promise<Uint8Array> {
+  for (const u of urls) {
+    try {
+      const r = await fetch(u);
+      if (r.ok) return new Uint8Array(await r.arrayBuffer());
+    } catch { /* try the next one */ }
+  }
+  throw new Error(`cannot load ${urls[0]}`);
+}
+let wasm: Promise<void> | null = null;
+let fonts: Promise<Uint8Array[]> | null = null;
+function engine(): Promise<Uint8Array[]> {
+  wasm ??= grab(FILES.wasm).then((b) => initWasm(b)).catch((e) => { wasm = null; throw e; });
+  fonts ??= Promise.all([grab(FILES.amiri), grab(FILES.cairo)]).catch((e) => { fonts = null; throw e; });
+  return wasm.then(() => fonts!);
+}
 
 function crcTable(): Uint32Array {
   const t = new Uint32Array(256);
@@ -161,7 +194,22 @@ Deno.serve(async (req) => {
   const goal = Math.min(50, Math.max(1, parseInt(url.searchParams.get('g') ?? '5', 10) || 5));
   const stamps = Math.min(goal, Math.max(0, parseInt(url.searchParams.get('s') ?? '0', 10) || 0));
   const pick = (k: string, d: string) => (/^[0-9a-fA-F]{6}$/.test(url.searchParams.get(k) ?? '') ? url.searchParams.get(k)! : d);
-  const body = await png(draw(stamps, goal, hex(pick('c', '0b1a36')), hex(pick('a', 'f6c232')), hex(pick('k', '1b1400')), url.searchParams.get('r') === '1'));
+  const bg = pick('c', '0b1a36'), accent = pick('a', 'f6c232'), ink = pick('k', '1b1400');
+  const rtl = url.searchParams.get('r') === '1';
+  const name = (url.searchParams.get('n') ?? '').slice(0, 60);
+  const l = url.searchParams.get('l');
+  const lang = l === 'fr' || l === 'en' ? l : 'ar';
+  let body: Uint8Array | null = null;
+  if (name) {
+    try {
+      const fontBuffers = await engine();
+      const svg = heroSvg({name, stamps, goal, bg, accent, ink, rtl, lang});
+      body = new Resvg(svg, {font: {fontBuffers, loadSystemFonts: false, defaultFontFamily: 'Cairo'}}).render().asPng();
+    } catch (e) {
+      console.error('hero render failed', String(e).slice(0, 200));
+    }
+  }
+  body ??= await png(draw(stamps, goal, hex(bg), hex(accent), hex(ink), rtl));
   return new Response(body, {
     headers: {
       'Content-Type': 'image/png',
