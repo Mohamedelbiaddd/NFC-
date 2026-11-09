@@ -232,7 +232,6 @@ Deno.serve(async (req) => {
     textModulesData: [
       ...(free ? [{id: 'free', header: '🎁', body: t.free}] : []),
       ...(nextText ? [{id: 'next', header: `📅 ${t.next}`, body: nextText}] : []),
-      {id: 'progress', header: `✨ ${t.progress}`, body: visitsText(lang, shown, goal)},
       {id: 'reward', header: `🎁 ${t.reward}`, body: `${reward} · ${t.every.replace('{0}', String(goal))}`},
       {id: 'scan', header: '📷', body: t.scan},
       ...(shop.address ? [{id: 'address', header: '📍', body: String(shop.address)}] : []),
