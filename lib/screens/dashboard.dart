@@ -39,6 +39,7 @@ class _DashboardState extends State<Dashboard> {
   String role = 'viewer';
   bool isSuper = false, loading = true, _loggedLogin = false;
   int page = 0, request = 0, tick = 0;
+  final networkAdd = ValueNotifier<int>(0);
   Map<String, int> profileScans = const {};
   int totalScans = 0;
   bool get seesNetwork => isSuper || staffRole == 'agent';
@@ -484,9 +485,43 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
+  /// "+" : new card (person), or — for admins and agents — a new app account
+  /// (name + e-mail, the password is generated and sent on WhatsApp).
+  Future<void> _plusMenu() async {
+    if (!seesNetwork) return addPerson();
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.manage_accounts_rounded, color: AppColors.accent),
+              title: Text(tr('حساب جديد للتطبيق (بالبريد الإلكتروني)'), style: const TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: Text(tr('الاسم والبريد، وكلمة المرور تُنشأ تلقائياً وترسلها له')),
+              onTap: () => Navigator.pop(context, 'account'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.badge_rounded, color: AppColors.primarySoft),
+              title: Text(tr('بطاقة شخص جديدة (NFC / QR)'), style: const TextStyle(fontWeight: FontWeight.w800)),
+              onTap: () => Navigator.pop(context, 'card'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || choice == null) return;
+    if (choice == 'card') return addPerson();
+    setState(() => page = 2); // the Network tab
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    networkAdd.value++;
+  }
+
   Widget _addButton() {
     final wide = MediaQuery.sizeOf(context).width >= 430;
-    final onPressed = canEdit && tenant != null ? addPerson : null;
+    final onPressed = canEdit && tenant != null ? _plusMenu : null;
     if (!wide) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
@@ -506,7 +541,7 @@ class _DashboardState extends State<Dashboard> {
       child: FilledButton.icon(
         onPressed: onPressed,
         icon: const Icon(Icons.add_rounded, size: 20),
-        label: Text(tr('إضافة شخص')),
+        label: Text(tr('إضافة')),
         style: FilledButton.styleFrom(
           minimumSize: const Size(0, 40),
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -516,6 +551,122 @@ class _DashboardState extends State<Dashboard> {
         ),
       ),
     );
+  }
+
+  /// Change my own password (re-checks the current one first).
+  Future<void> changeMyPassword() async {
+    final current = TextEditingController(), next = TextEditingController(), again = TextEditingController();
+    String? err;
+    var busy = false;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocal) => AlertDialog(
+          title: Text(tr('تغيير كلمة المرور')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: current, obscureText: true, decoration: InputDecoration(labelText: tr('كلمة المرور الحالية'))),
+              const SizedBox(height: 8),
+              TextField(controller: next, obscureText: true, decoration: InputDecoration(labelText: tr('كلمة المرور الجديدة (8 أحرف على الأقل)'))),
+              const SizedBox(height: 8),
+              TextField(controller: again, obscureText: true, decoration: InputDecoration(labelText: tr('أعد كتابة كلمة المرور الجديدة'))),
+              if (err != null) ...[
+                const SizedBox(height: 10),
+                Text(err!, style: const TextStyle(color: AppColors.danger)),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: busy ? null : () => Navigator.pop(context), child: Text(tr('إلغاء'))),
+            FilledButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      if (next.text.length < 8) return setLocal(() => err = tr('كلمة المرور الجديدة قصيرة (8 أحرف على الأقل).'));
+                      if (next.text != again.text) return setLocal(() => err = tr('كلمتا المرور غير متطابقتين.'));
+                      setLocal(() { busy = true; err = null; });
+                      try {
+                        final email = repo.client.auth.currentUser?.email ?? '';
+                        await repo.client.auth.signInWithPassword(email: email, password: current.text);
+                        await repo.client.auth.updateUser(UserAttributes(password: next.text));
+                        if (context.mounted) Navigator.pop(context);
+                        if (mounted) {
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            SnackBar(content: Text(tr('تم تغيير كلمة المرور.')), backgroundColor: AppColors.success),
+                          );
+                        }
+                      } on AuthException catch (e) {
+                        setLocal(() {
+                          busy = false;
+                          err = e.message.toLowerCase().contains('invalid') ? tr('كلمة المرور الحالية غير صحيحة.') : userError(e);
+                        });
+                      } catch (e) {
+                        setLocal(() { busy = false; err = userError(e); });
+                      }
+                    },
+              child: Text(busy ? tr('جارٍ الحفظ…') : tr('حفظ')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Delete the selected workspace (owner or super admin; refused while its
+  /// loyalty shops have customers).
+  Future<void> deleteWorkspace() async {
+    final current = tenants.where((t) => '${t['id']}' == tenant).firstOrNull;
+    if (current == null) return;
+    final name = '${current['name']}';
+    final typed = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocal) => AlertDialog(
+          title: Text(tr('حذف مساحة العمل')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(trf('ستُحذف «{0}» نهائياً مع بطاقاتها وأنشطتها. لا يمكن التراجع.', [name])),
+              const SizedBox(height: 10),
+              Text(tr('للتأكيد اكتب اسمها:'), style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+              TextField(controller: typed, onChanged: (_) => setLocal(() {})),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('إلغاء'))),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+              onPressed: typed.text.trim() == name.trim() ? () => Navigator.pop(context, true) : null,
+              child: Text(tr('حذف')),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      final r = await repo.client.rpc('nfc_delete_workspace', params: {'target': tenant});
+      final res = r is Map ? r : const {};
+      if (res['ok'] == true) {
+        tenant = null;
+        await load();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('تم حذف مساحة العمل.'))));
+        }
+        return;
+      }
+      final msg = switch ('${res['error']}') {
+        'has_customers' => tr('فيها محل له زبائن ونقاط، فلا يمكن حذفها. أوقف المحل بدل ذلك.'),
+        'forbidden' => tr('ليست لديك صلاحية حذف هذه المساحة.'),
+        _ => tr('تعذّر الحذف.'),
+      };
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: AppColors.danger));
+    } catch (e) {
+      notify(e);
+    }
   }
 
   Widget _workspaceBar() => Padding(
@@ -566,6 +717,11 @@ class _DashboardState extends State<Dashboard> {
             tooltip: tr('مساحة عمل جديدة'),
             onPressed: newTenant,
             icon: const Icon(Icons.add_box_outlined, size: 20),
+          ),
+          IconButton(
+            tooltip: tr('حذف مساحة العمل'),
+            onPressed: tenant == null ? null : deleteWorkspace,
+            icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.danger),
           ),
           IconButton(
             tooltip: businesses.isEmpty ? tr('أضف نشاطاً تجارياً') : tr('النشاط التجاري'),
@@ -652,6 +808,7 @@ class _DashboardState extends State<Dashboard> {
             isSuper: isSuper,
             shops: shops,
             tenant: tenant!,
+            openAdd: networkAdd,
           ),
         if (isSuper)
           ActivityTab(
@@ -730,6 +887,11 @@ class _DashboardState extends State<Dashboard> {
             tooltip: tr('تحديث'),
             onPressed: loading ? null : () => load(),
             icon: const Icon(Icons.sync_rounded, size: 20),
+          ),
+          IconButton(
+            tooltip: tr('تغيير كلمة المرور'),
+            onPressed: changeMyPassword,
+            icon: const Icon(Icons.key_rounded, size: 20),
           ),
           IconButton(
             tooltip: tr('تسجيل الخروج'),

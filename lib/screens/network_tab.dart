@@ -96,12 +96,16 @@ class NetworkTab extends StatefulWidget {
     required this.isSuper,
     required this.shops,
     required this.tenant,
+    this.openAdd,
   });
 
   final NetworkService service;
   final bool isSuper;
   final ShopsService shops;
   final String tenant;
+
+  /// Bumped by the dashboard's "+" menu to open the new-account form.
+  final ValueNotifier<int>? openAdd;
 
   @override
   State<NetworkTab> createState() => _NetworkTabState();
@@ -120,10 +124,12 @@ class _NetworkTabState extends State<NetworkTab> {
     super.initState();
     load();
     timer = Timer.periodic(const Duration(seconds: 30), (_) => load(quiet: true));
+    widget.openAdd?.addListener(_add);
   }
 
   @override
   void dispose() {
+    widget.openAdd?.removeListener(_add);
     timer?.cancel();
     super.dispose();
   }
