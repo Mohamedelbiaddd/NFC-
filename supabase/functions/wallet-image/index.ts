@@ -1,7 +1,7 @@
 // Supabase Edge Function: wallet-image
 //
 // Draws the stamp circles shown on a Google Wallet loyalty card as a PNG:
-//   GET ?s=<stamps>&g=<goal>&c=<hex colour>
+//   GET ?s=<stamps>&g=<goal>&c=<background hex>&a=<accent hex>&k=<ink hex>&r=1 (right to left)
 // One circle per visit of the shop's goal plus a gold gift circle; stamped
 // circles are filled with a check mark. The URL carries the whole state, so
 // Google re-downloads the picture whenever the count changes.
@@ -73,7 +73,7 @@ function hex(c: string): RGB {
   return [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)];
 }
 
-function draw(stamps: number, goal: number, bg: RGB): Uint8Array {
+function draw(stamps: number, goal: number, bg: RGB, accent: RGB = [246, 194, 50], ink: RGB = [27, 20, 0], rtl = false): Uint8Array {
   const img = new Uint8Array(W * H * 4);
   // Background: the shop colour, slightly darker towards the bottom.
   for (let y = 0; y < H; y++) {
@@ -105,14 +105,15 @@ function draw(stamps: number, goal: number, bg: RGB): Uint8Array {
   const cols = Math.ceil(n / rows);
   const cell = Math.min((W - 60) / cols, (H - 40) / rows);
   const R = cell * 0.4;
-  const white: RGB = [255, 255, 255];
-  const gold: RGB = [245, 179, 1];
+  const white: RGB = accent;
+  const gold: RGB = accent;
   const ready = stamps >= goal;
 
   for (let k = 0; k < n; k++) {
     const row = Math.floor(k / cols);
     const inRow = row === rows - 1 ? n - cols * (rows - 1) : cols;
-    const col = k % cols;
+    // Arabic: the first visit is on the right and the gift on the left.
+    const col = rtl ? inRow - 1 - (k % cols) : k % cols;
     const rowWidth = inRow * cell;
     const cx = (W - rowWidth) / 2 + cell * (col + 0.5);
     const cy = (H - rows * cell) / 2 + cell * (row + 0.5);
@@ -131,7 +132,7 @@ function draw(stamps: number, goal: number, bg: RGB): Uint8Array {
               segDist(x + 0.5, y + 0.5, cx - 0.42 * R, cy + 0.02 * R, cx - 0.1 * R, cy + 0.32 * R),
               segDist(x + 0.5, y + 0.5, cx - 0.1 * R, cy + 0.32 * R, cx + 0.44 * R, cy - 0.3 * R),
             );
-            blend(x, y, bg, Math.min(R - d + 0.5, 0.13 * R - m + 0.5));
+            blend(x, y, ink, Math.min(R - d + 0.5, 0.13 * R - m + 0.5));
           }
         } else {
           // Empty: soft fill and a ring.
@@ -140,14 +141,14 @@ function draw(stamps: number, goal: number, bg: RGB): Uint8Array {
         }
         if (gift) {
           // Simple gift box: body, lid and ribbon.
-          const box: RGB = filled ? bg : gold;
+          const box: RGB = filled ? ink : gold;
           const bx = x + 0.5 - cx, by = y + 0.5 - cy;
           const inBody = Math.abs(bx) <= 0.36 * R && by >= -0.08 * R && by <= 0.42 * R;
           const inLid = Math.abs(bx) <= 0.44 * R && by >= -0.26 * R && by < -0.08 * R;
-          const ribbon = Math.abs(bx) <= 0.06 * R && by >= -0.26 * R && by <= 0.42 * R;
+          const ribbon = Math.abs(bx) <= 0.035 * R && by >= -0.26 * R && by <= 0.42 * R;
           const bow = Math.hypot(bx + 0.16 * R, by + 0.36 * R) <= 0.11 * R || Math.hypot(bx - 0.16 * R, by + 0.36 * R) <= 0.11 * R;
           if ((inBody || inLid || bow) && !ribbon) blend(x, y, box, 1);
-          else if (ribbon && (inBody || inLid)) blend(x, y, white, 1);
+          else if (ribbon && (inBody || inLid)) blend(x, y, filled ? gold : bg, 1);
         }
       }
     }
@@ -159,8 +160,8 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const goal = Math.min(50, Math.max(1, parseInt(url.searchParams.get('g') ?? '5', 10) || 5));
   const stamps = Math.min(goal, Math.max(0, parseInt(url.searchParams.get('s') ?? '0', 10) || 0));
-  const c = /^[0-9a-fA-F]{6}$/.test(url.searchParams.get('c') ?? '') ? url.searchParams.get('c')! : '7367F0';
-  const body = await png(draw(stamps, goal, hex(c)));
+  const pick = (k: string, d: string) => (/^[0-9a-fA-F]{6}$/.test(url.searchParams.get(k) ?? '') ? url.searchParams.get(k)! : d);
+  const body = await png(draw(stamps, goal, hex(pick('c', '0b1a36')), hex(pick('a', 'f6c232')), hex(pick('k', '1b1400')), url.searchParams.get('r') === '1'));
   return new Response(body, {
     headers: {
       'Content-Type': 'image/png',

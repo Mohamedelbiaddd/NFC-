@@ -2,7 +2,11 @@
 //
 // Google Wallet loyalty cards for shop customers.
 //   POST {action: 'save', slug, token, lang?} -> {ok, url}  "Add to Google Wallet" link
-//   POST {action: 'sync', slug, token}         -> {ok}       refresh points after a visit
+//   POST {action: 'sync', slug, token}         -> {ok}       refresh points / next booking
+//
+// The pass uses the shop's theme colours and logo, shows the stamp circles
+// (wallet-image), progress, reward and next appointment, and links to call,
+// book (#book) and "my booking" (#mybooking) on the shop page.
 //
 // The customer proves who they are with the card token kept in their browser
 // (the same token used by nfc_customer_card). One LoyaltyClass per shop and one
@@ -24,10 +28,25 @@ const API = 'https://walletobjects.googleapis.com/walletobjects/v1';
 const SITE = (Deno.env.get('PUBLIC_SITE_URL') ?? 'https://nfc-smart-tags.vercel.app').replace(/\/+$/, '');
 const ISSUER = Deno.env.get('GOOGLE_WALLET_ISSUER_ID') ?? '3388000000023223039';
 
+// Page themes (same keys as web_profiles/themes.mjs): card colour, gold, ink.
+const THEMES: Record<string, [string, string, string]> = {
+  navy: ['#0b1a36', '#f6c232', '#1b1400'], black: ['#101010', '#d4af37', '#1a1405'], emerald: ['#072319', '#34d399', '#032016'],
+  royal: ['#170e33', '#c4b5fd', '#1b0f3d'], rose: ['#2a0c1b', '#f9a8d4', '#3b0a22'], ocean: ['#062234', '#38bdf8', '#032033'],
+  sunset: ['#271205', '#fb923c', '#2a1102'], crimson: ['#21070f', '#f43f5e', '#ffffff'], ivory: ['#1f1a12', '#b8860b', '#ffffff'],
+  mint: ['#0e2a21', '#0f9f6e', '#ffffff'],
+};
+const AR_NUM = ['', 'واحدة', 'اثنتين', 'ثلاث', 'أربع', 'خمس', 'ست', 'سبع', 'ثماني', 'تسع', 'عشر'];
+function visitsText(lang: string, n: number, g: number): string {
+  if (lang === 'fr') return `${n} visite(s) sur ${g}`;
+  if (lang === 'en') return `${n} of ${g} visits`;
+  const count = n === 0 ? 'لا زيارات بعد' : n === 1 ? 'زيارة واحدة' : n === 2 ? 'زيارتان' : n <= 10 ? `${AR_NUM[n]} زيارات` : `${n} زيارة`;
+  return `${count} من أصل ${AR_NUM[g] ?? g}`;
+}
+
 const TEXT: Record<string, Record<string, string>> = {
-  ar: {points: 'الزيارات', reward: 'الهدية', rewards: 'هدايا حصلت عليها', free: '🎁 زيارتك القادمة مجانية!', open: 'افتح بطاقتي', every: 'بعد {0} زيارات', scan: 'في كل زيارة امسح الكود الظاهر عند المحل، وتُضاف الدائرة هنا تلقائياً.'},
-  fr: {points: 'Visites', reward: 'Cadeau', rewards: 'Cadeaux obtenus', free: '🎁 Votre prochaine visite est offerte !', open: 'Ouvrir ma carte', every: 'Après {0} visites', scan: 'À chaque visite, scannez le code affiché au magasin : le cercle s’ajoute ici automatiquement.'},
-  en: {points: 'Visits', reward: 'Reward', rewards: 'Rewards earned', free: '🎁 Your next visit is free!', open: 'Open my card', every: 'After {0} visits', scan: 'At every visit, scan the code shown at the shop and a circle is added here automatically.'},
+  ar: {points: 'الزيارات', reward: 'الهدية', rewards: 'هدايا حصلت عليها', free: '🎁 زيارتك القادمة مجانية!', open: 'افتح بطاقتي', every: 'بعد {0} زيارات', call: 'اتصال', book: 'احجز موعدًا', mine: 'حجزي', next: 'موعدك القادم', progress: 'تقدّمك', scan: 'في كل زيارة امسح الكود الظاهر عند المحل، وتُضاف الدائرة هنا تلقائياً.'},
+  fr: {points: 'Visites', reward: 'Cadeau', rewards: 'Cadeaux obtenus', free: '🎁 Votre prochaine visite est offerte !', open: 'Ouvrir ma carte', every: 'Après {0} visites', call: 'Appeler', book: 'Prendre rendez-vous', mine: 'Mon rendez-vous', next: 'Votre prochain rendez-vous', progress: 'Progression', scan: 'À chaque visite, scannez le code affiché au magasin : le cercle s’ajoute ici automatiquement.'},
+  en: {points: 'Visits', reward: 'Reward', rewards: 'Rewards earned', free: '🎁 Your next visit is free!', open: 'Open my card', every: 'After {0} visits', call: 'Call', book: 'Book an appointment', mine: 'My booking', next: 'Your next appointment', progress: 'Progress', scan: 'At every visit, scan the code shown at the shop and a circle is added here automatically.'},
 };
 
 function json(body: unknown, status = 200): Response {
@@ -96,7 +115,6 @@ async function upsert(token: string, kind: string, resource: Record<string, unkn
 }
 
 const plain = (id: string) => id.replace(/[^a-zA-Z0-9]/g, '');
-const color = (c: unknown, fallback: string) => (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c) ? c : fallback);
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', {headers: CORS});
@@ -138,7 +156,7 @@ Deno.serve(async (req) => {
 
   const {data: shop} = await db
     .from('nfc_businesses')
-    .select('id, name, shop_slug, primary_color, loyalty_goal, loyalty_reward, loyalty_enabled, suspended, phone, address, card_background, latitude, longitude')
+    .select('id, name, shop_slug, primary_color, loyalty_goal, loyalty_reward, loyalty_enabled, suspended, phone, address, card_background, latitude, longitude, logo_url, theme, booking_enabled, services, week_hours, timezone')
     .eq('shop_slug', slug)
     .maybeSingle();
   if (!shop || !shop.loyalty_enabled || shop.suspended) return json({ok: false, error: 'shop'}, 404);
@@ -157,13 +175,34 @@ Deno.serve(async (req) => {
   const cardUrl = `${SITE}/c/${shop.shop_slug}`;
   const classId = `${ISSUER}.shop_${plain(shop.id)}`;
   const objectId = `${ISSUER}.cust_${plain(customer.id)}`;
-  const bg = color(shop.primary_color, '#7367F0');
+  const [bg, gold, ink] = THEMES[String(shop.theme)] ?? THEMES.navy;
+  const canBook = !!shop.booking_enabled && Array.isArray(shop.services) && shop.services.length > 0 && !!shop.week_hours;
+  // Next appointment (shown on the pass).
+  const {data: nextBooking} = await db
+    .from('nfc_bookings')
+    .select('service_name, starts_at')
+    .eq('customer_id', customer.id)
+    .eq('status', 'booked')
+    .gt('starts_at', new Date().toISOString())
+    .order('starts_at')
+    .limit(1)
+    .maybeSingle();
+  const tz = String(shop.timezone || 'Africa/Casablanca');
+  let nextText: string | null = null;
+  if (nextBooking) {
+    try {
+      nextText = `${nextBooking.service_name} · ${new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang, {weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz}).format(new Date(nextBooking.starts_at))}`;
+    } catch {
+      nextText = `${nextBooking.service_name} · ${nextBooking.starts_at}`;
+    }
+  }
+  const logo = typeof shop.logo_url === 'string' && shop.logo_url.startsWith('https://') ? shop.logo_url : `${SITE}/icon-512.png`;
 
   const loyaltyClass: Record<string, unknown> = {
     id: classId,
     issuerName: String(shop.name).slice(0, 60),
     programName: String(shop.name).slice(0, 60),
-    programLogo: {sourceUri: {uri: `${SITE}/icon-512.png`}},
+    programLogo: {sourceUri: {uri: logo}},
     hexBackgroundColor: bg,
     reviewStatus: 'UNDER_REVIEW',
     countryCode: 'MA',
@@ -173,6 +212,7 @@ Deno.serve(async (req) => {
       : {}),
   };
   const free = stamps >= goal;
+  const shown = Math.min(stamps, goal);
   const loyaltyObject: Record<string, unknown> = {
     id: objectId,
     classId,
@@ -180,25 +220,29 @@ Deno.serve(async (req) => {
     accountId: String(customer.phone),
     accountName: String(customer.name),
     hexBackgroundColor: bg,
-    loyaltyPoints: {label: t.points, balance: {string: `${Math.min(stamps, goal)} / ${goal}`}},
+    loyaltyPoints: {label: t.points, balance: {string: `${shown} / ${goal}`}},
     secondaryLoyaltyPoints: {label: t.rewards, balance: {int: Number(customer.rewards ?? 0)}},
     // No barcode: the customer scans the shop's live QR, never the other way round.
     heroImage: {
       sourceUri: {
-        uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image?s=${Math.min(stamps, goal)}&g=${goal}&c=${bg.slice(1)}`,
+        uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image?s=${shown}&g=${goal}&c=${bg.slice(1)}&a=${gold.slice(1)}&k=${ink.slice(1)}${lang === 'ar' ? '&r=1' : ''}`,
       },
-      contentDescription: {defaultValue: {language: lang, value: `${Math.min(stamps, goal)} / ${goal}`}},
+      contentDescription: {defaultValue: {language: lang, value: visitsText(lang, shown, goal)}},
     },
     textModulesData: [
       ...(free ? [{id: 'free', header: '🎁', body: t.free}] : []),
+      ...(nextText ? [{id: 'next', header: `📅 ${t.next}`, body: nextText}] : []),
+      {id: 'progress', header: `✨ ${t.progress}`, body: visitsText(lang, shown, goal)},
+      {id: 'reward', header: `🎁 ${t.reward}`, body: `${reward} · ${t.every.replace('{0}', String(goal))}`},
       {id: 'scan', header: '📷', body: t.scan},
-      {id: 'reward', header: t.reward, body: `${reward} · ${t.every.replace('{0}', String(goal))}`},
       ...(shop.address ? [{id: 'address', header: '📍', body: String(shop.address)}] : []),
     ],
     linksModuleData: {
       uris: [
+        ...(shop.phone ? [{id: 'phone', uri: `tel:${String(shop.phone).replace(/[^+0-9]/g, '')}`, description: `📞 ${t.call} · ${shop.phone}`}] : []),
+        ...(canBook ? [{id: 'book', uri: `${cardUrl}#book`, description: `📅 ${t.book}`}] : []),
+        ...(canBook ? [{id: 'mine', uri: `${cardUrl}#mybooking`, description: `🗓️ ${t.mine}`}] : []),
         {id: 'card', uri: cardUrl, description: t.open},
-        ...(shop.phone ? [{id: 'phone', uri: `tel:${shop.phone}`, description: String(shop.phone)}] : []),
       ],
     },
   };
@@ -208,6 +252,7 @@ Deno.serve(async (req) => {
     if (action === 'sync') {
       // Only refreshes cards the customer already saved.
       const exists = await upsert(token, 'loyaltyObject', loyaltyObject, true);
+      if (exists) await upsert(token, 'loyaltyClass', loyaltyClass);
       return json({ok: true, saved: exists});
     }
     await upsert(token, 'loyaltyClass', loyaltyClass);

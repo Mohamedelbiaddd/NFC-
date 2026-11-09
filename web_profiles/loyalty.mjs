@@ -165,23 +165,31 @@ export function validWeek(week) {
   return Array.isArray(week) && week.length === 7;
 }
 
+/** Opening periods of one day entry: [[open, close], ...] as "HH:MM". */
+export function periods(d) {
+  if (!d) return [];
+  const out = [[d.o, d.c]];
+  if (d.o2 && d.c2) out.push([d.o2, d.c2]);
+  return out;
+}
+
+/** "09:00 – 13:00 · 15:00 – 21:00" */
+export function dayText(d) {
+  return periods(d).map(([o, c]) => `${o} – ${c}`).join('  ·  ');
+}
+
 /** true / false when the week is known, null otherwise. */
 export function openNow(week) {
   if (!validWeek(week)) return null;
   const now = new Date();
   const minutes = now.getHours() * 60 + now.getMinutes();
-  const toMin = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
-  const today = week[todayIndex()];
-  const yesterday = week[(todayIndex() + 6) % 7];
-  if (today) {
-    const o = toMin(today.o), c = toMin(today.c);
-    if (c > o ? minutes >= o && minutes < c : minutes >= o || minutes < c) {
-      if (c > o || minutes >= o) return true;
-    }
+  const toMin = x => { const [h, m] = x.split(':').map(Number); return h * 60 + m; };
+  for (const [o, c] of periods(week[todayIndex()])) {
+    const a = toMin(o), z = toMin(c);
+    if (z > a ? minutes >= a && minutes < z : minutes >= a) return true;
   }
-  if (yesterday) {
-    const o = toMin(yesterday.o), c = toMin(yesterday.c);
-    if (c <= o && minutes < c) return true; // open past midnight
+  for (const [o, c] of periods(week[(todayIndex() + 6) % 7])) {
+    if (toMin(c) <= toMin(o) && minutes < toMin(c)) return true; // past midnight
   }
   return false;
 }

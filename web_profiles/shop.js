@@ -60,8 +60,72 @@ async function refresh() {
   applyColors(data.shop);
   if (!editing) applyTheme(r.shop?.theme);
   notifyQueue(data.customers ?? []);
+  try {
+    const rb = await rpc(config, 'nfc_shop_bookings', {target_slug: slug, session: session()});
+    data.bookings = rb?.ok ? rb.bookings ?? [] : [];
+  } catch { data.bookings = data.bookings ?? []; }
+  notifyBookings(data.bookings);
   if (!editing) render();
   return true;
+}
+
+// New appointments: sound + message, like the arrivals queue.
+let knownBookings = null;
+function notifyBookings(list) {
+  const ids = new Set(list.filter(k => k.status === 'booked').map(k => k.id));
+  if (knownBookings) {
+    for (const k of list) {
+      if (k.status === 'booked' && !knownBookings.has(k.id)) {
+        beep();
+        const msg = t('newBooking', {name: k.customer, service: k.service, day: k.day, time: k.time});
+        toast(msg);
+        try {
+          if (document.visibilityState !== 'visible' && window.Notification?.permission === 'granted') new Notification(data.shop.name, {body: msg});
+        } catch { /* optional */ }
+      }
+    }
+  }
+  knownBookings = ids;
+}
+
+function bookingsPanel() {
+  const list = (data.bookings ?? []);
+  const panel = el('div', undefined, 'panel');
+  panel.append(el('h2', `📅 ${t('appointments')}`));
+  const active = list.filter(k => k.status === 'booked');
+  if (!active.length) { panel.append(el('p', t('noAppointments'), 'muted small')); return panel; }
+  const today = new Date().toISOString().slice(0, 10);
+  let lastDay = '';
+  for (const k of active) {
+    if (k.day !== lastDay) {
+      lastDay = k.day;
+      let label = k.day;
+      try { label = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang, {weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC'}).format(new Date(k.day + 'T12:00:00Z')); } catch { /* keep iso */ }
+      panel.append(el('h3', (k.day === today ? `${t('todayLabel')} · ` : '') + label, 'appt-day'));
+    }
+    const row = el('div', undefined, 'appt');
+    const info = el('div');
+    const who = el('b', `${k.time} · ${k.customer}`);
+    const tel = el('a', k.phone, 'small'); tel.href = 'tel:' + String(k.phone).replace(/[^+0-9]/g, ''); tel.dir = 'ltr';
+    info.append(who, el('span', `${k.service} · ${k.minutes} ${t('min')}`, 'small muted'), tel);
+    const btns = el('div', undefined, 'appt-btns');
+    for (const [st, label, cls] of [['done', '✓', 'green'], ['no_show', t('noShowShort'), 'ghost'], ['cancelled', '✕', 'red']]) {
+      const b = el('button', label, 'btn small ' + cls); b.type = 'button';
+      b.title = t('status_' + st);
+      b.addEventListener('click', async () => {
+        if (st === 'cancelled' && !confirm(t('ownerCancelConfirm', {name: k.customer, time: k.time}))) return;
+        b.disabled = true;
+        try {
+          const r = await rpc(config, 'nfc_shop_booking_set', {target_slug: slug, session: session(), booking: k.id, new_status: st});
+          if (r?.ok) { toast(t('saved')); await refresh(); } else toast(t('saveError'), true);
+        } catch { toast(t('network'), true); } finally { b.disabled = false; }
+      });
+      btns.append(b);
+    }
+    row.append(info, btns);
+    panel.append(row);
+  }
+  return panel;
 }
 
 async function refreshQr() {
@@ -238,7 +302,7 @@ function homeView() {
   if (!queue.length) qPanel.append(el('p', t('queueEmpty'), 'empty'));
   for (const c of queue) qPanel.append(queueRow(c));
   grid.append(qrPanel, qPanel);
-  return [grid, closedPanel()];
+  return [grid, bookingsPanel(), closedPanel()];
 }
 
 function closedPanel() {
@@ -466,24 +530,83 @@ function settingsView() {
   const weekRows = [];
   const timeInput = v => { const i = el('input'); i.type = 'time'; i.className = 'field time'; i.value = v; return i; };
   week.forEach((d, i) => {
-    const row = el('div', undefined, 'week-edit');
+    const row = el('div', undefined, 'week-day');
+    const top = el('div', undefined, 'week-edit');
     const toggle = el('input'); toggle.type = 'checkbox'; toggle.checked = !!d;
     const lbl = el('label', undefined, 'day'); lbl.append(toggle, el('span', dayName(i, lang)));
-    const o = timeInput(d?.o ?? '09:00'), c = timeInput(d?.c ?? '21:00');
+    const o = timeInput(d?.o ?? '09:00'), c = timeInput(d?.c ?? (d?.o2 ? '13:00' : '21:00'));
     const off = el('span', t('dayOff'), 'off');
-    const sync = () => { o.hidden = c.hidden = !toggle.checked; off.hidden = toggle.checked; };
-    toggle.addEventListener('change', sync); sync();
-    row.append(lbl, o, c, off);
-    weekRows.push({toggle, o, c});
+    top.append(lbl, o, c, off);
+    // Second period after the lunch break.
+    const second = el('div', undefined, 'week-edit second');
+    const o2 = timeInput(d?.o2 ?? '15:00'), c2 = timeInput(d?.c2 ?? '21:00');
+    second.append(el('span', `☕ ${t('afterLunch')}`, 'small muted'), o2, c2);
+    const split = el('label', undefined, 'split'); const splitBox = el('input'); splitBox.type = 'checkbox'; splitBox.checked = !!d?.o2;
+    split.append(splitBox, el('span', t('lunchBreak')));
+    const sync = () => {
+      o.hidden = c.hidden = split.hidden = !toggle.checked; off.hidden = toggle.checked;
+      second.hidden = !(toggle.checked && splitBox.checked);
+    };
+    toggle.addEventListener('change', sync); splitBox.addEventListener('change', sync); sync();
+    row.append(top, split, second);
+    weekRows.push({toggle, o, c, splitBox, o2, c2});
     weekPanel.append(row);
   });
   const copy = el('button', t('copyMonday'), 'btn ghost small'); copy.type = 'button';
   copy.addEventListener('click', () => {
     const m = weekRows[0];
-    for (const r of weekRows.slice(1)) { r.toggle.checked = m.toggle.checked; r.o.value = m.o.value; r.c.value = m.c.value; r.toggle.dispatchEvent(new Event('change')); }
+    for (const r of weekRows.slice(1)) {
+      r.toggle.checked = m.toggle.checked; r.o.value = m.o.value; r.c.value = m.c.value;
+      r.splitBox.checked = m.splitBox.checked; r.o2.value = m.o2.value; r.c2.value = m.c2.value;
+      r.toggle.dispatchEvent(new Event('change'));
+    }
   });
   weekPanel.append(copy);
-  const weekValue = () => weekRows.map(r => r.toggle.checked && r.o.value && r.c.value ? {o: r.o.value.slice(0, 5), c: r.c.value.slice(0, 5)} : null);
+  const weekValue = () => weekRows.map(r => {
+    if (!r.toggle.checked || !r.o.value || !r.c.value) return null;
+    const d = {o: r.o.value.slice(0, 5), c: r.c.value.slice(0, 5)};
+    if (r.splitBox.checked && r.o2.value && r.c2.value && r.o2.value > r.c.value) { d.o2 = r.o2.value.slice(0, 5); d.c2 = r.c2.value.slice(0, 5); }
+    return d;
+  });
+  // Appointments: switch, services, slot length and chairs.
+  const bookPanel = el('div', undefined, 'panel');
+  bookPanel.append(el('h2', `📅 ${t('bookingTitle')}`), el('p', t('bookingNote'), 'muted small'));
+  const bookOn = el('input'); bookOn.type = 'checkbox'; bookOn.checked = !!s.booking_enabled;
+  const bookOnLbl = el('label', undefined, 'split big'); bookOnLbl.append(bookOn, el('span', t('bookingOn')));
+  const services = (Array.isArray(s.services) ? s.services : []).map(x => ({...x}));
+  const svcRows = el('div');
+  const newId = () => Math.random().toString(36).slice(2, 8);
+  const drawSvcs = () => {
+    svcRows.replaceChildren();
+    services.forEach((svc, i) => {
+      const row = el('div', undefined, 'svc-edit');
+      const n = el('input'); n.className = 'field'; n.placeholder = t('serviceName'); n.value = svc.name ?? ''; n.maxLength = 60;
+      n.addEventListener('input', () => { svc.name = n.value; });
+      const m = el('select'); m.className = 'field';
+      for (const v of [10, 15, 20, 30, 45, 60, 90, 120]) { const op = el('option', `${v} ${t('min')}`); op.value = String(v); op.selected = Number(svc.minutes) === v; m.append(op); }
+      m.addEventListener('change', () => { svc.minutes = Number(m.value); });
+      const pr = el('input'); pr.className = 'field'; pr.placeholder = t('price'); pr.value = svc.price ?? ''; pr.maxLength = 30;
+      pr.addEventListener('input', () => { svc.price = pr.value; });
+      const rm = el('button', '✕', 'btn ghost small'); rm.type = 'button';
+      rm.addEventListener('click', () => { services.splice(i, 1); drawSvcs(); });
+      row.append(n, m, pr, rm);
+      svcRows.append(row);
+    });
+  };
+  drawSvcs();
+  const addSvc = el('button', `＋ ${t('addService')}`, 'btn ghost small'); addSvc.type = 'button';
+  addSvc.addEventListener('click', () => { if (services.length < 30) { services.push({id: newId(), name: '', minutes: 30, price: ''}); drawSvcs(); } });
+  const step = el('select'); step.className = 'field';
+  for (const v of [10, 15, 20, 30, 45, 60]) { const op = el('option', `${t('every')} ${v} ${t('min')}`); op.value = String(v); op.selected = (s.slot_minutes ?? 30) === v; step.append(op); }
+  const chairs = field(t('chairs'), s.booking_capacity ?? 1, 'number'); chairs.input.min = 1; chairs.input.max = 20;
+  const stepWrap = el('label', undefined, 'fieldwrap'); stepWrap.append(el('span', t('slotStep'), 'small muted'), step);
+  bookPanel.append(bookOnLbl, el('h3', t('servicesTitle')), svcRows, addSvc, stepWrap, chairs.wrap);
+  const bookingValue = () => ({
+    enabled: bookOn.checked,
+    services: services.map(x => ({id: x.id || newId(), name: String(x.name ?? '').trim(), minutes: Number(x.minutes) || 30, ...(String(x.price ?? '').trim() ? {price: String(x.price).trim()} : {})})).filter(x => x.name),
+    slot_minutes: Number(step.value),
+    capacity: Math.min(20, Math.max(1, parseInt(chairs.input.value, 10) || 1)),
+  });
   // Loyalty rules
   const rules = el('div', undefined, 'panel');
   rules.append(el('h2', `🎁 ${t('loyaltyRules')}`));
@@ -577,8 +700,12 @@ function settingsView() {
         radius_m: String(Math.min(1000, Math.max(50, parseInt(radius.input.value, 10) || 200))),
         ...(geo ? {latitude: String(geo.lat), longitude: String(geo.lng)} : {}),
       }});
-      if (!r?.ok) { applyTheme(s.theme); toast(r?.error === 'email' ? t('badEmail') : r?.error === 'socials' ? t('badLink') : t('saveError'), true); return; }
-      toast(t('saved'));
+      if (!r?.ok) { applyTheme(s.theme); toast(r?.error === 'email' ? t('badEmail') : r?.error === 'socials' ? t('badLink') : r?.error === 'hours' ? t('badHours') : t('saveError'), true); return; }
+      const bv = bookingValue();
+      const rb = await rpc(config, 'nfc_shop_booking_settings', {target_slug: slug, session: session(), settings: bv});
+      if (!rb?.ok) { toast(rb?.error === 'services' ? t('badServices') : t('saveError'), true); return; }
+      if (bv.enabled && !bv.services.length) toast(t('needServices'), true);
+      else toast(t('saved'));
       editing = false;
       await refresh();
     } catch { toast(t('saveError'), true); } finally { save.disabled = false; }
@@ -602,7 +729,7 @@ function settingsView() {
     storage(sessionKey, null); loginView();
   });
   sec.append(oldP.wrap, newP.wrap, change, out);
-  return [themePanel, info, linksPanel, weekPanel, promo, rules, loc, save, sec];
+  return [themePanel, info, linksPanel, weekPanel, bookPanel, promo, rules, loc, save, sec];
 }
 
 function suspendedView() {

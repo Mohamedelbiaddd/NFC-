@@ -1,7 +1,7 @@
 import {t, lang, applyLang, langSwitcher} from '/i18n.mjs';
 import {applyTheme, ICONS} from '/themes.mjs';
 import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage, bannerStrip, industry, unit,
-  slotsGrid, safeImage, formatDate, dayName, todayIndex, validWeek, openNow, socialLink, industryLabel} from '/loyalty.mjs';
+  slotsGrid, safeImage, formatDate, dayName, todayIndex, validWeek, openNow, socialLink, industryLabel, dayText} from '/loyalty.mjs';
 
 const root = document.getElementById('app');
 const langs = document.getElementById('langs');
@@ -13,6 +13,7 @@ if (pendingCode && !/^[0-9a-f]{8}$/i.test(pendingCode)) pendingCode = null;
 if (pendingCode) history.replaceState(null, '', location.pathname);
 
 let config = null, shop = null, customer = null, notice = null, fresh = -1;
+let myBooking = null; // the customer's current appointment (nfc_booking_mine)
 let installEvent = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvent = e; });
 
@@ -53,6 +54,23 @@ function bizCard() {
   const open = shop.closed ? false : openNow(shop.week_hours);
   if (open !== null) cover.append(el('span', `● ${open ? t('openNow') : shop.closed ? t('closedBadge') : t('closedNow')}`, 'chip ' + (open ? 'green' : 'red')));
   card.append(cover);
+  // Two big actions: call and book.
+  const telLink = socialLink('phone', shop.phone);
+  if (telLink || shop.booking_enabled) {
+    const acts = el('div', undefined, 'bc-actions');
+    if (telLink) {
+      const a = ext(el('a', undefined, 'bc-act'), telLink.href);
+      a.append(svg('phone', 'ico'), el('span', t('call')));
+      acts.append(a);
+    }
+    if (shop.booking_enabled) {
+      const b = el('button', undefined, 'bc-act gold'); b.type = 'button';
+      b.append(svg('calendar', 'ico'), el('span', t('bookBtn')));
+      b.addEventListener('click', bookingSheet);
+      acts.append(b);
+    }
+    card.append(acts);
+  }
 
   const body = el('div', undefined, 'bc-body');
   // Address | today's hours
@@ -67,7 +85,7 @@ function bizCard() {
   if (today !== undefined || shop.hours) {
     const h = el('div', undefined, 'bc-tile');
     const txt = el('div');
-    txt.append(el('span', t('hours'), 'bc-small'), el('b', today === undefined ? shop.hours : today ? `${today.o} – ${today.c}` : t('dayOff'), 'bc-ltr'));
+    txt.append(el('span', t('hours'), 'bc-small'), el('b', today === undefined ? shop.hours : today ? dayText(today).replace(/  ·  /g, '\n') : t('dayOff'), 'bc-ltr bc-lines'));
     h.append(svg('clock', 'bc-ic'), txt);
     tiles.append(h);
   }
@@ -75,10 +93,12 @@ function bizCard() {
   // Phone | call
   const tel = socialLink('phone', shop.phone);
   if (tel) {
-    const row = el('div', undefined, 'bc-box bc-phone');
+    // The whole box opens the phone app (tel:).
+    const row = ext(el('a', undefined, 'bc-box bc-phone'), tel.href);
+    row.setAttribute('aria-label', `${t('call')} ${shop.phone}`);
     const num = el('div', undefined, 'bc-tile');
     num.append(svg('phone', 'bc-ic'), el('b', shop.phone, 'bc-ltr'));
-    const call = ext(el('a', undefined, 'bc-call'), tel.href);
+    const call = el('span', undefined, 'bc-call');
     call.append(svg('phone', 'ico'), document.createTextNode(t('call')));
     row.append(num, call);
     body.append(row);
@@ -141,8 +161,11 @@ function points() {
   row.append(gift);
   box.append(row);
   box.append(el('p', customer
-    ? (customer.next_free ? `${t('giftReady')} · ${reward}` : t('pointsOf', {n: stamps, g: goal + 1}) + ` · 🎁 ${reward}`)
-    : `${t('programText', {n: goal, r: reward})} — ${t('programHow')}`, 'bc-small'));
+    ? (customer.next_free ? t('giftReady') : visitsText(stamps, goal))
+    : `${t('programText', {n: goal, r: reward})} — ${t('programHow')}`, 'bc-progress'));
+  const rw = el('p', undefined, 'bc-reward');
+  rw.append(svg('gift', 'ico'), el('span', t('rewardLabel')), el('b', reward));
+  box.append(rw);
   return box;
 }
 
@@ -284,7 +307,7 @@ function infoPanel() {
     box.append(head);
     shop.week_hours.forEach((d, i) => {
       const row = el('div', undefined, 'week-row' + (i === todayIndex() ? ' today' : ''));
-      row.append(el('span', dayName(i, lang)), el('span', d ? `${d.o} – ${d.c}` : t('dayOff'), d ? 'time' : 'off'));
+      row.append(el('span', dayName(i, lang)), el('span', d ? dayText(d) : t('dayOff'), d ? 'time' : 'off'));
       box.append(row);
     });
     panel.append(box);
@@ -306,6 +329,7 @@ function render() {
     parts.push(b);
   }
   parts.push(bizCard());
+  if (customer && shop.booking_enabled) parts.push(myBookingPanel());
   if (customer) {
     parts.push(actions());
     if (canWallet()) parts.push(walletButton());
@@ -365,6 +389,210 @@ function walletButton() {
     btn.disabled = false;
   });
   return btn;
+}
+
+
+// "زيارة واحدة من أصل خمس" / "1 visit of 5"
+const AR_NUM = ['', 'واحدة', 'اثنتين', 'ثلاث', 'أربع', 'خمس', 'ست', 'سبع', 'ثماني', 'تسع', 'عشر'];
+function visitsText(n, g) {
+  if (lang !== 'ar') return t('visitsOf', {n, g});
+  const count = n === 0 ? 'لا زيارات بعد' : n === 1 ? 'زيارة واحدة' : n === 2 ? 'زيارتان'
+    : n <= 10 ? `${AR_NUM[n] ?? n} زيارات` : `${n} زيارة`;
+  return `${count} من أصل ${AR_NUM[g] ?? g}`;
+}
+
+/* ---------- Appointments ----------
+   Backend RPCs (supabase/migrations/202611090005_bookings.sql):
+   nfc_booking_slots, nfc_booking_create, nfc_booking_mine, nfc_booking_cancel. */
+const fmtDay = (iso, opts = {weekday: 'long', day: 'numeric', month: 'long'}) => {
+  try { return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang, {...opts, timeZone: 'UTC'}).format(new Date(iso + 'T12:00:00Z')); }
+  catch { return iso; }
+};
+const isoDay = d => d.toISOString().slice(0, 10);
+
+async function loadMyBooking() {
+  const token = storage(tokenKey);
+  if (!token || !shop?.booking_enabled) { myBooking = null; return; }
+  try {
+    const r = await rpc(config, 'nfc_booking_mine', {target_slug: slug, token});
+    myBooking = r?.ok ? r.booking : null;
+  } catch { /* keep the previous state */ }
+}
+
+// Name + phone before the first booking (joins the shop without a visit).
+function detailsStep(panel, done) {
+  panel.replaceChildren(el('h2', `📅 ${t('bookBtn')}`), el('p', t('yourDetails'), 'muted small'));
+  const name = el('input'); name.className = 'field'; name.placeholder = t('name'); name.autocomplete = 'name'; name.maxLength = 80;
+  const phone = el('input'); phone.className = 'field'; phone.placeholder = t('phone'); phone.type = 'tel'; phone.inputMode = 'tel'; phone.dir = 'ltr';
+  const go = el('button', t('continue'), 'btn'); go.type = 'button';
+  go.addEventListener('click', async () => {
+    if (!name.value.trim()) { toast(t('badName'), true); return; }
+    if (phone.value.replace(/[^0-9]/g, '').length < 6) { toast(t('badPhone'), true); return; }
+    go.disabled = true;
+    try {
+      const r = await rpc(config, 'nfc_customer_join', {target_slug: slug, customer_name: name.value.trim(), customer_phone: phone.value, code: null});
+      if (!r?.ok) { toast(r?.error === 'phone' ? t('badPhone') : t('badName'), true); return; }
+      storage(tokenKey, r.token);
+      customer = r.customer;
+      done();
+    } catch { toast(t('network'), true); } finally { go.disabled = false; }
+  });
+  panel.append(name, phone, go);
+}
+
+function bookingSheet() {
+  const {box, panel} = sheet();
+  panel.classList.add('book');
+  if (!storage(tokenKey)) { detailsStep(panel, () => { render(); servicesStep(); }); return; }
+  if (myBooking?.status === 'booked' && myBooking.upcoming) {
+    panel.append(el('h2', `📅 ${t('bookBtn')}`), el('p', t('bookErr_has_booking'), 'banner amber'));
+    const see = el('button', t('myBooking'), 'btn'); see.type = 'button';
+    see.addEventListener('click', () => { box.remove(); document.getElementById('my-booking')?.scrollIntoView({behavior: 'smooth'}); });
+    panel.append(see);
+    return;
+  }
+  servicesStep();
+
+  function servicesStep() {
+    panel.replaceChildren(el('h2', `📅 ${t('bookBtn')}`), el('p', t('chooseService'), 'muted small'));
+    const list = el('div', undefined, 'book-list');
+    for (const svc of shop.services ?? []) {
+      const b = el('button', undefined, 'book-svc'); b.type = 'button';
+      b.append(el('b', svc.name), el('span', [`${svc.minutes} ${t('min')}`, svc.price].filter(Boolean).join(' · ')));
+      b.addEventListener('click', () => dayStep(svc));
+      list.append(b);
+    }
+    panel.append(list);
+  }
+
+  function dayStep(svc) {
+    panel.replaceChildren(el('h2', svc.name), el('p', t('chooseDay'), 'muted small'));
+    const days = el('div', undefined, 'book-days');
+    const week = shop.week_hours;
+    const start = new Date();
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate() + i, 12));
+      const open = Array.isArray(week) ? !!week[(d.getUTCDay() + 6) % 7] : true;
+      const b = el('button', undefined, 'book-day'); b.type = 'button'; b.disabled = !open;
+      b.append(el('small', fmtDay(isoDay(d), {weekday: 'short'})), el('b', String(d.getUTCDate())), el('small', fmtDay(isoDay(d), {month: 'short'})));
+      b.addEventListener('click', () => timeStep(svc, isoDay(d)));
+      days.append(b);
+    }
+    const back = el('button', `← ${t('back')}`, 'btn ghost small'); back.type = 'button';
+    back.addEventListener('click', servicesStep);
+    panel.append(days, back);
+  }
+
+  async function timeStep(svc, day) {
+    panel.replaceChildren(el('h2', svc.name), el('p', fmtDay(day), 'muted'), el('div', undefined, 'spinner'));
+    const back = el('button', `← ${t('back')}`, 'btn ghost small'); back.type = 'button';
+    back.addEventListener('click', () => dayStep(svc));
+    let r;
+    try { r = await rpc(config, 'nfc_booking_slots', {target_slug: slug, service_id: svc.id, day}); }
+    catch { panel.replaceChildren(el('h2', svc.name), el('p', t('bookErr'), 'banner red'), back); return; }
+    const slots = r?.ok ? r.slots ?? [] : [];
+    panel.replaceChildren(el('h2', svc.name), el('p', `${fmtDay(day)} · ${t('chooseTime')}`, 'muted small'));
+    if (!r?.ok || !slots.length) {
+      panel.append(el('p', r?.ok ? t('noSlots') : t('bookErr'), 'banner amber'), back);
+      return;
+    }
+    const grid = el('div', undefined, 'book-times');
+    let chosen = null;
+    const confirm = el('button', t('confirmBook'), 'btn'); confirm.type = 'button'; confirm.disabled = true;
+    for (const time of slots) {
+      const b = el('button', time, 'book-time'); b.type = 'button';
+      b.addEventListener('click', () => {
+        chosen = time;
+        grid.querySelectorAll('.book-time').forEach(x => x.classList.toggle('on', x === b));
+        confirm.disabled = false;
+        confirm.textContent = `${t('confirmBook')} · ${time}`;
+      });
+      grid.append(b);
+    }
+    confirm.addEventListener('click', async () => {
+      if (!chosen || confirm.disabled) return;
+      confirm.disabled = true; // no double submit
+      confirm.textContent = t('booking');
+      try {
+        const res = await rpc(config, 'nfc_booking_create', {target_slug: slug, token: storage(tokenKey), service_id: svc.id, day, start_time: chosen});
+        if (res?.ok && res.booking) {
+          myBooking = res.booking;
+          success(res.booking);
+          wallet('sync').catch(() => {});
+          return;
+        }
+        toast(t('bookErr_' + (res?.error ?? '')) === 'bookErr_' + (res?.error ?? '') ? t('bookErr') : t('bookErr_' + res.error), true);
+        if (res?.error === 'taken') { timeStep(svc, day); return; }
+      } catch { toast(t('network'), true); }
+      confirm.disabled = false;
+      confirm.textContent = `${t('confirmBook')} · ${chosen}`;
+    });
+    panel.append(grid, confirm, back);
+  }
+
+  function success(k) {
+    panel.replaceChildren();
+    const ok = el('div', undefined, 'book-ok');
+    ok.append(el('div', '✓', 'book-check'), el('h2', t('booked')), el('p', k.service, 'book-big'),
+      el('p', `${fmtDay(k.day)} · ${k.time}`, 'book-big'));
+    const close = el('button', t('ok'), 'btn'); close.type = 'button';
+    close.addEventListener('click', () => { box.remove(); render(); });
+    panel.append(ok, close);
+  }
+}
+
+// "حجزي": status of the appointment and cancellation.
+function myBookingPanel() {
+  const k = myBooking;
+  const panel = el('section', undefined, 'panel my-booking');
+  panel.id = 'my-booking';
+  panel.append(el('h2', `🗓️ ${t('myBooking')}`));
+  if (!k) {
+    panel.append(el('p', t('noBooking'), 'muted small'));
+    const b = el('button', t('bookBtn'), 'btn'); b.type = 'button';
+    b.addEventListener('click', bookingSheet);
+    panel.append(b);
+    return panel;
+  }
+  const status = k.status === 'booked' && !k.upcoming ? 'now' : k.status;
+  const card = el('div', undefined, 'book-card ' + k.status);
+  card.append(el('b', k.service), el('span', `${fmtDay(k.day)} · ${k.time}`, 'bc-ltr-auto'),
+    el('span', t('status_' + status), 'chip ' + (k.status === 'booked' ? 'green' : k.status === 'cancelled' ? 'red' : '')));
+  if (k.status === 'cancelled' && k.cancelled_by === 'owner') card.append(el('p', t('cancelledByShop'), 'small muted'));
+  panel.append(card);
+  if (k.status === 'booked' && k.upcoming) {
+    const cancel = el('button', t('cancelBooking'), 'btn ghost'); cancel.type = 'button';
+    cancel.addEventListener('click', () => {
+      const {box, panel: p} = sheet();
+      p.append(el('h2', t('cancelBooking')), el('p', `${k.service} · ${fmtDay(k.day)} · ${k.time}`), el('p', t('cancelConfirm'), 'muted'));
+      const yes = el('button', t('cancelYes'), 'btn red'); yes.type = 'button';
+      const no = el('button', t('cancelNo'), 'btn ghost'); no.type = 'button';
+      no.addEventListener('click', () => box.remove());
+      yes.addEventListener('click', async () => {
+        yes.disabled = true; no.disabled = true;
+        try {
+          const r = await rpc(config, 'nfc_booking_cancel', {target_slug: slug, token: storage(tokenKey), booking: k.id});
+          if (r?.ok) {
+            myBooking = r.booking;
+            box.remove();
+            toast(t('cancelledOk'));
+            wallet('sync').catch(() => {});
+            render();
+            return;
+          }
+          toast(t('bookErr'), true);
+        } catch { toast(t('network'), true); }
+        yes.disabled = false; no.disabled = false;
+      });
+      p.append(yes, no);
+    });
+    panel.append(cancel);
+  } else if (shop.booking_enabled) {
+    const b = el('button', t('bookBtn'), 'btn'); b.type = 'button';
+    b.addEventListener('click', bookingSheet);
+    panel.append(b);
+  }
+  return panel;
 }
 
 function sheet() {
@@ -458,7 +686,11 @@ async function start() {
         else storage(tokenKey, null);
       }
     }
+    await loadMyBooking();
     render();
+    // Links from Google Wallet: #book opens booking, #mybooking shows it.
+    if (/(?:^#|&)book(?:&|$)/.test(location.hash) && shop.booking_enabled) bookingSheet();
+    if (/(?:^#|&)mybooking(?:&|$)/.test(location.hash)) document.getElementById('my-booking')?.scrollIntoView({behavior: 'smooth'});
   } catch (e) {
     console.error(e);
     status(t('network'), '');
