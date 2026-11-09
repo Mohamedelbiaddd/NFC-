@@ -2,6 +2,8 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 const Map<String, String> frStrings = {
+  '🔑 تغيير كلمة مرور صاحب المحل': '🔑 Changer le mot de passe du propriétaire',
+  'لم أجد هذا المحل في شبكتك.': 'Magasin introuvable dans votre réseau.',
   '⛔ أُوقف دخول صاحب محل بعد 3 محاولات خاطئة': '⛔ Accès d’un propriétaire bloqué après 3 essais',
   'محل «{0}» جاهز ✅\n\n🔗 صفحة محلك (ضعها على بطاقة NFC أو QR، وثبّتها على شاشة هاتفك):\n{1}\n\n🔐 للدخول إلى لوحتك: افتح الصفحة واضغط 4 مرات بسرعة على الشعار، ثم اكتب كلمة المرور.\nكلمة المرور: {3}\n(رابط مباشر للوحة: {2})\n\n⚠️ بعد 3 محاولات خاطئة يتوقف الدخول حتى نعطيك كلمة مرور جديدة.\nبعد الدخول غيّر كلمة المرور من «الإعدادات».': 'Magasin « {0} » prêt ✅\n\n🔗 Votre page (sur carte NFC ou QR, à épingler sur l’écran du téléphone) :\n{1}\n\n🔐 Pour ouvrir votre tableau : ouvrez la page, touchez 4 fois vite le logo, puis tapez le mot de passe.\nMot de passe : {3}\n(lien direct : {2})\n\n⚠️ Après 3 essais faux, l’accès est bloqué jusqu’à un nouveau mot de passe.\nChangez le mot de passe dans « Réglages » après connexion.',
   'مرتبطون به مباشرة': 'Liés directement',
@@ -487,6 +489,8 @@ const Map<String, String> frStrings = {
 };
 
 const Map<String, String> enStrings = {
+  '🔑 تغيير كلمة مرور صاحب المحل': '🔑 Change the shop owner password',
+  'لم أجد هذا المحل في شبكتك.': 'Shop not found in your network.',
   '⛔ أُوقف دخول صاحب محل بعد 3 محاولات خاطئة': '⛔ Owner access blocked after 3 wrong tries',
   'محل «{0}» جاهز ✅\n\n🔗 صفحة محلك (ضعها على بطاقة NFC أو QR، وثبّتها على شاشة هاتفك):\n{1}\n\n🔐 للدخول إلى لوحتك: افتح الصفحة واضغط 4 مرات بسرعة على الشعار، ثم اكتب كلمة المرور.\nكلمة المرور: {3}\n(رابط مباشر للوحة: {2})\n\n⚠️ بعد 3 محاولات خاطئة يتوقف الدخول حتى نعطيك كلمة مرور جديدة.\nبعد الدخول غيّر كلمة المرور من «الإعدادات».': 'Shop “{0}” is ready ✅\n\n🔗 Your page (on an NFC card or QR, pin it to your phone screen):\n{1}\n\n🔐 To open your dashboard: open the page, tap the logo 4 times quickly, then type the password.\nPassword: {3}\n(direct link: {2})\n\n⚠️ After 3 wrong tries access is blocked until we give you a new password.\nChange the password in “Settings” after signing in.',
   'مرتبطون به مباشرة': 'Directly linked',

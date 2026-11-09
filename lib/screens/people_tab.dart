@@ -21,6 +21,7 @@ class PeopleTab extends StatefulWidget {
     required this.onWrite,
     required this.onPreview,
     required this.onRefresh,
+    this.onShopPassword,
     this.scans = const {},
     this.totalScans = 0,
   });
@@ -36,6 +37,9 @@ class PeopleTab extends StatefulWidget {
   final void Function(Json profile) onWrite;
   final void Function(Json profile) onPreview;
   final Future<void> Function() onRefresh;
+
+  /// For a loyalty card linked to a shop: new owner password for that shop.
+  final void Function(Json profile, String shopSlug)? onShopPassword;
   final Map<String, int> scans;
   final int totalScans;
 
@@ -316,6 +320,9 @@ class _PeopleTabState extends State<PeopleTab> {
                   widget.onPreview(profile);
                 case 'delete':
                   widget.onDelete(profile);
+                case 'shop_password':
+                  final slug = loyaltyShopSlug(profile);
+                  if (slug != null) widget.onShopPassword?.call(profile, slug);
               }
             },
             itemBuilder: (context) => [
@@ -324,6 +331,11 @@ class _PeopleTabState extends State<PeopleTab> {
               PopupMenuItem(value: 'qr', child: Text(tr('رمز QR'))),
               PopupMenuItem(value: 'write', child: Text(tr('ربط بطاقة NFC'))),
               PopupMenuItem(value: 'preview', child: Text(tr('فتح الرابط'))),
+              if (widget.onShopPassword != null && loyaltyShopSlug(profile) != null)
+                PopupMenuItem(
+                  value: 'shop_password',
+                  child: Text(tr('🔑 تغيير كلمة مرور صاحب المحل')),
+                ),
               if (widget.canDelete) ...[
                 const PopupMenuDivider(),
                 PopupMenuItem(
@@ -412,4 +424,14 @@ class _PeopleTabState extends State<PeopleTab> {
       ),
     );
   }
+}
+
+/// The shop slug when this card is a loyalty card pointing at one of our
+/// shop pages (…/c/<slug>), otherwise null.
+String? loyaltyShopSlug(Json profile) {
+  if ('${profile['kind']}' != 'loyalty') return null;
+  final data = profile['data'];
+  final url = data is Map ? '${data['loyalty_url'] ?? ''}' : '';
+  final match = RegExp(r'/c/([a-z0-9]+(?:-[a-z0-9]+)*)/?$').firstMatch(url);
+  return match?.group(1);
 }

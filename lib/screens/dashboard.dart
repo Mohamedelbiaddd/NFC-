@@ -227,6 +227,28 @@ class _DashboardState extends State<Dashboard> {
     '${profile['custom_slug']}',
   );
 
+  /// "Change owner password" from a loyalty card in the people list.
+  Future<void> shopPasswordFromCard(Json profile, String slug) async {
+    try {
+      final rows = await network.shops();
+      final shop = rows.where((s) => '${s['shop_slug']}' == slug).firstOrNull;
+      if (!mounted) return;
+      if (shop == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('لم أجد هذا المحل في شبكتك.')), backgroundColor: AppColors.danger),
+        );
+        return;
+      }
+      await resetShopOwnerPassword(context, shops, shop);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(userError(e)), backgroundColor: AppColors.danger),
+        );
+      }
+    }
+  }
+
   Future<void> openProfile(Json profile) async {
     try {
       if (!await launchUrl(
@@ -607,6 +629,7 @@ class _DashboardState extends State<Dashboard> {
       onWrite: openWriter,
       onPreview: openProfile,
       onRefresh: refresh,
+      onShopPassword: shopPasswordFromCard,
       scans: profileScans,
       totalScans: totalScans,
     );

@@ -126,86 +126,10 @@ class _ShopsTabState extends State<ShopsTab> {
     if (result != null) await load();
   }
 
-  Future<void> _showAccess(Json shop, String password) async {
-    final slug = '${shop['shop_slug']}';
-    final link = ShopsService.ownerLink(slug);
-    final message =
-        shopAccessMessage('${shop['name']}', slug, password);
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(tr('دخول صاحب المحل')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(tr('🔗 رابط الولاء (للزبائن وبطاقة NFC):'), style: TextStyle(color: AppColors.muted)),
-            const SizedBox(height: 4),
-            SelectableText(ShopsService.customerLink(slug), textDirection: TextDirection.ltr, style: const TextStyle(color: AppColors.success)),
-            const SizedBox(height: 12),
-            Text(tr('🔑 لوحة صاحب المحل:'), style: TextStyle(color: AppColors.muted)),
-            const SizedBox(height: 4),
-            SelectableText(link, textDirection: TextDirection.ltr, style: const TextStyle(color: AppColors.accent)),
-            const SizedBox(height: 8),
-            SelectableText(
-              trf('كلمة المرور: {0}', [password]),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              tr('احفظ كلمة المرور الآن: لا تُعرض مرة أخرى، ويمكن إنشاء واحدة جديدة في أي وقت.'),
-              style: TextStyle(fontSize: 11.5, color: AppColors.warning),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: message));
-              if (context.mounted) Navigator.pop(context);
-              _snack(tr('تم النسخ، أرسلها عبر واتساب'));
-            },
-            child: Text(tr('نسخ الرسالة')),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(message)}');
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
-            },
-            child: Text(tr('إرسال واتساب')),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _showAccess(Json shop, String password) => showShopAccess(context, shop, password);
 
   Future<void> _resetPassword(Json shop) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(tr('كلمة مرور جديدة؟')),
-        content: Text(tr('ستتوقف كلمة المرور القديمة، ويخرج صاحب المحل من كل الأجهزة.')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('إلغاء'))),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('إنشاء'))),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    try {
-      final password = ShopsService.randomPassword();
-      await widget.service.setup(
-        businessId: '${shop['id']}',
-        slug: '${shop['shop_slug']}',
-        goal: (shop['goal'] as num?)?.toInt() ?? 5,
-        reward: '${shop['reward'] ?? ''}',
-        password: password,
-      );
-      await load();
-      if (mounted) await _showAccess(shop, password);
-    } catch (e) {
-      _snack(userError(e), bad: true);
-    }
+    if (await resetShopOwnerPassword(context, widget.service, shop)) await load();
   }
 
   Future<void> _joinQr(Json shop) async {
@@ -836,3 +760,93 @@ String shopAccessMessage(String name, String slug, String password) => trf(
   'محل «{0}» جاهز ✅\n\n🔗 صفحة محلك (ضعها على بطاقة NFC أو QR، وثبّتها على شاشة هاتفك):\n{1}\n\n🔐 للدخول إلى لوحتك: افتح الصفحة واضغط 4 مرات بسرعة على الشعار، ثم اكتب كلمة المرور.\nكلمة المرور: {3}\n(رابط مباشر للوحة: {2})\n\n⚠️ بعد 3 محاولات خاطئة يتوقف الدخول حتى نعطيك كلمة مرور جديدة.\nبعد الدخول غيّر كلمة المرور من «الإعدادات».',
   [name, ShopsService.customerLink(slug), ShopsService.ownerLink(slug), password],
 );
+
+Future<void> showShopAccess(BuildContext context, Json shop, String password) async {
+    final slug = '${shop['shop_slug']}';
+    final link = ShopsService.ownerLink(slug);
+    final message =
+        shopAccessMessage('${shop['name']}', slug, password);
+    final messenger = ScaffoldMessenger.of(context);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(tr('دخول صاحب المحل')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(tr('🔗 رابط الولاء (للزبائن وبطاقة NFC):'), style: TextStyle(color: AppColors.muted)),
+            const SizedBox(height: 4),
+            SelectableText(ShopsService.customerLink(slug), textDirection: TextDirection.ltr, style: const TextStyle(color: AppColors.success)),
+            const SizedBox(height: 12),
+            Text(tr('🔑 لوحة صاحب المحل:'), style: TextStyle(color: AppColors.muted)),
+            const SizedBox(height: 4),
+            SelectableText(link, textDirection: TextDirection.ltr, style: const TextStyle(color: AppColors.accent)),
+            const SizedBox(height: 8),
+            SelectableText(
+              trf('كلمة المرور: {0}', [password]),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              tr('احفظ كلمة المرور الآن: لا تُعرض مرة أخرى، ويمكن إنشاء واحدة جديدة في أي وقت.'),
+              style: TextStyle(fontSize: 11.5, color: AppColors.warning),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: message));
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
+              messenger.showSnackBar(SnackBar(content: Text(tr('تم النسخ، أرسلها عبر واتساب'))));
+            },
+            child: Text(tr('نسخ الرسالة')),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(message)}');
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            },
+            child: Text(tr('إرسال واتساب')),
+          ),
+        ],
+      ),
+    );
+  }
+
+/// Asks for confirmation, sets a new owner password (which also lifts a
+/// 3-try lock) and shows it with the WhatsApp message. Returns true when done.
+Future<bool> resetShopOwnerPassword(BuildContext context, ShopsService service, Json shop) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tr('كلمة مرور جديدة؟')),
+        content: Text(tr('ستتوقف كلمة المرور القديمة، ويخرج صاحب المحل من كل الأجهزة.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('إلغاء'))),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('إنشاء'))),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return false;
+    try {
+      final password = ShopsService.randomPassword();
+      await service.setup(
+        businessId: '${shop['id']}',
+        slug: '${shop['shop_slug']}',
+        goal: (shop['goal'] as num?)?.toInt() ?? 5,
+        reward: '${shop['reward'] ?? ''}',
+        password: password,
+      );
+      if (context.mounted) await showShopAccess(context, shop, password);
+      return true;
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(userError(e)), backgroundColor: AppColors.danger),
+        );
+      }
+      return false;
+    }
+  }
