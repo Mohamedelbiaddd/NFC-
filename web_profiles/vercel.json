@@ -13,6 +13,14 @@
     {
       "source": "/s/:slug",
       "destination": "/shop.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
     }
   ],
   "headers": [

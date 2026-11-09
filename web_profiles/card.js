@@ -312,7 +312,11 @@ function render() {
   }
   const pics = gallery(); if (pics) parts.push(pics);
   const info = infoPanel(); if (info) parts.push(info);
-  parts.push(el('p', 'NFC Studio', 'legal'));
+  const legal = el('p', undefined, 'legal');
+  const pl = el('a', t('privacy')); pl.href = '/privacy#' + lang;
+  const tl = el('a', t('terms')); tl.href = '/terms#' + lang;
+  legal.append('MAROC NFC Studio · ', pl, ' · ', tl);
+  parts.push(legal);
   root.replaceChildren(...parts);
   fresh = -1;
 }
