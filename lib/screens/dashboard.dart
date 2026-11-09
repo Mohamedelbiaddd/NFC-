@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../core/repository.dart';
+import '../core/i18n.dart';
+
 import '../core/app_config.dart';
-import 'profile_editor.dart';
+import '../core/people.dart';
+import '../core/repository.dart';
+import '../core/theme.dart';
+import '../core/workers_service.dart';
+import 'activity_tab.dart';
+import 'people_tab.dart';
+import 'person_form.dart';
+import 'qr_screen.dart';
+import 'users_tab.dart';
+import 'link_writer_screen.dart';
+import 'network_tab.dart';
+import 'shops_tab.dart';
+import '../core/network_service.dart';
+import '../core/shops_service.dart';
 import 'writer_screen.dart';
 
 class Dashboard extends StatefulWidget {
@@ -14,65 +28,133 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   late final Repository repo;
-  List<Json> tenants = [], businesses = [], profiles = [];
+  late final WorkersService workers;
+  late final ShopsService shops;
+  late final NetworkService network;
+  String staffRole = '';
+  String? staffNotice;
+  bool allowed = true;
+  List<Json> tenants = const [], businesses = const [], profiles = const [];
   String? tenant, error;
   String role = 'viewer';
-  int page = 0, events = 0, request = 0;
-  bool loading = true;
+  bool isSuper = false, loading = true, _loggedLogin = false;
+  int page = 0, request = 0, tick = 0;
+  Map<String, int> profileScans = const {};
+  int totalScans = 0;
+  bool get seesNetwork => isSuper || staffRole == 'agent';
+  int get tabCount => !canEdit ? 1 : 2 + (seesNetwork ? 1 : 0) + (isSuper ? 2 : 0);
+
   bool get canEdit => {'owner', 'admin', 'editor'}.contains(role);
   bool get canDelete => {'owner', 'admin'}.contains(role);
+  bool get canManage => canDelete;
+
   @override
   void initState() {
     super.initState();
     repo = Repository(Supabase.instance.client);
+    workers = WorkersService(repo.client);
+    shops = ShopsService(repo.client);
+    network = NetworkService(repo.client);
     load();
   }
 
-  void notify(Object e) {
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(userError(e))));
-    }
+  void notify(Object e) => _snack(userError(e), error: true);
+
+  void _snack(String message, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? AppColors.danger : AppColors.surfaceHigh,
+      ),
+    );
   }
 
-  Future<void> load({String? selected}) async {
+  Future<void> load({String? selected, bool silent = false}) async {
     final ticket = ++request;
-    setState(() {
-      loading = true;
-      error = null;
-    });
+    if (!silent) {
+      setState(() {
+        loading = true;
+        error = null;
+      });
+    }
     try {
       final ts = await repo.rows('nfc_tenants');
-      final t = selected ?? tenant ?? ts.firstOrNull?['id'];
-      final active = ts.any((x) => x['id'] == t) ? t : ts.firstOrNull?['id'];
+      final candidate =
+          selected ?? tenant ?? (ts.isEmpty ? null : '${ts.first['id']}');
+      final active = ts.any((x) => '${x['id']}' == candidate)
+          ? candidate
+          : (ts.isEmpty ? null : '${ts.first['id']}');
       final bs = active == null
           ? <Json>[]
           : await repo.rows('nfc_businesses', tenant: active);
       final ps = active == null
           ? <Json>[]
           : await repo.rows('nfc_profiles', tenant: active);
-      var r = 'viewer';
-      var n = 0;
+      ps.sort((a, b) => '${b['created_at']}'.compareTo('${a['created_at']}'));
+      var scans = <String, int>{};
+      var scanTotal = 0;
       if (active != null) {
-        final m = await repo.client
-            .from('nfc_memberships')
-            .select('role')
-            .eq('tenant_id', active)
-            .eq('user_id', repo.client.auth.currentUser!.id)
-            .single();
-        r = m['role'];
-        n = await repo.count('nfc_write_events', active);
+        try {
+          final rows = await workers.scanOverview(active);
+          for (final row in rows) {
+            final count = row['scans'];
+            final value = count is int ? count : int.tryParse('$count') ?? 0;
+            scans['${row['profile_id']}'] = value;
+            scanTotal += value;
+          }
+        } catch (_) {
+          // Scan counters are informative; never block the workspace load.
+        }
       }
-      if (mounted && ticket == request) {
-        setState(() {
-          tenants = ts;
-          tenant = active;
-          businesses = bs;
-          profiles = ps;
-          role = r;
-          events = n;
-        });
+      var superAdmin = false;
+      var current = 'viewer';
+      var account = <String, dynamic>{};
+      try {
+        account = await network.myAccount();
+      } catch (_) {
+        // Older databases: treat as allowed; RLS still protects the data.
+        account = {'allowed': true};
+      }
+      if (active != null) {
+        superAdmin = await repo.amSuperAdmin();
+        try {
+          final membership = await repo.client
+              .from('nfc_memberships')
+              .select('role')
+              .eq('tenant_id', active)
+              .eq('user_id', repo.client.auth.currentUser!.id)
+              .maybeSingle();
+          final value = '${membership?['role'] ?? ''}';
+          if (value.isNotEmpty && value != 'null') current = value;
+        } catch (_) {
+          // A super admin may hold no explicit membership row.
+        }
+        if (superAdmin) current = 'owner';
+      }
+      if (!mounted || ticket != request) return;
+      setState(() {
+        tenants = ts;
+        tenant = active;
+        businesses = bs;
+        profiles = ps;
+        role = current;
+        isSuper = superAdmin;
+        allowed = account['allowed'] != false;
+        final staff = account['staff'];
+        staffRole = staff is Map ? '${staff['role'] ?? ''}' : '';
+        staffNotice = staff is Map && staff['notice'] != null ? '${staff['notice']}' : null;
+        profileScans = scans;
+        totalScans = scanTotal;
+        if (page >= tabCount) page = 0;
+      });
+      if (active != null && !_loggedLogin) {
+        _loggedLogin = true;
+        await repo.logEvent(
+          active,
+          'login',
+          subject: repo.client.auth.currentUser?.email,
+        );
       }
     } catch (e) {
       if (mounted && ticket == request) setState(() => error = userError(e));
@@ -81,44 +163,192 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
+  Future<void> refresh() async {
+    await load(silent: true);
+    if (mounted) setState(() => tick++);
+  }
+
+  Future<void> addPerson() async {
+    if (tenant == null) {
+      _snack(tr('أنشئ مساحة عمل أولاً.'));
+      return;
+    }
+    if (businesses.isEmpty) {
+      _snack(tr('أضف نشاطاً تجارياً أولاً.'));
+      await businessForm();
+      return;
+    }
+    final changed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PersonForm(
+        repo: repo,
+        tenant: tenant!,
+        businesses: businesses,
+      ),
+    );
+    if (changed == true) {
+      setState(() => page = 0);
+      await refresh();
+      _snack(tr('تم حفظ الشخص وأصبح في القائمة.'));
+    }
+  }
+
+  Future<void> editPerson(Json profile) async {
+    if (tenant == null) return;
+    final changed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PersonForm(
+        repo: repo,
+        tenant: tenant!,
+        businesses: businesses,
+        profile: profile,
+      ),
+    );
+    if (changed == true) await refresh();
+  }
+
+  Future<void> deletePerson(Json profile) async {
+    if (!await confirm(trf('سيصبح رابط «{0}» غير متاح. الاسم المخصص يبقى محجوزاً لمنع انتحال البطاقات.', [personName(profile)]))) {
+      return;
+    }
+    try {
+      await repo.delete('nfc_profiles', '${profile['id']}');
+      await refresh();
+      _snack(tr('تم حذف البطاقة.'));
+    } catch (e) {
+      notify(e);
+    }
+  }
+
+  Uri profileLink(Json profile) => AppConfig.profileUrl(
+    AppConfig.profileBase,
+    '${profile['custom_slug']}',
+  );
+
+  /// "Change owner password" from a loyalty card in the people list.
+  Future<void> shopPasswordFromCard(Json profile, String slug) async {
+    try {
+      final rows = await network.shops();
+      final shop = rows.where((s) => '${s['shop_slug']}' == slug).firstOrNull;
+      if (!mounted) return;
+      if (shop == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('لم أجد هذا المحل في شبكتك.')), backgroundColor: AppColors.danger),
+        );
+        return;
+      }
+      await resetShopOwnerPassword(context, shops, shop);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(userError(e)), backgroundColor: AppColors.danger),
+        );
+      }
+    }
+  }
+
+  Future<void> openProfile(Json profile) async {
+    try {
+      if (!await launchUrl(
+        profileLink(profile),
+        mode: LaunchMode.externalApplication,
+      )) {
+        throw StateError(tr('تعذّر فتح الرابط'));
+      }
+    } catch (e) {
+      notify(e);
+    }
+  }
+
+  Future<void> openQr(Json profile) async {
+    final slug = '${profile['custom_slug'] ?? ''}';
+    if (slug.isEmpty) {
+
+      _snack(tr('لا يوجد رابط مخصص لهذا الشخص.'));
+      return;
+    }
+    final match = businesses.where((b) => b['id'] == profile['business_id']);
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => QrScreen(
+          url: profileLink(profile)
+              .replace(queryParameters: {'src': 'qr'})
+              .toString(),
+          title: personName(profile),
+          business: match.isEmpty ? '' : '${match.first['name']}',
+          slug: slug,
+          published: personPublished(profile),
+          onSaved: () async {
+            if (tenant != null) {
+              await repo.logEvent(tenant!, 'qr_saved', subject: personName(profile));
+            }
+          },
+        ),
+      ),
+    );
+    if (mounted) setState(() => tick++);
+  }
+
+  Future<void> openWriter(Json profile) async {
+    if (tenant == null) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => WriterScreen(
+          repo: repo,
+          tenant: tenant!,
+          profileId: '${profile['id']}',
+          profileName: personName(profile),
+        ),
+      ),
+    );
+    await refresh();
+  }
+
   Future<bool> confirm(String text) async =>
       await showDialog<bool>(
         context: context,
-        builder: (c) => AlertDialog(
-          title: const Text('تأكيد الحذف'),
+        builder: (context) => AlertDialog(
+          title: Text(tr('تأكيد الحذف')),
           content: Text(text),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('إلغاء'),
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(tr('إلغاء')),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('حذف'),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(tr('حذف')),
             ),
           ],
         ),
       ) ??
       false;
+
   Future<String?> ask(String title, String hint) async {
     final input = TextEditingController();
     final value = await showDialog<String>(
       context: context,
-      builder: (c) => AlertDialog(
+      builder: (context) => AlertDialog(
         title: Text(title),
         content: TextField(
           controller: input,
-          decoration: InputDecoration(labelText: hint),
           maxLength: 120,
+          decoration: InputDecoration(labelText: hint),
+          onSubmitted: (v) => Navigator.pop(context, v.trim()),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('إلغاء'),
+            onPressed: () => Navigator.pop(context),
+            child: Text(tr('إلغاء')),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(c, input.text.trim()),
-            child: const Text('متابعة'),
+            onPressed: () => Navigator.pop(context, input.text.trim()),
+            child: Text(tr('متابعة')),
           ),
         ],
       ),
@@ -129,7 +359,7 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> newTenant() async {
-    final name = await ask('مساحة عمل جديدة', 'اسم المساحة');
+    final name = await ask(tr('مساحة عمل جديدة'), tr('اسم المساحة'));
     if (name == null || name.isEmpty) return;
     try {
       final id = await repo.client.rpc(
@@ -142,62 +372,72 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
-  Future<void> businessForm([Json? b]) async {
+  Future<void> businessForm([Json? business]) async {
     if (tenant == null) return;
     final form = GlobalKey<FormState>();
-    final name = TextEditingController(text: b?['name'] ?? ''),
-        primary = TextEditingController(text: b?['primary_color'] ?? '#7367F0'),
-        accent = TextEditingController(text: b?['accent_color'] ?? '#2DD4BF');
+    final name = TextEditingController(text: business?['name'] ?? ''),
+        primary = TextEditingController(
+          text: business?['primary_color'] ?? '#7367F0',
+        ),
+        accent = TextEditingController(
+          text: business?['accent_color'] ?? '#2DD4BF',
+        );
     bool saving = false;
     String? err;
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (c) => StatefulBuilder(
-        builder: (c, update) => AlertDialog(
-          title: Text(b == null ? 'إضافة نشاط تجاري' : 'تعديل الهوية'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, update) => AlertDialog(
+          title: Text(business == null ? tr('إضافة نشاط تجاري') : tr('تعديل الهوية')),
           content: SizedBox(
             width: 480,
-            child: Form(
-              key: form,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: name,
-                    maxLength: 120,
-                    decoration: const InputDecoration(labelText: 'اسم النشاط'),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                  ),
-                  const SizedBox(height: 14),
-                  for (final pair in [
-                    (primary, 'اللون الأساسي'),
-                    (accent, 'لون التمييز'),
-                  ])
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: TextFormField(
-                        controller: pair.$1,
-                        textDirection: TextDirection.ltr,
-                        decoration: InputDecoration(
-                          labelText: '${pair.$2} · #RRGGBB',
-                        ),
-                        validator: (v) =>
-                            RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v ?? '')
-                            ? null
-                            : 'صيغة #RRGGBB',
+            child: SingleChildScrollView(
+              child: Form(
+                key: form,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: name,
+                      maxLength: 120,
+                      decoration: InputDecoration(
+                        labelText: tr('اسم النشاط'),
+                        prefixIcon: Icon(Icons.storefront_outlined),
                       ),
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? tr('مطلوب') : null,
                     ),
-                  if (err != null) Text(err!),
-                ],
+                    const SizedBox(height: 10),
+                    for (final pair in [
+                      (primary, tr('اللون الأساسي')),
+                      (accent, tr('لون التمييز')),
+                    ])
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: TextFormField(
+                          controller: pair.$1,
+                          textDirection: TextDirection.ltr,
+                          decoration: InputDecoration(
+                            labelText: '${pair.$2} · #RRGGBB',
+                          ),
+                          validator: (v) =>
+                              RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v ?? '')
+                              ? null
+                              : tr('صيغة #RRGGBB'),
+                        ),
+                      ),
+                    if (err != null)
+                      Text(err!, style: const TextStyle(color: AppColors.danger)),
+                  ],
+                ),
               ),
             ),
           ),
           actions: [
             TextButton(
-              onPressed: saving ? null : () => Navigator.pop(c),
-              child: const Text('إلغاء'),
+              onPressed: saving ? null : () => Navigator.pop(context),
+              child: Text(tr('إلغاء')),
             ),
             FilledButton(
               onPressed: saving
@@ -211,11 +451,11 @@ class _DashboardState extends State<Dashboard> {
                           'name': name.text.trim(),
                           'primary_color': primary.text,
                           'accent_color': accent.text,
-                        }, id: b?['id']);
-                        if (c.mounted) Navigator.pop(c);
-                        await load();
+                        }, id: business?['id']);
+                        if (context.mounted) Navigator.pop(context);
+                        await load(silent: true);
                       } catch (e) {
-                        if (c.mounted) {
+                        if (context.mounted) {
                           update(() {
                             err = userError(e);
                             saving = false;
@@ -223,7 +463,7 @@ class _DashboardState extends State<Dashboard> {
                         }
                       }
                     },
-              child: Text(saving ? 'جارٍ الحفظ…' : 'حفظ'),
+              child: Text(saving ? tr('جارٍ الحفظ…') : tr('حفظ')),
             ),
           ],
         ),
@@ -236,390 +476,323 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
-  Future<void> profileForm([Json? profile]) async {
-    if (tenant == null) return;
-    if (businesses.isEmpty) {
-      notify('أضف نشاطاً تجارياً أولاً');
-      return;
-    }
-    final changed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => ProfileEditor(
-        repo: repo,
-        tenant: tenant!,
-        businesses: businesses,
-        profile: profile,
-      ),
-    );
-    if (changed == true) await load();
-  }
-
-  Future<void> remove(String table, Json x) async {
-    if (!await confirm(
-      table == 'nfc_businesses'
-          ? 'حذف النشاط يحذف ملفاته وسجلاته ويوقف روابطه. الأسماء المخصصة تبقى محجوزة لمنع انتحال البطاقات.'
-          : 'سيصبح الرابط غير متاح. الاسم المخصص يبقى محجوزاً.',
-    )) {
-      return;
-    }
+  Future<void> signOut() async {
     try {
-      await repo.delete(table, x['id']);
-      await load();
+      await repo.client.auth.signOut();
     } catch (e) {
       notify(e);
     }
   }
 
-  Future<void> team() async {
-    final email = await ask('إدارة الفريق', 'بريد عضو مسجل مسبقاً');
-    if (email == null || email.isEmpty || !mounted) return;
-    final result = await showDialog<String>(
-      context: context,
-      builder: (c) => SimpleDialog(
-        title: const Text('صلاحية العضو'),
-        children: [
-          for (final r in [
-            'viewer',
-            'editor',
-            if (role == 'owner') 'admin',
-            'remove',
-          ])
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(c, r),
-              child: Text(r),
-            ),
-        ],
-      ),
-    );
-    if (result == null) return;
-    try {
-      await repo.client.rpc(
-        'nfc_set_member',
-        params: {
-          'workspace_id': tenant,
-          'member_email': email,
-          'member_role': result,
-        },
-      );
-      notify('تم تحديث العضوية');
-    } catch (e) {
-      notify(e);
-    }
-  }
-
-  Widget stat(String label, String value, IconData icon) => SizedBox(
-    width: 225,
-    child: Card(
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: const Color(0xFF9D8DFF)),
-            const SizedBox(height: 20),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
-            ),
-            Text(label),
-          ],
+  Widget _addButton() {
+    final wide = MediaQuery.sizeOf(context).width >= 430;
+    final onPressed = canEdit && tenant != null ? addPerson : null;
+    if (!wide) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: FilledButton(
+          onPressed: onPressed,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(44, 44),
+            padding: EdgeInsets.zero,
+            shape: const CircleBorder(),
+          ),
+          child: const Icon(Icons.add_rounded, size: 24),
         ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.add_rounded, size: 20),
+        label: Text(tr('إضافة شخص')),
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(0, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _workspaceBar() => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+    child: SurfaceCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.workspaces_outline,
+            size: 18,
+            color: AppColors.muted,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: tenant,
+                isExpanded: true,
+                hint: Text(tr('اختر مساحة عمل')),
+                borderRadius: BorderRadius.circular(16),
+                dropdownColor: AppColors.surfaceHigh,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
+                ),
+                items: tenants
+                    .map(
+                      (t) => DropdownMenuItem<String>(
+                        value: '${t['id']}',
+                        child: Text(
+                          '${t['name']}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null || value == tenant) return;
+                  setState(() => page = 0);
+                  load(selected: value);
+                },
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: tr('مساحة عمل جديدة'),
+            onPressed: newTenant,
+            icon: const Icon(Icons.add_box_outlined, size: 20),
+          ),
+          IconButton(
+            tooltip: businesses.isEmpty ? tr('أضف نشاطاً تجارياً') : tr('النشاط التجاري'),
+            onPressed: tenant == null || !canEdit ? null : () => businessForm(),
+            icon: const Icon(Icons.storefront_outlined, size: 20),
+          ),
+        ],
       ),
     ),
   );
-  Widget body() {
-    if (loading) return const Center(child: CircularProgressIndicator());
+
+  Widget _body() {
+    if (!allowed && !loading) {
+      return EmptyState(
+        icon: Icons.lock_outline_rounded,
+        title: tr('هذا الحساب غير مفعّل'),
+        text: tr('الحسابات تُنشأ فقط من طرف الإدارة أو الوكيل المسؤول. إذا كان حسابك موقوفاً تواصل مع المسؤول عنك.'),
+        action: FilledButton.icon(
+          onPressed: signOut,
+          icon: const Icon(Icons.logout_rounded),
+          label: Text(tr('تسجيل الخروج')),
+        ),
+      );
+    }
     if (error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(error!),
-            TextButton(onPressed: load, child: const Text('إعادة المحاولة')),
-          ],
+      return EmptyState(
+        icon: Icons.cloud_off_rounded,
+        title: tr('تعذّر تحميل البيانات'),
+        text: error!,
+        action: FilledButton.icon(
+          onPressed: () => load(),
+          icon: const Icon(Icons.refresh_rounded),
+          label: Text(tr('إعادة المحاولة')),
         ),
       );
     }
-    if (tenant == null) {
-      return Center(
-        child: FilledButton.icon(
+    if (tenants.isEmpty && !loading) {
+      return EmptyState(
+        icon: Icons.workspaces_outline,
+        title: tr('لا توجد مساحة عمل'),
+        text: tr('أنشئ مساحة عمل لتبدأ بإضافة الأشخاص وكتابة بطاقات NFC.'),
+        action: FilledButton.icon(
           onPressed: newTenant,
-          icon: const Icon(Icons.add_business),
-          label: const Text('أنشئ أول مساحة عمل'),
+          icon: const Icon(Icons.add_rounded),
+          label: Text(tr('مساحة عمل جديدة')),
         ),
       );
     }
-    return RefreshIndicator(
-      onRefresh: load,
-      child: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          Text(
-            [
-              'نظرة عامة',
-              'الأنشطة التجارية',
-              'ملفات NFC',
-              'الفريق والصلاحيات',
-            ][page],
-            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+    if (tenant == null || (loading && profiles.isEmpty)) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final people = PeopleTab(
+      profiles: profiles,
+      loading: loading,
+      canEdit: canEdit,
+      canDelete: canDelete,
+      onCreate: addPerson,
+      onEdit: editPerson,
+      onDelete: deletePerson,
+      onQr: openQr,
+      onWrite: openWriter,
+      onPreview: openProfile,
+      onRefresh: refresh,
+      onShopPassword: shopPasswordFromCard,
+      scans: profileScans,
+      totalScans: totalScans,
+    );
+    if (!canEdit) return people;
+    return IndexedStack(
+      index: page.clamp(0, tabCount - 1).toInt(),
+      children: [
+        people,
+        ShopsTab(
+          key: ValueKey('shops-$tick-${tenant!}'),
+          service: shops,
+          network: network,
+          tenant: tenant!,
+          seeAll: seesNetwork,
+        ),
+        if (seesNetwork)
+          NetworkTab(
+            key: ValueKey('network-$tick'),
+            service: network,
+            isSuper: isSuper,
+            shops: shops,
+            tenant: tenant!,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'مساحة عمل معزولة · صلاحيتك: $role',
-            style: const TextStyle(color: Color(0xFFA7AEC6)),
+        if (isSuper)
+          ActivityTab(
+            key: ValueKey('activity-$tick-${tenant!}'),
+            service: workers,
+            tenant: tenant!,
+            currentUserId: repo.client.auth.currentUser?.id,
           ),
-          const SizedBox(height: 24),
-          if (page == 0) ...[
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                stat('نشاط تجاري', '${businesses.length}', Icons.storefront),
-                stat('ملف رقمي', '${profiles.length}', Icons.layers_outlined),
-                stat(
-                  'ملف منشور',
-                  '${profiles.where((p) => p['published'] == true).length}',
-                  Icons.public,
-                ),
-                stat('عمليات أبلغ عنها التطبيق', '$events', Icons.contactless),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'ابدأ بإضافة نشاط تجاري، ثم أنشئ ملفاً باسم مخصص مثل bella-napoli. انشر واجهة الويب على نطاق HTTPS قبل برمجة بطاقات العملاء. سجلات الكتابة بلاغات من العميل وليست إثباتاً مادياً من الخادم.',
-                ),
-              ),
-            ),
-          ],
-          if (page == 1) ...[
-            if (canEdit)
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.icon(
-                  onPressed: businessForm,
-                  icon: const Icon(Icons.add),
-                  label: const Text('إضافة نشاط'),
-                ),
-              ),
-            const SizedBox(height: 16),
-            if (businesses.isEmpty) const Text('لا توجد أنشطة بعد.'),
-            for (final b in businesses)
-              Card(
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  leading: CircleAvatar(
-                    backgroundColor: Color(
-                      int.parse(
-                        'FF${(b['primary_color'] as String).substring(1)}',
-                        radix: 16,
-                      ),
-                    ),
-                    child: const Icon(Icons.storefront, color: Colors.white),
-                  ),
-                  title: Text(b['name']),
-                  subtitle: Text(
-                    '${b['primary_color']} · ${b['accent_color']}',
-                  ),
-                  trailing: Wrap(
-                    children: [
-                      if (canEdit)
-                        IconButton(
-                          onPressed: () => businessForm(b),
-                          icon: const Icon(Icons.edit_outlined),
-                        ),
-                      if (canDelete)
-                        IconButton(
-                          onPressed: () => remove('nfc_businesses', b),
-                          icon: const Icon(Icons.delete_outline),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-          if (page == 2) ...[
-            if (canEdit)
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.icon(
-                  onPressed: profileForm,
-                  icon: const Icon(Icons.add),
-                  label: const Text('إنشاء ملف NFC'),
-                ),
-              ),
-            const SizedBox(height: 16),
-            if (profiles.isEmpty) const Text('لا توجد ملفات بعد.'),
-            for (final p in profiles)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        p['title'],
-                        style: const TextStyle(
-                          fontSize: 19,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '${kindNames[p['kind']]} · ${p['published'] ? 'منشور' : 'مسودة'}',
-                      ),
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        '/p/${p['custom_slug']}',
-                        textDirection: TextDirection.ltr,
-                      ),
-                      Wrap(
-                        children: [
-                          if (canEdit)
-                            TextButton.icon(
-                              onPressed: () => profileForm(p),
-                              icon: const Icon(Icons.edit_outlined),
-                              label: const Text('تعديل'),
-                            ),
-                          TextButton.icon(
-                            onPressed: () async {
-                              try {
-                                final url = AppConfig.profileUrl(
-                                  AppConfig.profileBase,
-                                  p['custom_slug'],
-                                );
-                                if (!await launchUrl(
-                                  url,
-                                  mode: LaunchMode.externalApplication,
-                                )) {
-                                  throw StateError('تعذّر فتح الرابط');
-                                }
-                              } catch (e) {
-                                notify(e);
-                              }
-                            },
-                            icon: const Icon(Icons.open_in_new),
-                            label: const Text('معاينة'),
-                          ),
-                          if (canEdit)
-                            TextButton.icon(
-                              onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (_) => WriterScreen(
-                                    repo: repo,
-                                    tenant: tenant!,
-                                    profileId: p['id'],
-                                  ),
-                                ),
-                              ).then((_) => load()),
-                              icon: const Icon(Icons.nfc),
-                              label: const Text('برمجة البطاقة'),
-                            ),
-                          if (canDelete)
-                            IconButton(
-                              onPressed: () => remove('nfc_profiles', p),
-                              icon: const Icon(Icons.delete_outline),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-          if (page == 3) ...[
-            const Text(
-              'الأدوار: owner / admin / editor / viewer. العضو يسجّل حسابه أولاً، ثم تضيفه بالبريد. لا يستطيع العميل تغيير tenant_id أو ترقية نفسه عبر قاعدة البيانات.',
-            ),
-            const SizedBox(height: 20),
-            if (canDelete)
-              FilledButton(
-                onPressed: team,
-                child: const Text('إضافة / تعديل / إزالة عضو مسجل'),
-              ),
-          ],
-        ],
-      ),
+        if (isSuper)
+          UsersTab(
+            key: ValueKey('users-$tick'),
+            service: workers,
+            currentUserId: repo.client.auth.currentUser?.id,
+          ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 820;
-    final destinations = const [
-      (Icons.space_dashboard_outlined, 'الرئيسية'),
-      (Icons.storefront_outlined, 'الأنشطة'),
-      (Icons.contactless_outlined, 'ملفات NFC'),
-      (Icons.group_outlined, 'الفريق'),
-    ];
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NFC Studio'),
-        actions: [
-          if (tenants.isNotEmpty)
-            SizedBox(
-              width: MediaQuery.sizeOf(context).width < 500 ? 140 : 220,
-              child: DropdownButton<String>(
-                value: tenant,
-                isExpanded: true,
-                items: tenants
-                    .map(
-                      (t) => DropdownMenuItem<String>(
-                        value: t['id'],
-                        child: Text(t['name'], overflow: TextOverflow.ellipsis),
-                      ),
-                    )
-                    .toList(),
-                onChanged: loading ? null : (v) => load(selected: v),
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primarySoft],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.contactless_rounded,
+                size: 20,
+                color: Colors.white,
               ),
             ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('NFC Studio', style: TextStyle(fontSize: 16)),
+                Text(
+                  isSuper ? tr('مدير عام · صلاحيات كاملة') : tr('لوحة الإدارة'),
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: AppColors.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          const LanguageButton(),
+          _addButton(),
+          const SizedBox(width: 4),
           IconButton(
-            tooltip: 'مساحة جديدة',
-            onPressed: newTenant,
-            icon: const Icon(Icons.add_business_outlined),
-          ),
-          IconButton(
-            tooltip: 'تسجيل الخروج',
-            onPressed: () async {
-              await repo.client.auth.signOut();
-            },
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      body: Row(
-        children: [
-          if (wide)
-            NavigationRail(
-              selectedIndex: page,
-              extended: true,
-              onDestinationSelected: (i) => setState(() => page = i),
-              destinations: destinations
-                  .map(
-                    (d) => NavigationRailDestination(
-                      icon: Icon(d.$1),
-                      label: Text(d.$2),
+            tooltip: tr('رابط مباشر على بطاقة NFC'),
+            onPressed: canEdit
+                ? () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => LinkWriterScreen(repo: repo, tenant: tenant),
                     ),
                   )
-                  .toList(),
-            ),
-          Expanded(child: body()),
+                : null,
+            icon: const Icon(Icons.add_link_rounded, size: 20),
+          ),
+          IconButton(
+            tooltip: tr('تحديث'),
+            onPressed: loading ? null : () => load(),
+            icon: const Icon(Icons.sync_rounded, size: 20),
+          ),
+          IconButton(
+            tooltip: tr('تسجيل الخروج'),
+            onPressed: signOut,
+            icon: const Icon(Icons.logout_rounded, size: 20),
+          ),
+          const SizedBox(width: 6),
         ],
       ),
-      bottomNavigationBar: wide
-          ? null
-          : NavigationBar(
-              selectedIndex: page,
-              onDestinationSelected: (i) => setState(() => page = i),
-              destinations: destinations
-                  .map(
-                    (d) => NavigationDestination(icon: Icon(d.$1), label: d.$2),
-                  )
-                  .toList(),
+      body: Column(
+        children: [
+          if (staffNotice != null)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.warning.withValues(alpha: 0.6)),
+              ),
+              child: Text('⚠️ $staffNotice', style: const TextStyle(height: 1.5)),
             ),
+          _workspaceBar(),
+          Expanded(child: _body()),
+        ],
+      ),
+      bottomNavigationBar: canEdit && allowed && tenant != null
+          ? NavigationBar(
+              selectedIndex: page.clamp(0, tabCount - 1).toInt(),
+              onDestinationSelected: (index) => setState(() => page = index),
+              destinations: [
+                NavigationDestination(
+                  icon: Icon(Icons.people_alt_outlined),
+                  selectedIcon: Icon(Icons.people_alt_rounded),
+                  label: tr('الأشخاص'),
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.storefront_outlined),
+                  selectedIcon: Icon(Icons.storefront_rounded),
+                  label: tr('المحلات'),
+                ),
+                if (seesNetwork)
+                  NavigationDestination(
+                    icon: Icon(Icons.hub_outlined),
+                    selectedIcon: Icon(Icons.hub_rounded),
+                    label: tr('الشبكة'),
+                  ),
+                if (isSuper)
+                  NavigationDestination(
+                    icon: Icon(Icons.insights_outlined),
+                    selectedIcon: Icon(Icons.insights_rounded),
+                    label: tr('المتابعة'),
+                  ),
+                if (isSuper)
+                  NavigationDestination(
+                    icon: Icon(Icons.shield_outlined),
+                    selectedIcon: Icon(Icons.shield_rounded),
+                    label: tr('المستخدمون'),
+                  ),
+              ],
+            )
+          : null,
     );
   }
 }

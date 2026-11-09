@@ -1,3 +1,4 @@
+import 'i18n.dart';
 class AppConfig {
   static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   // Both names are public client keys. The legacy name remains supported.
@@ -7,6 +8,11 @@ class AppConfig {
   );
   // Origin only, e.g. https://cards.customer-domain.com. Never an index.html URL.
   static const profileBase = String.fromEnvironment('PUBLIC_PROFILE_BASE_URL');
+  // Storage bucket that holds profile images. Leave empty to auto-detect the
+  // bucket at runtime and fall back to 'profile-images'.
+  static const storageBucket = String.fromEnvironment('SUPABASE_STORAGE_BUCKET');
+  // Hard limit enforced by the app; keep it in sync with the bucket limit.
+  static const imageMaxBytes = 5 * 1024 * 1024;
   static const reservedSlugs = {
     'admin',
     'api',
@@ -18,6 +24,17 @@ class AppConfig {
     'www',
     'new',
   };
+  // Field-worker accounts authenticate with a username; the app maps it to this
+  // synthetic address, which is exactly what supabase/functions/admin-workers
+  // creates. Real e-mail logins keep working unchanged.
+  static const workerDomain = 'workers.nfc-studio.internal';
+  static String? loginEmail(String input) {
+    final value = input.trim();
+    if (value.isEmpty) return null;
+    if (value.contains('@')) return value.toLowerCase();
+    return '${value.toLowerCase()}@$workerDomain';
+  }
+
   static bool validSlug(String s) =>
       s.length >= 3 &&
       s.length <= 63 &&
@@ -32,13 +49,13 @@ class AppConfig {
         uri.hasQuery ||
         uri.userInfo.isNotEmpty ||
         (uri.path.isNotEmpty && uri.path != '/')) {
-      throw const FormatException(
-        'أدخل أصل نطاق HTTPS فقط، مثل https://cards.example.com',
+      throw FormatException(
+        tr('أدخل أصل نطاق HTTPS فقط، مثل https://cards.example.com'),
       );
     }
     if (!validSlug(slug)) {
-      throw const FormatException(
-        'الاسم: 3–63 حرفاً، a-z و0-9 وشرطات مفردة فقط',
+      throw FormatException(
+        tr('الاسم: 3–63 حرفاً، a-z و0-9 وشرطات مفردة فقط'),
       );
     }
     return uri.replace(path: '/p/$slug', query: null, fragment: null);

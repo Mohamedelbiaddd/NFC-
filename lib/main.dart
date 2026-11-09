@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/app_config.dart';
+import 'core/theme.dart';
 import 'screens/auth_screen.dart';
 import 'screens/dashboard.dart';
+import 'core/i18n.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await loadAppLang();
   if (AppConfig.supabaseUrl.isEmpty || AppConfig.publishableKey.isEmpty) {
     runApp(
-      const MaterialApp(
+      MaterialApp(
         home: Scaffold(
           body: Center(
             child: Text(
-              'شغّل: flutter run --dart-define-from-file=config.json',
+              tr('شغّل: flutter run --dart-define-from-file=config.json'),
             ),
           ),
         ),
@@ -30,7 +33,7 @@ Future<void> main() async {
   } catch (e) {
     runApp(
       MaterialApp(
-        home: Scaffold(body: Center(child: Text('فشل بدء الاتصال: $e'))),
+        home: Scaffold(body: Center(child: Text(trf('فشل بدء الاتصال: {0}', [e])))),
       ),
     );
   }
@@ -39,36 +42,23 @@ Future<void> main() async {
 class NfcStudio extends StatelessWidget {
   const NfcStudio({super.key});
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    debugShowCheckedModeBanner: false,
-    title: 'NFC Studio',
-    locale: const Locale('ar'),
-    supportedLocales: const [Locale('ar'), Locale('en')],
-    localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    theme: ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF9D8DFF),
-        brightness: Brightness.dark,
+  Widget build(BuildContext context) => ValueListenableBuilder<String>(
+    valueListenable: appLang,
+    builder: (context, lang, _) => MaterialApp(
+      key: ValueKey(lang),
+      debugShowCheckedModeBanner: false,
+      title: 'NFC Studio',
+      locale: Locale(lang),
+      supportedLocales: const [Locale('ar'), Locale('fr'), Locale('en')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      theme: AppTheme.dark(),
+      home: StreamBuilder<AuthState>(
+        stream: Supabase.instance.client.auth.onAuthStateChange,
+        builder: (context, snapshot) =>
+            Supabase.instance.client.auth.currentSession == null
+            ? const AuthScreen()
+            : const Dashboard(),
       ),
-      scaffoldBackgroundColor: const Color(0xFF0D1020),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: const Color(0xFF1A1F35),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-      cardTheme: CardThemeData(
-        color: const Color(0xFF181D32),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-    ),
-    home: StreamBuilder<AuthState>(
-      stream: Supabase.instance.client.auth.onAuthStateChange,
-      builder: (context, snapshot) =>
-          Supabase.instance.client.auth.currentSession == null
-          ? const AuthScreen()
-          : const Dashboard(),
     ),
   );
 }

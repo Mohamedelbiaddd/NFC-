@@ -1,0 +1,155 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'i18n.dart';
+
+import 'repository.dart';
+
+/// A readable failure coming from an Edge Function or the database.
+class WorkerException implements Exception {
+  WorkerException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// Team accounts and the audit trail. Both are served by SECURITY DEFINER RPCs
+/// so a worker never sees another workspace's data.
+class WorkersService {
+  WorkersService(this.client);
+
+  final SupabaseClient client;
+
+  Future<List<Json>> overview(String tenant) async => _rows(
+    await client.rpc('nfc_team_overview', params: {'workspace_id': tenant}),
+  );
+
+  Future<List<Json>> activity(String tenant, {int limit = 120}) async => _rows(
+    await client.rpc(
+      'nfc_activity_feed',
+      params: {'workspace_id': tenant, 'max_rows': limit},
+    ),
+  );
+
+  /// Every account in the project. Super administrators only (the server
+  /// raises 'Not authorized' for anybody else).
+  Future<List<Json>> allUsers({String? term}) async => _rows(
+    await client.rpc('nfc_all_users', params: {'term': term}),
+  );
+
+  /// Everything one account produced: profiles it created, its activity and
+  /// its workspaces (super administrators only).
+  Future<Json> userDetail(String userId) async {
+    final value = await client.rpc(
+      'nfc_admin_user_detail',
+      params: {'target_id': userId},
+    );
+    return value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
+  }
+
+  /// Per-profile scan counters for one workspace.
+  Future<List<Json>> scanOverview(String tenant) async => _rows(
+    await client.rpc('nfc_scan_overview', params: {'workspace_id': tenant}),
+  );
+
+  /// Ban or unban any account (super administrator only).
+  Future<void> setUserBanned({
+    required String userId,
+    required bool banned,
+  }) async {
+    try {
+      await client.rpc(
+        'nfc_admin_set_user_state',
+        params: {'target_id': userId, 'banned': banned},
+      );
+    } catch (e) {
+      final match = RegExp(r'message\W+(.+)').firstMatch(e.toString());
+      throw WorkerException(match?.group(1)?.trim() ?? userError(e));
+    }
+  }
+
+  Future<void> createWorker({
+    required String tenant,
+    required String username,
+    required String displayName,
+    required String password,
+    String role = 'editor',
+  }) => _invoke({
+    'action': 'create',
+    'workspace_id': tenant,
+    'username': username,
+    'display_name': displayName,
+    'password': password,
+    'role': role,
+  });
+
+  Future<void> resetPassword({
+    required String tenant,
+    required String workerId,
+    required String password,
+  }) => _invoke({
+    'action': 'reset_password',
+    'workspace_id': tenant,
+    'worker_id': workerId,
+    'password': password,
+  });
+
+  Future<void> setDisabled({
+    required String tenant,
+    required String workerId,
+    required bool disabled,
+  }) => _invoke({
+    'action': 'set_disabled',
+    'workspace_id': tenant,
+    'worker_id': workerId,
+    'disabled': disabled,
+  });
+
+  Future<void> deleteWorker({
+    required String tenant,
+    required String workerId,
+  }) => _invoke({
+    'action': 'delete',
+    'workspace_id': tenant,
+    'worker_id': workerId,
+  });
+
+  Future<Json> _invoke(Map<String, dynamic> body) async {
+    try {
+      final response = await client.functions.invoke(
+        'admin-workers',
+        body: body,
+      );
+      final data = response.data;
+      if (response.status >= 400) {
+        throw WorkerException(_errorMessage(data, response.status));
+      }
+      return data is Map
+          ? Map<String, dynamic>.from(data)
+          : <String, dynamic>{};
+    } catch (e) {
+      if (e is WorkerException) rethrow;
+      final match = RegExp(r'"error"\s*:\s*"([^"]+)"').firstMatch(e.toString());
+      throw WorkerException(
+        match?.group(1) ??
+            tr('تعذّر تنفيذ الطلب. تحقق من الاتصال ثم أعد المحاولة.'),
+      );
+    }
+  }
+
+  String _errorMessage(dynamic data, int status) {
+    if (data is Map && data['error'] != null) return '${data['error']}';
+    if (status == 401) return tr('انتهت الجلسة. سجّل الدخول من جديد.');
+    if (status == 403) return tr('لا تملك صلاحية هذه العملية.');
+    return trf('فشل الطلب (رمز {0}).', [status]);
+  }
+
+  List<Json> _rows(dynamic data) {
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    return const [];
+  }
+}

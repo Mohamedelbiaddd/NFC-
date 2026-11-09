@@ -1,1 +1,64 @@
-{"rewrites":[{"source":"/p/:slug","destination":"/index.html"}],"headers":[{"source":"/p/:slug","headers":[{"key":"Cache-Control","value":"no-store"}]}]}
+{
+  "buildCommand": "node generate-config.mjs",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/p/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/c/:slug",
+      "destination": "/card.html"
+    },
+    {
+      "source": "/s/:slug",
+      "destination": "/shop.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/config.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/p/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/c/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/s/:slug",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ]
+}
