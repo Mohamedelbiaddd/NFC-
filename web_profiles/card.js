@@ -173,6 +173,7 @@ function render() {
   const info = infoPanel(); if (info) parts.push(info);
   const strip = bannerStrip(shop, config);
   if (strip) { const p = el('div', undefined, 'panel'); p.append(el('h2', `📸 ${t('gallery')}`), strip); parts.push(p); }
+  if (customer && !/iPhone|iPad|iPod/i.test(navigator.userAgent)) parts.push(walletButton());
   if (customer) {
     const home = el('button', t('addHome'), 'btn ghost'); home.type = 'button';
     home.addEventListener('click', addToHome);
@@ -181,6 +182,30 @@ function render() {
   parts.push(el('p', 'NFC Studio', 'legal'));
   root.replaceChildren(...parts);
   fresh = -1;
+}
+
+async function wallet(action) {
+  const res = await fetch(`${config.supabaseUrl}/functions/v1/wallet-pass`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', apikey: config.publishableKey,
+      Authorization: `Bearer ${config.publishableKey}`},
+    body: JSON.stringify({action, slug, token: storage(tokenKey), lang}),
+  });
+  return res.json().catch(() => ({ok: false}));
+}
+
+function walletButton() {
+  const btn = el('button', t('wallet'), 'btn wallet'); btn.type = 'button';
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      const r = await wallet('save');
+      if (r?.ok && r.url) { location.href = r.url; return; }
+      toast(r?.error === 'not_configured' ? t('walletSoon') : t('walletError'));
+    } catch { toast(t('walletError')); }
+    btn.disabled = false;
+  });
+  return btn;
 }
 
 function sheet() {
@@ -250,7 +275,7 @@ async function start() {
         if (r?.error === 'card') storage(tokenKey, null);
         else {
           customer = r.customer;
-          if (r.ok) { notice = {kind: 'green', text: r.free ? t('stampedFree') : t('stamped')}; fresh = r.free ? -1 : customer.stamps - 1; }
+          if (r.ok) { notice = {kind: 'green', text: r.free ? t('stampedFree') : t('stamped')}; fresh = r.free ? -1 : customer.stamps - 1; wallet('sync').catch(() => {}); }
           else notice = {kind: 'amber', text: r.error === 'too_soon' ? t('tooSoon') : t('codeExpired')};
         }
       }
