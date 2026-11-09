@@ -111,7 +111,9 @@ function bizCard() {
     }
     body.append(grid);
   }
-  body.append(points());
+  // Loyalty points only for members, or for someone who just scanned the
+  // shop's live QR to join; the public page shows the shop details only.
+  if (customer || pendingCode) body.append(points());
   card.append(body);
   return card;
 }
@@ -312,6 +314,10 @@ function render() {
     parts.push(home);
   } else if (pendingCode) {
     parts.push(joinPanel());
+  } else {
+    const home = el('button', t('saveShop'), 'btn ghost'); home.type = 'button';
+    home.addEventListener('click', addToHome);
+    parts.push(home);
   }
   const pics = gallery(); if (pics) parts.push(pics);
   const info = infoPanel(); if (info) parts.push(info);
