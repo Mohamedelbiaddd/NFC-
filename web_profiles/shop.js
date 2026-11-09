@@ -1,7 +1,7 @@
 import qrcode from '/qrcode.mjs';
 import {t, lang, applyLang, langSwitcher, ago} from '/i18n.mjs';
 import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage, industry, safeImage,
-  numbersRow, initials, formatDate, unit} from '/loyalty.mjs';
+  numbersRow, initials, formatDate, unit, dayName, validWeek} from '/loyalty.mjs';
 
 const root = document.getElementById('app');
 const langs = document.getElementById('langs');
@@ -384,8 +384,33 @@ function settingsView() {
   // Shop info
   const info = el('div', undefined, 'panel');
   info.append(el('h2', `🏪 ${t('shopInfo')}`));
-  const name = field(t('shopName'), s.name), phone = field(t('phone'), s.phone, 'tel'), address = field(t('address'), s.address), hours = field(`🕒 ${t('hours')}`, s.hours, 'textarea');
-  info.append(name.wrap, phone.wrap, address.wrap, hours.wrap);
+  const name = field(t('shopName'), s.name), phone = field(t('phone'), s.phone, 'tel'), address = field(t('address'), s.address);
+  info.append(name.wrap, phone.wrap, address.wrap);
+  // Weekly hours: one row per day, Monday first.
+  const weekPanel = el('div', undefined, 'panel');
+  weekPanel.append(el('h2', `🕒 ${t('hours')}`), el('p', t('weekNote'), 'muted small'));
+  const week = validWeek(s.week_hours) ? s.week_hours.map(d => d ? {...d} : null) : Array.from({length: 7}, () => ({o: '09:00', c: '21:00'}));
+  const weekRows = [];
+  const timeInput = v => { const i = el('input'); i.type = 'time'; i.className = 'field time'; i.value = v; return i; };
+  week.forEach((d, i) => {
+    const row = el('div', undefined, 'week-edit');
+    const toggle = el('input'); toggle.type = 'checkbox'; toggle.checked = !!d;
+    const lbl = el('label', undefined, 'day'); lbl.append(toggle, el('span', dayName(i, lang)));
+    const o = timeInput(d?.o ?? '09:00'), c = timeInput(d?.c ?? '21:00');
+    const off = el('span', t('dayOff'), 'off');
+    const sync = () => { o.hidden = c.hidden = !toggle.checked; off.hidden = toggle.checked; };
+    toggle.addEventListener('change', sync); sync();
+    row.append(lbl, o, c, off);
+    weekRows.push({toggle, o, c});
+    weekPanel.append(row);
+  });
+  const copy = el('button', t('copyMonday'), 'btn ghost small'); copy.type = 'button';
+  copy.addEventListener('click', () => {
+    const m = weekRows[0];
+    for (const r of weekRows.slice(1)) { r.toggle.checked = m.toggle.checked; r.o.value = m.o.value; r.c.value = m.c.value; r.toggle.dispatchEvent(new Event('change')); }
+  });
+  weekPanel.append(copy);
+  const weekValue = () => weekRows.map(r => r.toggle.checked && r.o.value && r.c.value ? {o: r.o.value.slice(0, 5), c: r.c.value.slice(0, 5)} : null);
   // Loyalty rules
   const rules = el('div', undefined, 'panel');
   rules.append(el('h2', `🎁 ${t('loyaltyRules')}`));
@@ -472,7 +497,7 @@ function settingsView() {
     save.disabled = true;
     try {
       const r = await rpc(config, 'nfc_shop_update', {target_slug: slug, session: session(), settings: {
-        name: name.input.value, phone: phone.input.value, address: address.input.value, hours: hours.input.value,
+        name: name.input.value, phone: phone.input.value, address: address.input.value, week_hours: weekValue(),
         goal: String(Math.min(50, Math.max(1, parseInt(goal.input.value, 10) || 5))), reward: reward.input.value,
         banners, card_background: background,
         radius_m: String(Math.min(1000, Math.max(50, parseInt(radius.input.value, 10) || 200))),
@@ -503,7 +528,7 @@ function settingsView() {
     storage(sessionKey, null); loginView();
   });
   sec.append(oldP.wrap, newP.wrap, change, out);
-  return [info, rules, design, promo, loc, save, sec];
+  return [info, weekPanel, rules, design, promo, loc, save, sec];
 }
 
 function suspendedView() {

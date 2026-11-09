@@ -113,12 +113,19 @@ Deno.serve(async (req) => {
   const lang = ['ar', 'fr', 'en'].includes(String(body.lang)) ? String(body.lang) : 'ar';
   if (!SLUG.test(slug) || !TOKEN.test(cardToken)) return json({ok: false, error: 'card'}, 400);
 
-  const rawKey = Deno.env.get('GOOGLE_WALLET_KEY');
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+    auth: {persistSession: false},
+  });
+  // The key comes from the function secret, or else from the private
+  // nfc_private.app_secrets table (service role only).
+  let rawKey = Deno.env.get('GOOGLE_WALLET_KEY');
   if (!rawKey) {
-    // Names only (never values) so a misspelt secret is easy to spot.
-    const names = Object.keys(Deno.env.toObject()).filter((n) => /WALLET|GOOGLE/i.test(n));
-    console.error(`GOOGLE_WALLET_KEY missing; similar secrets: ${names.join(', ') || 'none'}`);
-    return json({ok: false, error: 'not_configured', similar: names}, 503);
+    const {data} = await db.rpc('nfc_app_secret', {secret_name: 'GOOGLE_WALLET_KEY'});
+    if (typeof data === 'string' && data) rawKey = data;
+  }
+  if (!rawKey) {
+    console.error('GOOGLE_WALLET_KEY missing (secret and app_secrets)');
+    return json({ok: false, error: 'not_configured'}, 503);
   }
   let key: ServiceKey;
   try {
@@ -129,9 +136,6 @@ Deno.serve(async (req) => {
     return json({ok: false, error: 'bad_key'}, 500);
   }
 
-  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
-    auth: {persistSession: false},
-  });
   const {data: shop} = await db
     .from('nfc_businesses')
     .select('id, name, shop_slug, primary_color, loyalty_goal, loyalty_reward, loyalty_enabled, suspended, phone, address, card_background, latitude, longitude')

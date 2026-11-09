@@ -145,3 +145,39 @@ export function formatDate(iso, lang) {
     return iso;
   }
 }
+
+/* ---------- Weekly opening hours (Monday first) ---------- */
+const MONDAY = new Date(Date.UTC(2024, 0, 1, 12)); // a Monday
+
+export function dayName(i, lng, style = 'long') {
+  const d = new Date(MONDAY.getTime() + i * 86400000);
+  try { return new Intl.DateTimeFormat(lng === 'ar' ? 'ar-MA' : lng, {weekday: style, timeZone: 'UTC'}).format(d); }
+  catch { return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]; }
+}
+
+export const todayIndex = () => (new Date().getDay() + 6) % 7;
+
+export function validWeek(week) {
+  return Array.isArray(week) && week.length === 7;
+}
+
+/** true / false when the week is known, null otherwise. */
+export function openNow(week) {
+  if (!validWeek(week)) return null;
+  const now = new Date();
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const toMin = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+  const today = week[todayIndex()];
+  const yesterday = week[(todayIndex() + 6) % 7];
+  if (today) {
+    const o = toMin(today.o), c = toMin(today.c);
+    if (c > o ? minutes >= o && minutes < c : minutes >= o || minutes < c) {
+      if (c > o || minutes >= o) return true;
+    }
+  }
+  if (yesterday) {
+    const o = toMin(yesterday.o), c = toMin(yesterday.c);
+    if (c <= o && minutes < c) return true; // open past midnight
+  }
+  return false;
+}

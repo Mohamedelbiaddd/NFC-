@@ -1,6 +1,6 @@
 import {t, lang, applyLang, langSwitcher} from '/i18n.mjs';
 import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage, bannerStrip, industry, unit,
-  slotsGrid, safeImage, formatDate} from '/loyalty.mjs';
+  slotsGrid, safeImage, formatDate, dayName, todayIndex, validWeek, openNow} from '/loyalty.mjs';
 
 const root = document.getElementById('app');
 const langs = document.getElementById('langs');
@@ -151,7 +151,19 @@ function infoPanel() {
     else row.append(el('p', text));
     panel.append(row);
   };
-  if (shop.hours) add('🕒', `${t('hours')}\n${shop.hours}`);
+  if (validWeek(shop.week_hours)) {
+    const box = el('div', undefined, 'week');
+    const open = openNow(shop.week_hours) && !shop.closed;
+    const head = el('div', undefined, 'week-head');
+    head.append(el('strong', `🕒 ${t('hours')}`), el('span', open ? `● ${t('openNow')}` : `● ${t('closedNow')}`, open ? 'chip green' : 'chip red'));
+    box.append(head);
+    shop.week_hours.forEach((d, i) => {
+      const row = el('div', undefined, 'week-row' + (i === todayIndex() ? ' today' : ''));
+      row.append(el('span', dayName(i, lang)), el('span', d ? `${d.o} – ${d.c}` : t('dayOff'), d ? 'time' : 'off'));
+      box.append(row);
+    });
+    panel.append(box);
+  } else if (shop.hours) add('🕒', `${t('hours')}\n${shop.hours}`);
   if (shop.address) add('📍', shop.address);
   if (shop.latitude != null) add('🧭', t('directions'), `https://www.google.com/maps/search/?api=1&query=${shop.latitude},${shop.longitude}`);
   if (shop.phone && /^[+0-9 ()-]{3,40}$/.test(shop.phone)) add('📞', shop.phone, 'tel:' + shop.phone.replace(/[^+0-9]/g, ''));
