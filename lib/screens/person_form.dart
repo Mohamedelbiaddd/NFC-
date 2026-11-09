@@ -13,7 +13,7 @@ import '../core/repository.dart';
 import '../core/storage_service.dart';
 import '../core/theme.dart';
 import 'catalog_editor.dart';
-import 'shops_tab.dart' show ShopForm;
+import 'shops_tab.dart' show ShopForm, showShopAccess;
 
 /// One clear form for adding or editing a person (vCard) or another card kind.
 /// Image picking/uploads, slug suggestion and publishing live here so the
@@ -245,7 +245,10 @@ class _PersonFormState extends State<PersonForm> {
         await storage.deleteImage(removed);
       }
       final code = pin.text.trim();
-      if (code.isNotEmpty && id != null) {
+      final shopSlug = _shopSlug;
+      if (code.isNotEmpty && shopSlug != null) {
+        await _setShopPassword(shopSlug, code);
+      } else if (code.isNotEmpty && id != null) {
         await widget.repo.setProfilePin(id, code);
       }
       if (mounted) Navigator.pop(context, true);
@@ -366,6 +369,82 @@ class _PersonFormState extends State<PersonForm> {
         ),
       ),
     );
+  }
+
+  /// Slug of the shop this loyalty card points to (…/c/<slug>), if any.
+  String? get _shopSlug {
+    if (kind != 'loyalty') return null;
+    final url = extra['loyalty_url']?.text.trim() ?? '';
+    return RegExp(r'/c/([a-z0-9]+(?:-[a-z0-9]+)*)/?$').firstMatch(url)?.group(1);
+  }
+
+  /// For a loyalty card linked to a shop, the "code" is the shop owner's
+  /// password used on the shop page (4 taps on the photo), not a card PIN.
+  Widget _shopOwnerSection() => Container(
+    margin: const EdgeInsets.only(top: 8),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: AppColors.surfaceHigh,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: AppColors.border),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.key_rounded, size: 18, color: AppColors.accent),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                tr('كلمة مرور صاحب المحل'),
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          tr('يفتح صاحب المحل صفحته، ويضغط 4 مرات على صورته، ثم يكتب كلمة المرور هذه. تغييرها يلغي القفل بعد 3 محاولات خاطئة.'),
+          style: TextStyle(fontSize: 11.5, color: AppColors.muted, height: 1.5),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: pin,
+          textDirection: TextDirection.ltr,
+          maxLength: 72,
+          decoration: InputDecoration(
+            labelText: tr('كلمة مرور جديدة (اتركها فارغة للإبقاء على الحالية)'),
+            counterText: '',
+            suffixIcon: IconButton(
+              tooltip: tr('توليد'),
+              onPressed: locked ? null : () => setState(() => pin.text = ShopsService.randomPassword()),
+              icon: const Icon(Icons.casino_outlined),
+            ),
+          ),
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty || text.length >= 6) return null;
+            return tr('6 أحرف على الأقل');
+          },
+        ),
+      ],
+    ),
+  );
+
+  /// Sets the shop owner's password and shows it with the WhatsApp message.
+  Future<void> _setShopPassword(String slug, String password) async {
+    final shops = await NetworkService(widget.repo.client).shops();
+    final shop = shops.where((s) => '${s['shop_slug']}' == slug).firstOrNull;
+    if (shop == null) throw Exception(tr('لم أجد هذا المحل في شبكتك.'));
+    await ShopsService(widget.repo.client).setup(
+      businessId: '${shop['id']}',
+      slug: slug,
+      goal: (shop['goal'] as num?)?.toInt() ?? 5,
+      reward: '${shop['reward'] ?? ''}',
+      password: password,
+    );
+    if (mounted) await showShopAccess(context, shop, password);
   }
 
   Widget _ownerSection() => Container(
@@ -701,7 +780,7 @@ class _PersonFormState extends State<PersonForm> {
                     style: TextStyle(fontSize: 12, color: AppColors.muted),
                   ),
                 ),
-                _ownerSection(),
+                _shopSlug != null ? _shopOwnerSection() : _ownerSection(),
                 ExpansionTile(
                   tilePadding: EdgeInsets.zero,
                   childrenPadding: const EdgeInsets.only(bottom: 4),

@@ -2,6 +2,11 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 const Map<String, String> frStrings = {
+  'كلمة مرور صاحب المحل': 'Mot de passe du propriétaire',
+  'يفتح صاحب المحل صفحته، ويضغط 4 مرات على صورته، ثم يكتب كلمة المرور هذه. تغييرها يلغي القفل بعد 3 محاولات خاطئة.': 'Le propriétaire ouvre sa page, touche 4 fois sa photo et tape ce mot de passe. Le changer lève le blocage après 3 essais.',
+  'كلمة مرور جديدة (اتركها فارغة للإبقاء على الحالية)': 'Nouveau mot de passe (vide = garder l’actuel)',
+  'توليد': 'Générer',
+  '6 أحرف على الأقل': '6 caractères minimum',
   '🔑 تغيير كلمة مرور صاحب المحل': '🔑 Changer le mot de passe du propriétaire',
   'لم أجد هذا المحل في شبكتك.': 'Magasin introuvable dans votre réseau.',
   '⛔ أُوقف دخول صاحب محل بعد 3 محاولات خاطئة': '⛔ Accès d’un propriétaire bloqué après 3 essais',
@@ -489,6 +494,11 @@ const Map<String, String> frStrings = {
 };
 
 const Map<String, String> enStrings = {
+  'كلمة مرور صاحب المحل': 'Shop owner password',
+  'يفتح صاحب المحل صفحته، ويضغط 4 مرات على صورته، ثم يكتب كلمة المرور هذه. تغييرها يلغي القفل بعد 3 محاولات خاطئة.': 'The owner opens his page, taps his photo 4 times and types this password. Changing it lifts the 3-try lock.',
+  'كلمة مرور جديدة (اتركها فارغة للإبقاء على الحالية)': 'New password (leave empty to keep the current one)',
+  'توليد': 'Generate',
+  '6 أحرف على الأقل': 'At least 6 characters',
   '🔑 تغيير كلمة مرور صاحب المحل': '🔑 Change the shop owner password',
   'لم أجد هذا المحل في شبكتك.': 'Shop not found in your network.',
   '⛔ أُوقف دخول صاحب محل بعد 3 محاولات خاطئة': '⛔ Owner access blocked after 3 wrong tries',
