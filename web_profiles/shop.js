@@ -77,7 +77,7 @@ function notifyBookings(list) {
     for (const k of list) {
       if (k.status === 'booked' && !knownBookings.has(k.id)) {
         beep();
-        const msg = t('newBooking', {name: k.customer, service: k.service, day: k.day, time: k.time});
+        const msg = t('newBooking', {name: k.customer, service: svcLabel(k.service), day: k.day, time: k.time});
         toast(msg);
         try {
           if (document.visibilityState !== 'visible' && window.Notification?.permission === 'granted') new Notification(data.shop.name, {body: msg});
@@ -88,26 +88,46 @@ function notifyBookings(list) {
   knownBookings = ids;
 }
 
+const svcLabel = (name) => name === 'موعد' ? t('appointment') : name;
+let bookDay = null;  // the day picked in the week strip (YYYY-MM-DD)
+
+function localIso(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// The week ahead: one button per day with how many people booked it, and
+// under it the list of that day — time, name, phone and service.
 function bookingsPanel() {
-  const list = (data.bookings ?? []);
+  const active = (data.bookings ?? []).filter(k => k.status === 'booked');
   const panel = el('div', undefined, 'panel');
   panel.append(el('h2', `📅 ${t('appointments')}`));
-  const active = list.filter(k => k.status === 'booked');
-  if (!active.length) { panel.append(el('p', t('noAppointments'), 'muted small')); return panel; }
-  const today = new Date().toISOString().slice(0, 10);
-  let lastDay = '';
-  for (const k of active) {
-    if (k.day !== lastDay) {
-      lastDay = k.day;
-      let label = k.day;
-      try { label = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang, {weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC'}).format(new Date(k.day + 'T12:00:00Z')); } catch { /* keep iso */ }
-      panel.append(el('h3', (k.day === today ? `${t('todayLabel')} · ` : '') + label, 'appt-day'));
-    }
+  const today = localIso(new Date());
+  if (!bookDay || bookDay < today) bookDay = today;
+  const strip = el('div', undefined, 'week-strip');
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(); d.setDate(d.getDate() + i);
+    const iso = localIso(d);
+    const n = active.filter(k => k.day === iso).length;
+    const b = el('button', undefined, 'week-day' + (iso === bookDay ? ' on' : '') + (n ? ' has' : '')); b.type = 'button';
+    let wd = '';
+    try { wd = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang, {weekday: 'short'}).format(d); } catch { /* none */ }
+    b.append(el('small', i === 0 ? t('todayLabel') : wd), el('b', String(d.getDate())), el('span', n ? String(n) : '·', 'week-n'));
+    b.addEventListener('click', () => { bookDay = iso; panel.replaceWith(bookingsPanel()); });
+    strip.append(b);
+  }
+  panel.append(strip);
+  const later = active.filter(k => k.day > localIso(new Date(Date.now() + 6 * 864e5))).length;
+  const list = active.filter(k => k.day === bookDay).sort((a, b) => a.time.localeCompare(b.time));
+  if (!list.length) panel.append(el('p', t('noAppointmentsDay'), 'muted small'));
+  for (const k of list) {
     const row = el('div', undefined, 'appt');
     const info = el('div');
     const who = el('b', `${k.time} · ${k.customer}`);
-    const tel = el('a', k.phone, 'small'); tel.href = 'tel:' + String(k.phone).replace(/[^+0-9]/g, ''); tel.dir = 'ltr';
-    info.append(who, el('span', `${k.service} · ${k.minutes} ${t('min')}`, 'small muted'), tel);
+    info.append(who, el('span', `${svcLabel(k.service)} · ${k.minutes} ${t('min')}`, 'small muted'));
+    if (k.phone) {
+      const tel = el('a', `📞 ${k.phone}`, 'small'); tel.href = 'tel:' + String(k.phone).replace(/[^+0-9]/g, ''); tel.dir = 'ltr';
+      info.append(tel);
+    }
     const btns = el('div', undefined, 'appt-btns');
     for (const [st, label, cls] of [['done', '✓', 'green'], ['no_show', t('noShowShort'), 'ghost'], ['cancelled', '✕', 'red']]) {
       const b = el('button', label, 'btn small ' + cls); b.type = 'button';
@@ -125,6 +145,7 @@ function bookingsPanel() {
     row.append(info, btns);
     panel.append(row);
   }
+  if (later) panel.append(el('p', t('laterBookings', {n: later}), 'muted small'));
   return panel;
 }
 

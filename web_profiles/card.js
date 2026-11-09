@@ -280,8 +280,8 @@ function loyaltyCard() {
 function joinPanel() {
   const panel = el('div', undefined, 'panel');
   panel.append(el('h2', `✨ ${t('join')}`), el('p', t('joinText'), 'muted small'));
-  const name = el('input'); name.className = 'field'; name.placeholder = t('name'); name.autocomplete = 'name'; name.maxLength = 80;
-  const phone = el('input'); phone.className = 'field'; phone.placeholder = t('phone'); phone.type = 'tel'; phone.autocomplete = 'tel'; phone.inputMode = 'tel'; phone.dir = 'ltr';
+  const name = el('input'); name.className = 'field'; name.placeholder = t('fullName'); name.autocomplete = 'name'; name.maxLength = 80;
+  const phone = el('input'); phone.className = 'field'; phone.placeholder = t('phoneForCall'); phone.type = 'tel'; phone.autocomplete = 'tel'; phone.inputMode = 'tel'; phone.dir = 'ltr';
   const btn = el('button', t('joinBtn'), 'btn'); btn.type = 'button';
   btn.addEventListener('click', async () => {
     if (!name.value.trim()) { toast(t('badName'), true); return; }
@@ -498,7 +498,11 @@ function detailsStep(panel, done, title = `📅 ${t('bookBtn')}`, note = t('your
   panel.append(name, phone, go);
 }
 
+const svcLabel = (name) => name === 'موعد' ? t('appointment') : name;
+
 function bookingSheet() {
+  const svcs = shop.book_services ?? shop.services ?? [];
+  const svcName = (svc) => svc.id === 'visit' ? t('appointment') : svc.name;
   const {box, panel} = sheet();
   panel.classList.add('book');
   if (!storage(tokenKey)) { detailsStep(panel, () => { render(); servicesStep(); }); return; }
@@ -512,11 +516,13 @@ function bookingSheet() {
   servicesStep();
 
   function servicesStep() {
+    // Only one service (or none listed): go straight to choosing the day.
+    if (svcs.length === 1) { dayStep(svcs[0]); return; }
     panel.replaceChildren(el('h2', `📅 ${t('bookBtn')}`), el('p', t('chooseService'), 'muted small'));
     const list = el('div', undefined, 'book-list');
-    for (const svc of shop.services ?? []) {
+    for (const svc of svcs) {
       const b = el('button', undefined, 'book-svc'); b.type = 'button';
-      b.append(el('b', svc.name), el('span', [`${svc.minutes} ${t('min')}`, svc.price].filter(Boolean).join(' · ')));
+      b.append(el('b', svcName(svc)), el('span', [`${svc.minutes} ${t('min')}`, svc.price].filter(Boolean).join(' · ')));
       b.addEventListener('click', () => dayStep(svc));
       list.append(b);
     }
@@ -524,7 +530,7 @@ function bookingSheet() {
   }
 
   function dayStep(svc) {
-    panel.replaceChildren(el('h2', svc.name), el('p', t('chooseDay'), 'muted small'));
+    panel.replaceChildren(el('h2', `📅 ${svcName(svc)}`), el('p', t('chooseDay'), 'muted small'));
     const days = el('div', undefined, 'book-days');
     const week = shop.week_hours;
     const start = new Date();
@@ -538,18 +544,19 @@ function bookingSheet() {
     }
     const back = el('button', `← ${t('back')}`, 'btn ghost small'); back.type = 'button';
     back.addEventListener('click', servicesStep);
-    panel.append(days, back);
+    panel.append(days);
+    if (svcs.length > 1) panel.append(back);
   }
 
   async function timeStep(svc, day) {
-    panel.replaceChildren(el('h2', svc.name), el('p', fmtDay(day), 'muted'), el('div', undefined, 'spinner'));
+    panel.replaceChildren(el('h2', svcName(svc)), el('p', fmtDay(day), 'muted'), el('div', undefined, 'spinner'));
     const back = el('button', `← ${t('back')}`, 'btn ghost small'); back.type = 'button';
     back.addEventListener('click', () => dayStep(svc));
     let r;
     try { r = await rpc(config, 'nfc_booking_slots', {target_slug: slug, service_id: svc.id, day}); }
-    catch { panel.replaceChildren(el('h2', svc.name), el('p', t('bookErr'), 'banner red'), back); return; }
+    catch { panel.replaceChildren(el('h2', svcName(svc)), el('p', t('bookErr'), 'banner red'), back); return; }
     const slots = r?.ok ? r.slots ?? [] : [];
-    panel.replaceChildren(el('h2', svc.name), el('p', `${fmtDay(day)} · ${t('chooseTime')}`, 'muted small'));
+    panel.replaceChildren(el('h2', svcName(svc)), el('p', `${fmtDay(day)} · ${t('chooseTime')}`, 'muted small'));
     if (!r?.ok || !slots.length) {
       panel.append(el('p', r?.ok ? t('noSlots') : t('bookErr'), 'banner amber'), back);
       return;
@@ -591,7 +598,7 @@ function bookingSheet() {
   function success(k) {
     panel.replaceChildren();
     const ok = el('div', undefined, 'book-ok');
-    ok.append(el('div', '✓', 'book-check'), el('h2', t('booked')), el('p', k.service, 'book-big'),
+    ok.append(el('div', '✓', 'book-check'), el('h2', t('booked')), el('p', svcLabel(k.service), 'book-big'),
       el('p', `${fmtDay(k.day)} · ${k.time}`, 'book-big'));
     const close = el('button', t('ok'), 'btn'); close.type = 'button';
     close.addEventListener('click', () => { box.remove(); render(); });
@@ -614,7 +621,7 @@ function myBookingPanel() {
   }
   const status = k.status === 'booked' && !k.upcoming ? 'now' : k.status;
   const card = el('div', undefined, 'book-card ' + k.status);
-  card.append(el('b', k.service), el('span', `${fmtDay(k.day)} · ${k.time}`, 'bc-ltr-auto'),
+  card.append(el('b', svcLabel(k.service)), el('span', `${fmtDay(k.day)} · ${k.time}`, 'bc-ltr-auto'),
     el('span', t('status_' + status), 'chip ' + (k.status === 'booked' ? 'green' : k.status === 'cancelled' ? 'red' : '')));
   if (k.status === 'cancelled' && k.cancelled_by === 'owner') card.append(el('p', t('cancelledByShop'), 'small muted'));
   panel.append(card);
@@ -622,7 +629,7 @@ function myBookingPanel() {
     const cancel = el('button', t('cancelBooking'), 'btn ghost'); cancel.type = 'button';
     cancel.addEventListener('click', () => {
       const {box, panel: p} = sheet();
-      p.append(el('h2', t('cancelBooking')), el('p', `${k.service} · ${fmtDay(k.day)} · ${k.time}`), el('p', t('cancelConfirm'), 'muted'));
+      p.append(el('h2', t('cancelBooking')), el('p', `${svcLabel(k.service)} · ${fmtDay(k.day)} · ${k.time}`), el('p', t('cancelConfirm'), 'muted'));
       const yes = el('button', t('cancelYes'), 'btn red'); yes.type = 'button';
       const no = el('button', t('cancelNo'), 'btn ghost'); no.type = 'button';
       no.addEventListener('click', () => box.remove());

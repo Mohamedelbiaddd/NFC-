@@ -493,3 +493,12 @@ a.bc-phone { color: inherit; text-decoration: none; }
 .ad-full .ad-bars { top: max(12px, env(safe-area-inset-top)); }
 .ad-close { position: fixed; top: max(26px, calc(env(safe-area-inset-top) + 16px)); right: 14px; z-index: 81; width: 40px; height: 40px; border-radius: 50%; border: 0; background: #0008; color: #fff; font-size: 20px; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .ad-track { transition: none; } }
+
+/* Owner: the week ahead with booking counts */
+.week-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 4px 0 14px; }
+.week-day { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border-radius: 14px; border: 1px solid var(--line-2); background: var(--panel-2); color: var(--text); cursor: pointer; font: inherit; }
+.week-day small { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.week-day b { font-size: 18px; }
+.week-n { font-size: 12px; font-weight: 800; color: var(--muted); }
+.week-day.has .week-n { min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--primary); color: var(--t-ink, #111); }
+.week-day.on { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary) inset; }
