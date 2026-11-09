@@ -91,7 +91,7 @@ class NetworkService {
 
   /// Super admin: may this agent add people / manage them.
   Future<void> setPermissions(String userId, {bool? canAdd, bool? canManage}) async {
-    await _ok(await client.rpc('nfc_admin_set_staff_perms',
+    _ok(await client.rpc('nfc_admin_set_staff_perms',
         params: {'target': userId, 'can_add': canAdd, 'can_manage': canManage}));
   }
 
