@@ -44,6 +44,8 @@ function zoom(src){
 
 function render(p,config){
  if(!p||!p.business||!p.data){status('الملف غير متاح','قد يكون غير منشور أو تم حذفه.');return;}
+ // A loyalty card linked to one of our shops opens the shop page directly.
+ if(p.kind==='loyalty'){try{const u=new URL(p.data.loyalty_url);if(u.origin===location.origin&&/^\/c\/[a-z0-9-]+$/.test(u.pathname)){location.replace(u.pathname);return;}}catch{}}
  state.profile=p;
  const b=p.business,d=p.data;
  for(const key of ['primary_color','accent_color'])if(/^#[0-9a-f]{6}$/i.test(b[key]??''))document.documentElement.style.setProperty(key==='primary_color'?'--primary':'--accent',b[key]);

@@ -833,6 +833,6 @@ class _ShopFormState extends State<ShopForm> {
 
 /// WhatsApp message for the shop owner: loyalty link, dashboard and password.
 String shopAccessMessage(String name, String slug, String password) => trf(
-  'محل «{0}» جاهز ✅\n\n🔗 رابط الولاء لزبائنك (ضعه على بطاقة NFC أو QR):\n{1}\n\n🔑 لوحة المحل:\n{2}\nكلمة المرور: {3}\n\nبعد الدخول غيّر كلمة المرور من «الإعدادات».',
+  'محل «{0}» جاهز ✅\n\n🔗 صفحة محلك (ضعها على بطاقة NFC أو QR، وثبّتها على شاشة هاتفك):\n{1}\n\n🔐 للدخول إلى لوحتك: افتح الصفحة واضغط 4 مرات بسرعة على الشعار، ثم اكتب كلمة المرور.\nكلمة المرور: {3}\n(رابط مباشر للوحة: {2})\n\n⚠️ بعد 3 محاولات خاطئة يتوقف الدخول حتى نعطيك كلمة مرور جديدة.\nبعد الدخول غيّر كلمة المرور من «الإعدادات».',
   [name, ShopsService.customerLink(slug), ShopsService.ownerLink(slug), password],
 );

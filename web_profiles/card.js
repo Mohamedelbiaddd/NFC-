@@ -1,6 +1,6 @@
 import {t, lang, applyLang, langSwitcher} from '/i18n.mjs';
 import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage, bannerStrip, industry, unit,
-  slotsGrid, safeImage, formatDate, dayName, todayIndex, validWeek, openNow} from '/loyalty.mjs';
+  slotsGrid, safeImage, formatDate, dayName, todayIndex, validWeek, openNow, socialLink, industryLabel} from '/loyalty.mjs';
 
 const root = document.getElementById('app');
 const langs = document.getElementById('langs');
@@ -20,10 +20,16 @@ function status(title, text) {
   root.firstChild.append(el('h2', title), el('p', text ?? '', 'muted'));
 }
 
-function topbar() {
-  const bar = el('div', undefined, 'topbar');
-  const brand = el('div', undefined, 'brand');
-  const logo = el('div', industry(shop).icon, 'logo');
+// Professional header: cover picture, logo (hidden owner entry), name and status.
+function hero() {
+  const box = el('header', undefined, 'hero');
+  const coverUrl = safeImage(shop.cover_url, config) ?? safeImage(shop.banners?.[0], config) ?? safeImage(shop.card_background, config);
+  const cover = el('div', undefined, 'cover' + (coverUrl ? '' : ' plain'));
+  if (coverUrl) cover.style.backgroundImage = `url("${coverUrl}")`;
+  cover.append(langs);
+  const logoUrl = safeImage(shop.logo_url, config);
+  const logo = el('div', logoUrl ? undefined : industry(shop).icon, 'hero-logo');
+  if (logoUrl) { const img = el('img'); img.src = logoUrl; img.alt = ''; img.referrerPolicy = 'no-referrer'; logo.append(img); }
   // Hidden owner entry: four quick taps on the logo.
   let taps = [];
   logo.addEventListener('click', () => {
@@ -32,15 +38,73 @@ function topbar() {
     taps.push(now);
     if (taps.length >= 4) { taps = []; ownerLogin(); }
   });
-  const txt = el('div');
-  txt.append(el('h1', shop.name));
-  const sub = el('div', undefined, 'sub');
-  sub.append(shop.closed ? el('span', `● ${t('closedBadge')}`, 'chip red') : el('span', undefined, 'chip green'));
-  if (!shop.closed) { sub.lastChild.append(el('i', undefined, 'dot live'), document.createTextNode(t('openBadge'))); }
-  txt.append(sub);
-  brand.append(logo, txt);
-  bar.append(brand, langs);
-  return bar;
+  const body = el('div', undefined, 'hero-body');
+  body.append(el('h1', shop.name));
+  const sub = el('div', undefined, 'hero-sub');
+  sub.append(el('span', `${industry(shop).icon} ${industryLabel(shop)}`, 'chip'));
+  const open = shop.closed ? false : openNow(shop.week_hours);
+  if (shop.closed || open === false) sub.append(el('span', `● ${shop.closed ? t('closedBadge') : t('closedNow')}`, 'chip red'));
+  else if (open === true) sub.append(el('span', `● ${t('openNow')}`, 'chip green'));
+  body.append(sub);
+  if (shop.address) body.append(el('p', `📍 ${shop.address}`, 'hero-addr'));
+  box.append(cover, logo, body);
+  return box;
+}
+
+// Round contact buttons: call, WhatsApp, directions, social networks.
+function quickLinks() {
+  const items = [];
+  if (shop.phone) items.push(['phone', shop.phone, t('call')]);
+  for (const s of Array.isArray(shop.socials) ? shop.socials : []) items.push([s.type, s.value, t('social_' + s.type)]);
+  if (shop.latitude != null) items.push(['maps', `https://www.google.com/maps/search/?api=1&query=${shop.latitude},${shop.longitude}`, t('directions')]);
+  if (shop.email) items.push(['email', shop.email, t('emailLabel')]);
+  const row = el('nav', undefined, 'quick');
+  const seen = new Set();
+  for (const [type, value, label] of items) {
+    const link = socialLink(type, value);
+    if (!link || seen.has(link.href)) continue;
+    seen.add(link.href);
+    const a = el('a', undefined, 'q');
+    a.href = link.href; a.target = '_blank'; a.rel = 'noopener';
+    const ico = el('span', link.icon, 'q-ico');
+    ico.style.background = link.color;
+    a.append(ico, el('span', label, 'q-label'));
+    row.append(a);
+  }
+  return row.childNodes.length ? row : null;
+}
+
+// Up to six photos; tap one to see it full screen.
+function gallery() {
+  const urls = (Array.isArray(shop.banners) ? shop.banners : []).map(u => safeImage(u, config)).filter(Boolean);
+  if (!urls.length) return null;
+  const panel = el('section', undefined, 'panel');
+  panel.append(el('h2', `📸 ${t('gallery')}`));
+  const grid = el('div', undefined, 'gallery g' + Math.min(urls.length, 3));
+  urls.forEach((url, i) => {
+    const img = el('img'); img.src = url; img.loading = 'lazy'; img.alt = ''; img.referrerPolicy = 'no-referrer';
+    img.addEventListener('click', () => {
+      const box = el('div', undefined, 'lightbox');
+      const big = el('img'); big.src = urls[i]; big.alt = '';
+      box.append(big);
+      box.addEventListener('click', () => box.remove());
+      document.body.append(box);
+    });
+    grid.append(img);
+  });
+  panel.append(grid);
+  return panel;
+}
+
+// Visitors without a card see what the programme offers; the join form only
+// appears when they scanned the shop's code.
+function teaser() {
+  const panel = el('section', undefined, 'panel teaser');
+  panel.append(el('h2', `🎁 ${t('programTitle')}`));
+  panel.append(el('p', t('programText', {n: shop.goal, r: shop.reward}), 'muted'));
+  panel.append(slotsGrid(shop.goal, 0, false, -1));
+  panel.append(el('p', `📷 ${t('programHow')}`, 'small'));
+  return panel;
 }
 
 function closedBanner() {
@@ -164,34 +228,33 @@ function infoPanel() {
     });
     panel.append(box);
   } else if (shop.hours) add('🕒', `${t('hours')}\n${shop.hours}`);
-  if (shop.address) add('📍', shop.address);
-  if (shop.latitude != null) add('🧭', t('directions'), `https://www.google.com/maps/search/?api=1&query=${shop.latitude},${shop.longitude}`);
-  if (shop.phone && /^[+0-9 ()-]{3,40}$/.test(shop.phone)) add('📞', shop.phone, 'tel:' + shop.phone.replace(/[^+0-9]/g, ''));
   return panel.childNodes.length ? panel : null;
 }
 
 function render() {
   if (!shop) return;
   document.title = shop.name;
-  const parts = [topbar()];
+  const parts = [hero()];
+  const links = quickLinks(); if (links) parts.push(links);
   const closed = closedBanner(); if (closed) parts.push(closed);
   if (notice) {
     const b = el('div', undefined, `banner ${notice.kind}`);
     b.append(el('span', notice.kind === 'green' ? '🎉' : '⚠️', 'ico'), el('p', notice.text));
     parts.push(b);
   }
-  parts.push(loyaltyCard());
-  if (!customer) parts.push(joinPanel());
-  else parts.push(actions());
-  const info = infoPanel(); if (info) parts.push(info);
-  const strip = bannerStrip(shop, config);
-  if (strip) { const p = el('div', undefined, 'panel'); p.append(el('h2', `📸 ${t('gallery')}`), strip); parts.push(p); }
-  if (customer && canWallet()) parts.push(walletButton());
   if (customer) {
+    parts.push(loyaltyCard(), actions());
+    if (canWallet()) parts.push(walletButton());
     const home = el('button', t('addHome'), 'btn ghost'); home.type = 'button';
     home.addEventListener('click', addToHome);
     parts.push(home);
+  } else if (pendingCode) {
+    parts.push(loyaltyCard(), joinPanel());
+  } else {
+    parts.push(teaser());
   }
+  const pics = gallery(); if (pics) parts.push(pics);
+  const info = infoPanel(); if (info) parts.push(info);
   parts.push(el('p', 'NFC Studio', 'legal'));
   root.replaceChildren(...parts);
   fresh = -1;
@@ -212,7 +275,8 @@ const canWallet = () => !/iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // Right after joining or a stamped visit, offer Google Wallet once per phone.
 function walletPrompt() {
-  if (!canWallet() || storage(walletKey)) return;
+  if (storage(walletKey)) return;
+  if (!canWallet()) { storage(walletKey, 'home'); addToHome(); return; }
   const {box, panel} = sheet();
   const later = el('button', t('later'), 'btn ghost'); later.type = 'button';
   later.addEventListener('click', () => box.remove());
@@ -257,11 +321,17 @@ function ownerLogin() {
   const pass = el('input'); pass.type = 'password'; pass.className = 'field'; pass.placeholder = t('password'); pass.autocomplete = 'current-password';
   const go = el('button', t('login'), 'btn'); go.type = 'button';
   const forgot = el('button', t('forgot'), 'btn ghost'); forgot.type = 'button';
+  const info = el('p', '', 'banner amber small'); info.hidden = true;
   const submit = async () => {
     go.disabled = true;
     try {
       const r = await rpc(config, 'nfc_shop_login', {target_slug: slug, password: pass.value});
-      if (!r?.ok) { toast(r?.error === 'locked' ? t('locked') : t('wrongPass'), true); return; }
+      if (!r?.ok) {
+        info.textContent = r?.error === 'locked' ? t('locked') : r?.left ? t('triesLeft', {n: r.left}) : t('wrongPass');
+        info.hidden = false;
+        if (r?.error === 'locked') { pass.disabled = true; go.hidden = true; }
+        return;
+      }
       storage(`nfc_shop_${slug}`, r.session);
       location.href = `/s/${slug}`;
     } catch {
@@ -279,7 +349,7 @@ function ownerLogin() {
     const ok = el('button', t('ok'), 'btn'); ok.type = 'button'; ok.addEventListener('click', () => s.box.remove());
     s.panel.append(el('h2', '📨'), el('p', t('forgotSent')), ok);
   });
-  panel.append(el('h2', `🔐 ${t('ownerAccess')}`), pass, go, forgot);
+  panel.append(el('h2', `🔐 ${t('ownerAccess')}`), pass, info, go, forgot);
   setTimeout(() => pass.focus(), 60);
 }
 

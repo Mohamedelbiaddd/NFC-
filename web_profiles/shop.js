@@ -1,7 +1,7 @@
 import qrcode from '/qrcode.mjs';
 import {t, lang, applyLang, langSwitcher, ago} from '/i18n.mjs';
 import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage, industry, safeImage,
-  numbersRow, initials, formatDate, unit, dayName, validWeek} from '/loyalty.mjs';
+  numbersRow, initials, formatDate, unit, dayName, validWeek, SOCIAL_TYPES} from '/loyalty.mjs';
 
 const root = document.getElementById('app');
 const langs = document.getElementById('langs');
@@ -111,7 +111,7 @@ function drawQr() {
 function updateRing() {
   if (!qr) return;
   const left = Math.max(0, (qr.until - Date.now()) / 1000);
-  for (const ring of document.querySelectorAll('.ring')) ring.style.setProperty('--p', `${(left / 30) * 100}%`);
+  for (const ring of document.querySelectorAll('.ring')) ring.style.setProperty('--p', `${(left / 5) * 100}%`);
   for (const c of document.querySelectorAll('[data-countdown]')) c.textContent = t('refreshIn', {s: Math.ceil(left)});
 }
 
@@ -126,7 +126,7 @@ function loginView() {
     btn.disabled = true;
     try {
       const r = await rpc(config, 'nfc_shop_login', {target_slug: slug, password: pass.value});
-      if (!r?.ok) { toast(r?.error === 'locked' ? t('locked') : t('wrongPass'), true); return; }
+      if (!r?.ok) { toast(r?.error === 'locked' ? t('locked') : r?.left ? t('triesLeft', {n: r.left}) : t('wrongPass'), true); return; }
       storage(sessionKey, r.session);
       if (await refresh()) startTimers();
     } catch {
@@ -268,7 +268,7 @@ function closedPanel() {
 async function setClosed(until, message) {
   try {
     const r = await rpc(config, 'nfc_shop_set_closed', {target_slug: slug, session: session(), until_date: until, message});
-    if (!r?.ok) { toast(t('saveError'), true); return; }
+    if (!r?.ok) { toast(r?.error === 'email' ? t('badEmail') : r?.error === 'socials' ? t('badLink') : t('saveError'), true); return; }
     toast(t('saved'));
     await refresh();
   } catch { toast(t('network'), true); }
@@ -385,7 +385,56 @@ function settingsView() {
   const info = el('div', undefined, 'panel');
   info.append(el('h2', `🏪 ${t('shopInfo')}`));
   const name = field(t('shopName'), s.name), phone = field(t('phone'), s.phone, 'tel'), address = field(t('address'), s.address);
-  info.append(name.wrap, phone.wrap, address.wrap);
+  const email = field(t('emailLabel'), s.email, 'email');
+  // Logo and cover picture of the public page.
+  let logoUrl = s.logo_url ?? '', coverUrl = s.cover_url ?? '';
+  const imagePicker = (label, get, set, round) => {
+    const wrap = el('div', undefined, 'pick');
+    const thumb = el('div', undefined, 'pick-thumb' + (round ? ' round' : ''));
+    const draw = () => { const u = safeImage(get(), config); thumb.style.backgroundImage = u ? `url("${u}")` : ''; thumb.textContent = u ? '' : '＋'; };
+    const file = el('input'); file.type = 'file'; file.accept = 'image/jpeg,image/png,image/webp'; file.hidden = true;
+    const btns = el('div', undefined, 'pick-btns');
+    const pick = el('button', label, 'btn ghost small'); pick.type = 'button';
+    const clear = el('button', '✕', 'btn ghost small'); clear.type = 'button';
+    pick.addEventListener('click', () => file.click()); thumb.addEventListener('click', () => file.click());
+    clear.addEventListener('click', () => { set(''); draw(); });
+    file.addEventListener('change', async () => {
+      const f = file.files?.[0]; if (!f) return;
+      pick.disabled = true;
+      try { set(await upload(f)); draw(); } catch { toast(t('uploadError'), true); } finally { pick.disabled = false; }
+    });
+    btns.append(pick, clear);
+    wrap.append(thumb, btns, file); draw();
+    return wrap;
+  };
+  const pics = el('div', undefined, 'pick-row');
+  pics.append(imagePicker(t('logo'), () => logoUrl, v => { logoUrl = v; }, true), imagePicker(t('cover'), () => coverUrl, v => { coverUrl = v; }, false));
+  info.append(pics, name.wrap, phone.wrap, email.wrap, address.wrap);
+  // Social links (Instagram, WhatsApp, TikTok…)
+  const socials = (Array.isArray(s.socials) ? s.socials : []).map(x => ({...x}));
+  const linksPanel = el('div', undefined, 'panel');
+  linksPanel.append(el('h2', `🔗 ${t('linksTitle')}`), el('p', t('linksNote'), 'muted small'));
+  const linkRows = el('div');
+  const drawLinks = () => {
+    linkRows.replaceChildren();
+    socials.forEach((item, i) => {
+      const row = el('div', undefined, 'link-edit');
+      const type = el('select'); type.className = 'field';
+      for (const k of SOCIAL_TYPES) { const o = el('option', t('social_' + k)); o.value = k; o.selected = k === item.type; type.append(o); }
+      type.addEventListener('change', () => { item.type = type.value; });
+      const value = el('input'); value.className = 'field'; value.value = item.value ?? ''; value.dir = 'ltr';
+      value.placeholder = '@name / https://… / 06…';
+      value.addEventListener('input', () => { item.value = value.value; });
+      const rm = el('button', '✕', 'btn ghost small'); rm.type = 'button';
+      rm.addEventListener('click', () => { socials.splice(i, 1); drawLinks(); });
+      row.append(type, value, rm);
+      linkRows.append(row);
+    });
+  };
+  drawLinks();
+  const addLink = el('button', `＋ ${t('addLink')}`, 'btn ghost small'); addLink.type = 'button';
+  addLink.addEventListener('click', () => { if (socials.length < 12) { socials.push({type: 'instagram', value: ''}); drawLinks(); } });
+  linksPanel.append(linkRows, addLink);
   // Weekly hours: one row per day, Monday first.
   const weekPanel = el('div', undefined, 'panel');
   weekPanel.append(el('h2', `🕒 ${t('hours')}`), el('p', t('weekNote'), 'muted small'));
@@ -450,7 +499,7 @@ function settingsView() {
   // Promo pictures
   const banners = [...(s.banners ?? [])];
   const promo = el('div', undefined, 'panel');
-  promo.append(el('h2', `📸 ${t('banners')}`));
+  promo.append(el('h2', `📸 ${t('gallery')}`), el('p', t('galleryNote'), 'muted small'));
   const thumbs = el('div', undefined, 'thumbs');
   const drawThumbs = () => {
     thumbs.replaceChildren();
@@ -460,7 +509,7 @@ function settingsView() {
       const rm = el('button', '✕'); rm.type = 'button'; rm.addEventListener('click', () => { banners.splice(i, 1); drawThumbs(); });
       box.append(img, rm); thumbs.append(box);
     });
-    if (banners.length < 5) {
+    if (banners.length < 6) {
       const add = el('button', t('addImage'), 'btn small ghost'); add.type = 'button';
       const file = el('input'); file.type = 'file'; file.accept = 'image/jpeg,image/png,image/webp'; file.hidden = true;
       add.addEventListener('click', () => file.click());
@@ -499,11 +548,12 @@ function settingsView() {
       const r = await rpc(config, 'nfc_shop_update', {target_slug: slug, session: session(), settings: {
         name: name.input.value, phone: phone.input.value, address: address.input.value, week_hours: weekValue(),
         goal: String(Math.min(50, Math.max(1, parseInt(goal.input.value, 10) || 5))), reward: reward.input.value,
-        banners, card_background: background,
+        banners, card_background: background, logo_url: logoUrl, cover_url: coverUrl, email: email.input.value,
+        socials: socials.map(x => ({type: x.type, value: String(x.value ?? '').trim()})).filter(x => x.value),
         radius_m: String(Math.min(1000, Math.max(50, parseInt(radius.input.value, 10) || 200))),
         ...(geo ? {latitude: String(geo.lat), longitude: String(geo.lng)} : {}),
       }});
-      if (!r?.ok) { toast(t('saveError'), true); return; }
+      if (!r?.ok) { toast(r?.error === 'email' ? t('badEmail') : r?.error === 'socials' ? t('badLink') : t('saveError'), true); return; }
       toast(t('saved'));
       editing = false;
       await refresh();
@@ -528,7 +578,7 @@ function settingsView() {
     storage(sessionKey, null); loginView();
   });
   sec.append(oldP.wrap, newP.wrap, change, out);
-  return [info, weekPanel, rules, design, promo, loc, save, sec];
+  return [info, linksPanel, weekPanel, promo, rules, design, loc, save, sec];
 }
 
 function suspendedView() {

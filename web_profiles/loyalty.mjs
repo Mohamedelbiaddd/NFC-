@@ -3,16 +3,20 @@
 import {lang} from '/i18n.mjs';
 
 export const INDUSTRIES = {
-  barber: {icon: '✂️', unit: {ar: 'زيارة', en: 'visit', fr: 'visite', it: 'visita'}},
-  beauty: {icon: '💅', unit: {ar: 'زيارة', en: 'visit', fr: 'visite', it: 'visita'}},
-  carwash: {icon: '🚗', unit: {ar: 'غسلة', en: 'wash', fr: 'lavage', it: 'lavaggio'}},
-  bakery: {icon: '🥐', unit: {ar: 'شراء', en: 'purchase', fr: 'achat', it: 'acquisto'}},
-  cafe: {icon: '☕', unit: {ar: 'كوب', en: 'cup', fr: 'café', it: 'caffè'}},
-  snack: {icon: '🍕', unit: {ar: 'طلب', en: 'order', fr: 'commande', it: 'ordine'}},
-  other: {icon: '⭐', unit: {ar: 'زيارة', en: 'visit', fr: 'visite', it: 'visita'}},
+  barber: {icon: '✂️', label: {ar: 'حلاقة', fr: 'Barbier', en: 'Barber', it: 'Barbiere'}, unit: {ar: 'زيارة', en: 'visit', fr: 'visite', it: 'visita'}},
+  beauty: {icon: '💅', label: {ar: 'تجميل', fr: 'Beauté', en: 'Beauty', it: 'Bellezza'}, unit: {ar: 'زيارة', en: 'visit', fr: 'visite', it: 'visita'}},
+  carwash: {icon: '🚗', label: {ar: 'غسيل سيارات', fr: 'Lavage auto', en: 'Car wash', it: 'Autolavaggio'}, unit: {ar: 'غسلة', en: 'wash', fr: 'lavage', it: 'lavaggio'}},
+  bakery: {icon: '🥐', label: {ar: 'مخبزة', fr: 'Boulangerie', en: 'Bakery', it: 'Panetteria'}, unit: {ar: 'شراء', en: 'purchase', fr: 'achat', it: 'acquisto'}},
+  cafe: {icon: '☕', label: {ar: 'مقهى', fr: 'Café', en: 'Café', it: 'Caffè'}, unit: {ar: 'كوب', en: 'cup', fr: 'café', it: 'caffè'}},
+  snack: {icon: '🍕', label: {ar: 'سناك / بيتزاريا', fr: 'Snack / Pizzeria', en: 'Snack / Pizzeria', it: 'Snack / Pizzeria'}, unit: {ar: 'طلب', en: 'order', fr: 'commande', it: 'ordine'}},
+  other: {icon: '⭐', label: {ar: 'محل', fr: 'Commerce', en: 'Shop', it: 'Negozio'}, unit: {ar: 'زيارة', en: 'visit', fr: 'visite', it: 'visita'}},
 };
 export function industry(shop) {
   return INDUSTRIES[shop?.industry] ?? INDUSTRIES.other;
+}
+export function industryLabel(shop) {
+  const l = industry(shop).label ?? {};
+  return l[lang] ?? l.en ?? '';
 }
 export function unit(shop) {
   return industry(shop).unit[lang] ?? industry(shop).unit.en;
@@ -180,4 +184,50 @@ export function openNow(week) {
     if (c <= o && minutes < c) return true; // open past midnight
   }
   return false;
+}
+
+/* ---------- Shop links (phone, WhatsApp, social networks) ---------- */
+const SOCIAL = {
+  phone: {icon: '📞', color: '#2563eb'},
+  whatsapp: {icon: '💬', color: '#25d366'},
+  instagram: {icon: '📸', color: 'linear-gradient(45deg,#f58529,#dd2a7b,#8134af)'},
+  tiktok: {icon: '🎵', color: '#111'},
+  facebook: {icon: '👍', color: '#1877f2'},
+  snapchat: {icon: '👻', color: '#fffc00', ink: '#111'},
+  youtube: {icon: '▶️', color: '#ff0000'},
+  website: {icon: '🌐', color: '#0ea5e9'},
+  maps: {icon: '📍', color: '#ea4335'},
+  email: {icon: '✉️', color: '#6366f1'},
+};
+export const SOCIAL_TYPES = Object.keys(SOCIAL);
+
+function httpsUrl(value, hosts) {
+  try {
+    const u = new URL(value);
+    if (u.protocol !== 'https:') return null;
+    if (hosts && !hosts.some(h => u.hostname === h || u.hostname.endsWith('.' + h))) return null;
+    return u.href;
+  } catch { return null; }
+}
+
+/** {href, icon, color, ink} for one link, or null when the value is not usable. */
+export function socialLink(type, raw) {
+  const value = String(raw ?? '').trim();
+  const meta = SOCIAL[type];
+  if (!meta || !value) return null;
+  const handle = value.replace(/^@/, '').replace(/[^A-Za-z0-9._-]/g, '');
+  const digits = value.replace(/[^0-9]/g, '');
+  let href = null;
+  switch (type) {
+    case 'phone': href = digits.length >= 6 ? 'tel:' + value.replace(/[^+0-9]/g, '') : null; break;
+    case 'whatsapp': href = digits.length >= 6 ? `https://wa.me/${digits}` : httpsUrl(value, ['wa.me', 'whatsapp.com']); break;
+    case 'email': href = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value) ? 'mailto:' + value : null; break;
+    case 'instagram': href = httpsUrl(value, ['instagram.com']) ?? (handle ? `https://instagram.com/${handle}` : null); break;
+    case 'tiktok': href = httpsUrl(value, ['tiktok.com']) ?? (handle ? `https://www.tiktok.com/@${handle}` : null); break;
+    case 'facebook': href = httpsUrl(value, ['facebook.com', 'fb.com', 'fb.me']) ?? (handle ? `https://facebook.com/${handle}` : null); break;
+    case 'snapchat': href = httpsUrl(value, ['snapchat.com']) ?? (handle ? `https://snapchat.com/add/${handle}` : null); break;
+    case 'youtube': href = httpsUrl(value, ['youtube.com', 'youtu.be']) ?? (handle ? `https://youtube.com/@${handle}` : null); break;
+    default: href = httpsUrl(value);
+  }
+  return href ? {href, ...meta} : null;
 }

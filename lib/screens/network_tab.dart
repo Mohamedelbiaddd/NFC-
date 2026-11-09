@@ -529,6 +529,7 @@ class _NetworkTabState extends State<NetworkTab> {
     'notice_sent': tr('📩 أرسل تنبيه دفع إلى'),
     'notice_cleared': tr('أزال التنبيه عن'),
     'owner_reset_requested': tr('🔑 طلب كلمة مرور جديدة لمحل'),
+    'owner_locked': tr('⛔ أُوقف دخول صاحب محل بعد 3 محاولات خاطئة'),
     'owner_password_changed': tr('غيّر كلمة مرور محل'),
   };
 
