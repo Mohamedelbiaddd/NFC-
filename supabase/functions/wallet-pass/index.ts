@@ -25,9 +25,9 @@ const SITE = (Deno.env.get('PUBLIC_SITE_URL') ?? 'https://nfc-smart-tags.vercel.
 const ISSUER = Deno.env.get('GOOGLE_WALLET_ISSUER_ID') ?? '3388000000023223039';
 
 const TEXT: Record<string, Record<string, string>> = {
-  ar: {points: 'الزيارات', reward: 'الهدية', rewards: 'هدايا حصلت عليها', free: '🎁 زيارتك القادمة مجانية!', open: 'افتح بطاقتي', every: 'بعد {0} زيارات'},
-  fr: {points: 'Visites', reward: 'Cadeau', rewards: 'Cadeaux obtenus', free: '🎁 Votre prochaine visite est offerte !', open: 'Ouvrir ma carte', every: 'Après {0} visites'},
-  en: {points: 'Visits', reward: 'Reward', rewards: 'Rewards earned', free: '🎁 Your next visit is free!', open: 'Open my card', every: 'After {0} visits'},
+  ar: {points: 'الزيارات', reward: 'الهدية', rewards: 'هدايا حصلت عليها', free: '🎁 زيارتك القادمة مجانية!', open: 'افتح بطاقتي', every: 'بعد {0} زيارات', scan: 'في كل زيارة امسح الكود الظاهر عند المحل، وتُضاف الدائرة هنا تلقائياً.'},
+  fr: {points: 'Visites', reward: 'Cadeau', rewards: 'Cadeaux obtenus', free: '🎁 Votre prochaine visite est offerte !', open: 'Ouvrir ma carte', every: 'Après {0} visites', scan: 'À chaque visite, scannez le code affiché au magasin : le cercle s’ajoute ici automatiquement.'},
+  en: {points: 'Visits', reward: 'Reward', rewards: 'Rewards earned', free: '🎁 Your next visit is free!', open: 'Open my card', every: 'After {0} visits', scan: 'At every visit, scan the code shown at the shop and a circle is added here automatically.'},
 };
 
 function json(body: unknown, status = 200): Response {
@@ -79,11 +79,11 @@ async function accessToken(key: ServiceKey): Promise<string> {
   return body.access_token;
 }
 
-/// Inserts the resource, or replaces it when it already exists.
+/// Replaces the resource (PUT, so removed fields disappear) or inserts it.
 async function upsert(token: string, kind: string, resource: Record<string, unknown>, createOnly = false) {
   const headers = {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'};
   const id = encodeURIComponent(String(resource.id));
-  let res = await fetch(`${API}/${kind}/${id}`, {method: 'PATCH', headers, body: JSON.stringify(resource)});
+  let res = await fetch(`${API}/${kind}/${id}`, {method: 'PUT', headers, body: JSON.stringify(resource)});
   if (res.status === 404) {
     if (createOnly === false) {
       res = await fetch(`${API}/${kind}`, {method: 'POST', headers, body: JSON.stringify(resource)});
@@ -168,7 +168,6 @@ Deno.serve(async (req) => {
     reviewStatus: 'UNDER_REVIEW',
     countryCode: 'MA',
     multipleDevicesAndHoldersAllowedStatus: 'ONE_USER_ALL_DEVICES',
-    ...(shop.card_background ? {heroImage: {sourceUri: {uri: shop.card_background}}} : {}),
     ...(shop.latitude != null && shop.longitude != null
       ? {locations: [{latitude: Number(shop.latitude), longitude: Number(shop.longitude)}]}
       : {}),
@@ -183,10 +182,17 @@ Deno.serve(async (req) => {
     hexBackgroundColor: bg,
     loyaltyPoints: {label: t.points, balance: {string: `${Math.min(stamps, goal)} / ${goal}`}},
     secondaryLoyaltyPoints: {label: t.rewards, balance: {int: Number(customer.rewards ?? 0)}},
-    barcode: {type: 'QR_CODE', value: cardUrl, alternateText: String(customer.name).slice(0, 30)},
+    // No barcode: the customer scans the shop's live QR, never the other way round.
+    heroImage: {
+      sourceUri: {
+        uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image?s=${Math.min(stamps, goal)}&g=${goal}&c=${bg.slice(1)}`,
+      },
+      contentDescription: {defaultValue: {language: lang, value: `${Math.min(stamps, goal)} / ${goal}`}},
+    },
     textModulesData: [
-      {id: 'reward', header: t.reward, body: `${reward} · ${t.every.replace('{0}', String(goal))}`},
       ...(free ? [{id: 'free', header: '🎁', body: t.free}] : []),
+      {id: 'scan', header: '📷', body: t.scan},
+      {id: 'reward', header: t.reward, body: `${reward} · ${t.every.replace('{0}', String(goal))}`},
       ...(shop.address ? [{id: 'address', header: '📍', body: String(shop.address)}] : []),
     ],
     linksModuleData: {
@@ -202,7 +208,6 @@ Deno.serve(async (req) => {
     if (action === 'sync') {
       // Only refreshes cards the customer already saved.
       const exists = await upsert(token, 'loyaltyObject', loyaltyObject, true);
-      if (exists) await upsert(token, 'loyaltyClass', loyaltyClass);
       return json({ok: true, saved: exists});
     }
     await upsert(token, 'loyaltyClass', loyaltyClass);
