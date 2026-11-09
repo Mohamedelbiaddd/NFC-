@@ -293,6 +293,9 @@ function infoPanel() {
 function render() {
   if (!shop) return;
   document.title = shop.name;
+  let appTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+  if (!appTitle) { appTitle = document.createElement('meta'); appTitle.name = 'apple-mobile-web-app-title'; document.head.append(appTitle); }
+  appTitle.content = shop.name;
   const parts = [];
   const closed = closedBanner(); if (closed) parts.push(closed);
   if (notice) {
@@ -371,6 +374,9 @@ function addToHome() {
   if (installEvent) { installEvent.prompt(); installEvent = null; return; }
   const {box, panel} = sheet();
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  // iPhone: the icon opens exactly this address, so it must carry the card.
+  const token = storage(tokenKey);
+  if (ios && token) history.replaceState(null, '', `${location.pathname}#k=${token}`);
   const ok = el('button', t('ok'), 'btn'); ok.type = 'button';
   ok.addEventListener('click', () => box.remove());
   panel.append(el('h2', t('addHome')), el('p', ios ? t('iosHelp') : t('androidHelp')), ok);
@@ -424,6 +430,10 @@ async function start() {
     if (!shop) { status(t('unavailable'), t('unavailableText')); return; }
     applyColors(shop);
     applyTheme(shop.theme);
+    // An iPhone home-screen app has its own storage: its start URL carries
+    // the card token in the hash (#k=…), set when the customer added it.
+    const fromHash = /(?:^#|&)k=([0-9a-f]{48})/.exec(location.hash)?.[1];
+    if (fromHash) storage(tokenKey, fromHash);
     const token = storage(tokenKey);
     if (token) {
       if (pendingCode) {
