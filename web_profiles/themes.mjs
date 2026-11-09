@@ -1,0 +1,68 @@
+// Ten looks for the public shop page. The owner picks one in his settings;
+// each only changes colours, so every layout stays the same and readable.
+export const THEMES = {
+  navy:    {name: {ar: 'كحلي وذهبي', fr: 'Marine et or', en: 'Navy & gold'},       bg: '#06112a', card: '#0b1a36', card2: '#0f2346', line: '#2b4373', text: '#ffffff', muted: '#a3b3d1', gold: '#f6c232', ink: '#1b1400'},
+  black:   {name: {ar: 'أسود فاخر', fr: 'Noir luxe', en: 'Black luxury'},          bg: '#050505', card: '#101010', card2: '#181818', line: '#353026', text: '#f7f3ea', muted: '#a8a193', gold: '#d4af37', ink: '#1a1405'},
+  emerald: {name: {ar: 'زمردي', fr: 'Émeraude', en: 'Emerald'},                     bg: '#03140e', card: '#072319', card2: '#0b2e22', line: '#1f5c46', text: '#ecfdf5', muted: '#9cc9b6', gold: '#34d399', ink: '#032016'},
+  royal:   {name: {ar: 'بنفسجي ملكي', fr: 'Violet royal', en: 'Royal purple'},      bg: '#0d0720', card: '#170e33', card2: '#211647', line: '#40307a', text: '#f5f3ff', muted: '#b9b0de', gold: '#c4b5fd', ink: '#1b0f3d'},
+  rose:    {name: {ar: 'وردي أنيق', fr: 'Rose chic', en: 'Chic rose'},             bg: '#1a0711', card: '#2a0c1b', card2: '#381226', line: '#6e2c4b', text: '#fff1f7', muted: '#e0a9c2', gold: '#f9a8d4', ink: '#3b0a22'},
+  ocean:   {name: {ar: 'أزرق المحيط', fr: 'Océan', en: 'Ocean'},                   bg: '#03131e', card: '#062234', card2: '#0a2e46', line: '#1d5277', text: '#f0f9ff', muted: '#9cc3dc', gold: '#38bdf8', ink: '#032033'},
+  sunset:  {name: {ar: 'برتقالي الغروب', fr: 'Coucher de soleil', en: 'Sunset'},    bg: '#170902', card: '#271205', card2: '#361a08', line: '#6d3913', text: '#fff7ed', muted: '#e2b48d', gold: '#fb923c', ink: '#2a1102'},
+  crimson: {name: {ar: 'أحمر قرمزي', fr: 'Pourpre', en: 'Crimson'},                bg: '#130409', card: '#21070f', card2: '#2f0b16', line: '#61192c', text: '#fff1f2', muted: '#e3a4ae', gold: '#f43f5e', ink: '#ffffff'},
+  ivory:   {name: {ar: 'عاجي فاتح', fr: 'Ivoire', en: 'Ivory light'},              bg: '#f3eee4', card: '#ffffff', card2: '#f8f4ec', line: '#e2d9c8', text: '#1f1a12', muted: '#71685a', gold: '#b8860b', ink: '#ffffff'},
+  mint:    {name: {ar: 'نعناعي فاتح', fr: 'Menthe', en: 'Mint light'},             bg: '#ecf6f2', card: '#ffffff', card2: '#f1f9f6', line: '#cfe6dc', text: '#0e2a21', muted: '#557268', gold: '#0f9f6e', ink: '#ffffff'},
+};
+
+export function themeOf(shop) {
+  return THEMES[shop?.theme] ?? THEMES.navy;
+}
+
+export function applyTheme(key) {
+  const th = THEMES[key] ?? THEMES.navy;
+  const r = document.documentElement.style;
+  r.setProperty('--t-bg', th.bg);
+  r.setProperty('--t-card', th.card);
+  r.setProperty('--t-card2', th.card2);
+  r.setProperty('--t-line', th.line);
+  r.setProperty('--t-text', th.text);
+  r.setProperty('--t-muted', th.muted);
+  r.setProperty('--t-gold', th.gold);
+  r.setProperty('--t-ink', th.ink);
+  // Shared page variables follow the theme too (panels, buttons, text).
+  r.setProperty('--bg', th.bg);
+  r.setProperty('--panel', th.card);
+  r.setProperty('--panel-2', th.card2);
+  r.setProperty('--line', th.line + '99');
+  r.setProperty('--line-2', th.line);
+  r.setProperty('--text', th.text);
+  r.setProperty('--muted', th.muted);
+  r.setProperty('--primary', th.gold);
+  r.setProperty('--accent', th.gold);
+  const light = ['ivory', 'mint'].includes(key);
+  document.documentElement.dataset.light = String(light);
+  document.documentElement.style.colorScheme = light ? 'light' : 'dark';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', th.bg);
+}
+
+// Small line icons (stroke follows currentColor) and brand marks.
+const S = (d, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${extra}>${d}</svg>`;
+export const ICONS = {
+  pin: S('<path d="M12 21s-7-6.1-7-11a7 7 0 1 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/>'),
+  clock: S('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  phone: S('<path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/>'),
+  calendar: S('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/>'),
+  globe: S('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'),
+  map: S('<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>'),
+  mail: S('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'),
+  arrow: S('<path d="M19 12H5M11 6l-6 6 6 6"/>'),
+  sparkle: S('<path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z" fill="currentColor" stroke="none"/>'),
+  gift: S('<rect x="3" y="9" width="18" height="12" rx="2"/><path d="M12 9v12M3 13h18M12 9s-1.5-5-4.5-5a2.2 2.2 0 0 0 0 4.4C10 8.4 12 9 12 9zM12 9s1.5-5 4.5-5a2.2 2.2 0 0 1 0 4.4C14 8.4 12 9 12 9z"/>'),
+  check: S('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 'stroke-width="3"'),
+  leaf: `<svg viewBox="0 0 24 24"><path fill="#22c55e" d="M20 4c-9 0-15 4-15 11 0 1.6.5 3 1.2 4.1C8 14 11 11 16 9c-4 2.6-7 6-8.4 10.4C8.8 20.4 10.3 21 12 21c6 0 9-6 8-17z"/></svg>`,
+  whatsapp: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#25d366"/><path fill="#25d366" d="M3.5 21 5 16l4 3z"/><path fill="#fff" d="M9.2 7.4c.3-.1.6 0 .8.3l.9 2c.1.3 0 .6-.2.8l-.6.6c.6 1.3 1.6 2.3 2.9 2.9l.6-.6c.2-.2.5-.3.8-.2l2 .9c.3.2.4.5.3.8-.3 1-1.2 1.7-2.3 1.6-3.5-.4-6.3-3.2-6.7-6.7-.1-1.1.6-2 1.5-2.4z"/></svg>`,
+  instagram: `<svg viewBox="0 0 24 24"><defs><linearGradient id="ig" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f9a825"/><stop offset=".5" stop-color="#e91e63"/><stop offset="1" stop-color="#7b1fa2"/></linearGradient></defs><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" fill="none" stroke="url(#ig)" stroke-width="2.4"/><circle cx="12" cy="12" r="4.3" fill="none" stroke="url(#ig)" stroke-width="2.4"/><circle cx="17.4" cy="6.6" r="1.4" fill="url(#ig)"/></svg>`,
+  facebook: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5" fill="#1877f2"/><path fill="#fff" d="M13.3 22.4v-7.2h2.4l.4-2.9h-2.8v-1.8c0-.8.3-1.4 1.4-1.4h1.5V6.5c-.3 0-1.2-.1-2.2-.1-2.2 0-3.6 1.3-3.6 3.7v2.2H8v2.9h2.4v7.2z"/></svg>`,
+  tiktok: `<svg viewBox="0 0 24 24"><path fill="#25f4ee" d="M9.4 10.2v-1A6 6 0 1 0 14 15V8.7a7.6 7.6 0 0 0 4.4 1.4V7.2a4.4 4.4 0 0 1-3.4-3.9h-2.9v11.6a2.6 2.6 0 1 1-2.6-2.6z" transform="translate(-.8 -.6)"/><path fill="#fe2c55" d="M9.4 10.2v-1A6 6 0 1 0 14 15V8.7a7.6 7.6 0 0 0 4.4 1.4V7.2a4.4 4.4 0 0 1-3.4-3.9h-2.9v11.6a2.6 2.6 0 1 1-2.6-2.6z" transform="translate(.8 .6)"/><path fill="currentColor" d="M9.4 10.2v-1A6 6 0 1 0 14 15V8.7a7.6 7.6 0 0 0 4.4 1.4V7.2a4.4 4.4 0 0 1-3.4-3.9h-2.9v11.6a2.6 2.6 0 1 1-2.6-2.6z"/></svg>`,
+  snapchat: `<svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="6" fill="#fffc00"/><path fill="#fff" stroke="#111" stroke-width="1.1" d="M12 5.5c2.3 0 3.8 1.7 3.8 3.9v1.7l1.3-.3c.5 0 .6.6.2.8l-1.4.7c.5 1.4 1.5 2.3 2.6 2.7-.2.6-1.2.8-2 .9l-.2.9c-1-.1-1.7.1-2.4.6-1.1.8-2.7.8-3.8 0-.7-.5-1.4-.7-2.4-.6l-.2-.9c-.8-.1-1.8-.3-2-.9 1.1-.4 2.1-1.3 2.6-2.7l-1.4-.7c-.4-.2-.3-.8.2-.8l1.3.3V9.4c0-2.2 1.5-3.9 3.8-3.9z"/></svg>`,
+  youtube: `<svg viewBox="0 0 24 24"><rect x="1.5" y="5" width="21" height="14" rx="4.5" fill="#ff0000"/><path fill="#fff" d="m10 8.8 5.4 3.2-5.4 3.2z"/></svg>`,
+};

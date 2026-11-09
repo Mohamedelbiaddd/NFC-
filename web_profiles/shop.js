@@ -1,5 +1,6 @@
 import qrcode from '/qrcode.mjs';
 import {t, lang, applyLang, langSwitcher, ago} from '/i18n.mjs';
+import {THEMES, applyTheme} from '/themes.mjs';
 import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage, industry, safeImage,
   numbersRow, initials, formatDate, unit, dayName, validWeek, SOCIAL_TYPES} from '/loyalty.mjs';
 
@@ -57,6 +58,7 @@ async function refresh() {
   if (!r?.ok) { storage(sessionKey, null); toast(t('sessionExpired'), true); loginView(); return false; }
   data = r;
   applyColors(data.shop);
+  if (!editing) applyTheme(r.shop?.theme);
   notifyQueue(data.customers ?? []);
   if (!editing) render();
   return true;
@@ -268,7 +270,7 @@ function closedPanel() {
 async function setClosed(until, message) {
   try {
     const r = await rpc(config, 'nfc_shop_set_closed', {target_slug: slug, session: session(), until_date: until, message});
-    if (!r?.ok) { toast(r?.error === 'email' ? t('badEmail') : r?.error === 'socials' ? t('badLink') : t('saveError'), true); return; }
+    if (!r?.ok) { applyTheme(s.theme); toast(r?.error === 'email' ? t('badEmail') : r?.error === 'socials' ? t('badLink') : t('saveError'), true); return; }
     toast(t('saved'));
     await refresh();
   } catch { toast(t('network'), true); }
@@ -409,7 +411,29 @@ function settingsView() {
   };
   const pics = el('div', undefined, 'pick-row');
   pics.append(imagePicker(t('logo'), () => logoUrl, v => { logoUrl = v; }, true), imagePicker(t('cover'), () => coverUrl, v => { coverUrl = v; }, false));
-  info.append(pics, name.wrap, phone.wrap, email.wrap, address.wrap);
+  const tagline = field(t('tagline'), s.tagline);
+  tagline.input.maxLength = 80;
+  info.append(pics, name.wrap, tagline.wrap, phone.wrap, email.wrap, address.wrap);
+  // Theme: ten looks for the public page; the dashboard previews it live.
+  let theme = THEMES[s.theme] ? s.theme : 'navy';
+  const themePanel = el('div', undefined, 'panel');
+  themePanel.append(el('h2', `🎨 ${t('themeTitle')}`), el('p', t('themeNote'), 'muted small'));
+  const themeGrid = el('div', undefined, 'themes');
+  const drawThemes = () => {
+    themeGrid.replaceChildren();
+    for (const [key, th] of Object.entries(THEMES)) {
+      const b = el('button', undefined, 'theme-opt' + (key === theme ? ' on' : '')); b.type = 'button';
+      const sw = el('div', undefined, 'theme-sw');
+      sw.style.background = `linear-gradient(160deg, ${th.card2}, ${th.bg})`;
+      for (const c of [th.gold, th.text, th.line]) { const i = el('i'); i.style.background = c; sw.append(i); }
+      b.append(sw, el('span', th.name[lang] ?? th.name.en));
+      b.addEventListener('click', () => { theme = key; applyTheme(key); drawThemes(); });
+      themeGrid.append(b);
+    }
+  };
+  drawThemes();
+  const view = el('a', `👁 ${t('preview')}`, 'btn ghost small'); view.href = `/c/${slug}`; view.target = '_blank';
+  themePanel.append(themeGrid, view);
   // Social links (Instagram, WhatsApp, TikTok…)
   const socials = (Array.isArray(s.socials) ? s.socials : []).map(x => ({...x}));
   const linksPanel = el('div', undefined, 'panel');
@@ -548,12 +572,12 @@ function settingsView() {
       const r = await rpc(config, 'nfc_shop_update', {target_slug: slug, session: session(), settings: {
         name: name.input.value, phone: phone.input.value, address: address.input.value, week_hours: weekValue(),
         goal: String(Math.min(50, Math.max(1, parseInt(goal.input.value, 10) || 5))), reward: reward.input.value,
-        banners, card_background: background, logo_url: logoUrl, cover_url: coverUrl, email: email.input.value,
+        banners, card_background: background, logo_url: logoUrl, cover_url: coverUrl, email: email.input.value, theme, tagline: tagline.input.value,
         socials: socials.map(x => ({type: x.type, value: String(x.value ?? '').trim()})).filter(x => x.value),
         radius_m: String(Math.min(1000, Math.max(50, parseInt(radius.input.value, 10) || 200))),
         ...(geo ? {latitude: String(geo.lat), longitude: String(geo.lng)} : {}),
       }});
-      if (!r?.ok) { toast(r?.error === 'email' ? t('badEmail') : r?.error === 'socials' ? t('badLink') : t('saveError'), true); return; }
+      if (!r?.ok) { applyTheme(s.theme); toast(r?.error === 'email' ? t('badEmail') : r?.error === 'socials' ? t('badLink') : t('saveError'), true); return; }
       toast(t('saved'));
       editing = false;
       await refresh();
@@ -578,7 +602,7 @@ function settingsView() {
     storage(sessionKey, null); loginView();
   });
   sec.append(oldP.wrap, newP.wrap, change, out);
-  return [info, linksPanel, weekPanel, promo, rules, design, loc, save, sec];
+  return [themePanel, info, linksPanel, weekPanel, promo, rules, loc, save, sec];
 }
 
 function suspendedView() {

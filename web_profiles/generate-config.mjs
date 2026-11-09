@@ -16,6 +16,7 @@ import {fileURLToPath} from 'node:url';
 const root = dirname(fileURLToPath(import.meta.url));
 const out = join(root, 'dist');
 const STATIC_FILES = [
+  'themes.mjs',
   'index.html',
   'app.js',
   'routing.mjs',

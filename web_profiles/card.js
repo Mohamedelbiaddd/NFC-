@@ -1,4 +1,5 @@
 import {t, lang, applyLang, langSwitcher} from '/i18n.mjs';
+import {applyTheme, ICONS} from '/themes.mjs';
 import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage, bannerStrip, industry, unit,
   slotsGrid, safeImage, formatDate, dayName, todayIndex, validWeek, openNow, socialLink, industryLabel} from '/loyalty.mjs';
 
@@ -20,58 +21,127 @@ function status(title, text) {
   root.firstChild.append(el('h2', title), el('p', text ?? '', 'muted'));
 }
 
-// Professional header: cover picture, logo (hidden owner entry), name and status.
-function hero() {
-  const box = el('header', undefined, 'hero');
-  const coverUrl = safeImage(shop.cover_url, config) ?? safeImage(shop.banners?.[0], config) ?? safeImage(shop.card_background, config);
-  const cover = el('div', undefined, 'cover' + (coverUrl ? '' : ' plain'));
-  if (coverUrl) cover.style.backgroundImage = `url("${coverUrl}")`;
-  cover.append(langs);
+const svg = (name, cls = 'ico') => { const x = el('span', undefined, cls); x.innerHTML = ICONS[name] ?? ''; return x; };
+const ext = (a, href) => { a.href = href; if (!href.startsWith('tel:') && !href.startsWith('mailto:')) { a.target = '_blank'; a.rel = 'noopener'; } return a; };
+
+// The digital business card: header, cover with photo, details, links,
+// social networks and loyalty points. Four quick taps on the photo open the
+// hidden owner login.
+function bizCard() {
+  const card = el('article', undefined, 'bc');
+  const head = el('div', undefined, 'bc-head');
+  const badge = el('span', industry(shop).icon, 'bc-badge');
+  head.append(badge, el('h2', t('bizCard')), langs);
+  card.append(head);
+
+  const coverUrl = safeImage(shop.cover_url, config) ?? safeImage(shop.banners?.[0], config);
+  const cover = el('div', undefined, 'bc-cover' + (coverUrl ? '' : ' plain'));
+  if (coverUrl) cover.style.setProperty('--cover', `url("${coverUrl}")`);
   const logoUrl = safeImage(shop.logo_url, config);
-  const logo = el('div', logoUrl ? undefined : industry(shop).icon, 'hero-logo');
-  if (logoUrl) { const img = el('img'); img.src = logoUrl; img.alt = ''; img.referrerPolicy = 'no-referrer'; logo.append(img); }
-  // Hidden owner entry: four quick taps on the logo.
+  const avatar = el('div', logoUrl ? undefined : industry(shop).icon, 'bc-avatar');
+  if (logoUrl) { const img = el('img'); img.src = logoUrl; img.alt = ''; img.referrerPolicy = 'no-referrer'; avatar.append(img); }
   let taps = [];
-  logo.addEventListener('click', () => {
+  avatar.addEventListener('click', () => {
     const now = Date.now();
     taps = taps.filter(x => now - x < 1500);
     taps.push(now);
     if (taps.length >= 4) { taps = []; ownerLogin(); }
   });
-  const body = el('div', undefined, 'hero-body');
-  body.append(el('h1', shop.name));
-  const sub = el('div', undefined, 'hero-sub');
-  sub.append(el('span', `${industry(shop).icon} ${industryLabel(shop)}`, 'chip'));
+  const nameRow = el('div', undefined, 'bc-name');
+  nameRow.append(el('h1', shop.name), svg('leaf', 'bc-leaf'));
+  cover.append(avatar, nameRow, el('p', shop.tagline || industryLabel(shop), 'bc-tagline'));
   const open = shop.closed ? false : openNow(shop.week_hours);
-  if (shop.closed || open === false) sub.append(el('span', `● ${shop.closed ? t('closedBadge') : t('closedNow')}`, 'chip red'));
-  else if (open === true) sub.append(el('span', `● ${t('openNow')}`, 'chip green'));
-  body.append(sub);
-  if (shop.address) body.append(el('p', `📍 ${shop.address}`, 'hero-addr'));
-  box.append(cover, logo, body);
-  return box;
+  if (open !== null) cover.append(el('span', `● ${open ? t('openNow') : shop.closed ? t('closedBadge') : t('closedNow')}`, 'chip ' + (open ? 'green' : 'red')));
+  card.append(cover);
+
+  const body = el('div', undefined, 'bc-body');
+  // Address | today's hours
+  const tiles = el('div', undefined, 'bc-box bc-split');
+  if (shop.address) {
+    const a = el(shop.latitude != null ? 'a' : 'div', undefined, 'bc-tile');
+    if (shop.latitude != null) ext(a, `https://www.google.com/maps/search/?api=1&query=${shop.latitude},${shop.longitude}`);
+    a.append(svg('pin', 'bc-ic'), el('span', shop.address));
+    tiles.append(a);
+  }
+  const today = validWeek(shop.week_hours) ? shop.week_hours[todayIndex()] : undefined;
+  if (today !== undefined || shop.hours) {
+    const h = el('div', undefined, 'bc-tile');
+    const txt = el('div');
+    txt.append(el('span', t('hours'), 'bc-small'), el('b', today === undefined ? shop.hours : today ? `${today.o} – ${today.c}` : t('dayOff'), 'bc-ltr'));
+    h.append(svg('clock', 'bc-ic'), txt);
+    tiles.append(h);
+  }
+  if (tiles.childNodes.length) body.append(tiles);
+  // Phone | call
+  const tel = socialLink('phone', shop.phone);
+  if (tel) {
+    const row = el('div', undefined, 'bc-box bc-phone');
+    const num = el('div', undefined, 'bc-tile');
+    num.append(svg('phone', 'bc-ic'), el('b', shop.phone, 'bc-ltr'));
+    const call = ext(el('a', undefined, 'bc-call'), tel.href);
+    call.append(svg('phone', 'ico'), document.createTextNode(t('call')));
+    row.append(num, call);
+    body.append(row);
+  }
+  const socials = Array.isArray(shop.socials) ? shop.socials : [];
+  // Links and apps (booking, website, map)
+  const appIcons = {booking: 'calendar', website: 'globe', maps: 'map'};
+  const apps = socials.filter(x => x.type in appIcons).map(x => [x, socialLink(x.type, x.value)]).filter(([, l]) => l);
+  if (apps.length) {
+    body.append(el('h3', t('linksApps'), 'bc-title'));
+    for (const [x, l] of apps) {
+      const a = ext(el('a', undefined, 'bc-box bc-link'), l.href);
+      a.append(svg(appIcons[x.type], 'bc-square'), el('b', t('social_' + x.type)), el('span', undefined, 'bc-grow'));
+      const go = el('span', t('openLink'), 'bc-open'); go.append(svg('arrow', 'ico'));
+      a.append(go);
+      body.append(a);
+    }
+  }
+  // Social networks
+  const brand = ['whatsapp', 'instagram', 'facebook', 'tiktok', 'snapchat', 'youtube', 'email'];
+  const nets = socials.filter(x => brand.includes(x.type)).map(x => [x, socialLink(x.type, x.value)]).filter(([, l]) => l);
+  if (shop.email && !nets.some(([x]) => x.type === 'email')) { const l = socialLink('email', shop.email); if (l) nets.push([{type: 'email'}, l]); }
+  if (nets.length) {
+    body.append(el('h3', t('socialTitle'), 'bc-title'));
+    const grid = el('div', undefined, 'bc-grid');
+    for (const [x, l] of nets) {
+      const a = ext(el('a', undefined, 'bc-net'), l.href);
+      a.append(svg(x.type === 'email' ? 'mail' : x.type, 'bc-brand'), el('span', t('social_' + x.type)));
+      grid.append(a);
+    }
+    body.append(grid);
+  }
+  body.append(points());
+  card.append(body);
+  return card;
 }
 
-// Round contact buttons: call, WhatsApp, directions, social networks.
-function quickLinks() {
-  const items = [];
-  if (shop.phone) items.push(['phone', shop.phone, t('call')]);
-  for (const s of Array.isArray(shop.socials) ? shop.socials : []) items.push([s.type, s.value, t('social_' + s.type)]);
-  if (shop.latitude != null) items.push(['maps', `https://www.google.com/maps/search/?api=1&query=${shop.latitude},${shop.longitude}`, t('directions')]);
-  if (shop.email) items.push(['email', shop.email, t('emailLabel')]);
-  const row = el('nav', undefined, 'quick');
-  const seen = new Set();
-  for (const [type, value, label] of items) {
-    const link = socialLink(type, value);
-    if (!link || seen.has(link.href)) continue;
-    seen.add(link.href);
-    const a = el('a', undefined, 'q');
-    a.href = link.href; a.target = '_blank'; a.rel = 'noopener';
-    const ico = el('span', link.icon, 'q-ico');
-    ico.style.background = link.color;
-    a.append(ico, el('span', label, 'q-label'));
-    row.append(a);
+// Loyalty points: one circle per visit of the goal, then the free one.
+function points() {
+  const goal = customer?.goal ?? shop.goal;
+  const reward = customer?.reward ?? shop.reward;
+  const stamps = Math.min(goal, customer?.stamps ?? 0);
+  const box = el('section', undefined, 'bc-box bc-points' + (customer?.next_free ? ' ready' : ''));
+  const title = el('h3');
+  title.append(svg('sparkle', 'bc-spark'), document.createTextNode(t('pointsTitle')));
+  box.append(title);
+  const row = el('div', undefined, 'bc-dots');
+  row.style.setProperty('--cols', String(Math.min(goal + 1, 7)));
+  for (let i = 0; i < goal; i++) {
+    const d = el('span', undefined, 'bc-dot' + (i < stamps ? ' on' : '') + (i === fresh ? ' pop' : ''));
+    if (i < stamps) d.innerHTML = ICONS.check;
+    else d.append(el('i', String(i + 1)));
+    row.append(d);
   }
-  return row.childNodes.length ? row : null;
+  const gift = el('span', undefined, 'bc-dot gift' + (customer?.next_free ? ' on' : ''));
+  gift.innerHTML = ICONS.gift;
+  gift.append(el('em', t('freeBadge')));
+  row.append(gift);
+  box.append(row);
+  box.append(el('p', customer
+    ? (customer.next_free ? `${t('giftReady')} · ${reward}` : t('pointsOf', {n: stamps, g: goal + 1}) + ` · 🎁 ${reward}`)
+    : `${t('programText', {n: goal, r: reward})} — ${t('programHow')}`, 'bc-small'));
+  return box;
 }
 
 // Up to six photos; tap one to see it full screen.
@@ -81,11 +151,11 @@ function gallery() {
   const panel = el('section', undefined, 'panel');
   panel.append(el('h2', `📸 ${t('gallery')}`));
   const grid = el('div', undefined, 'gallery g' + Math.min(urls.length, 3));
-  urls.forEach((url, i) => {
+  urls.forEach((url) => {
     const img = el('img'); img.src = url; img.loading = 'lazy'; img.alt = ''; img.referrerPolicy = 'no-referrer';
     img.addEventListener('click', () => {
       const box = el('div', undefined, 'lightbox');
-      const big = el('img'); big.src = urls[i]; big.alt = '';
+      const big = el('img'); big.src = url; big.alt = '';
       box.append(big);
       box.addEventListener('click', () => box.remove());
       document.body.append(box);
@@ -93,17 +163,6 @@ function gallery() {
     grid.append(img);
   });
   panel.append(grid);
-  return panel;
-}
-
-// Visitors without a card see what the programme offers; the join form only
-// appears when they scanned the shop's code.
-function teaser() {
-  const panel = el('section', undefined, 'panel teaser');
-  panel.append(el('h2', `🎁 ${t('programTitle')}`));
-  panel.append(el('p', t('programText', {n: shop.goal, r: shop.reward}), 'muted'));
-  panel.append(slotsGrid(shop.goal, 0, false, -1));
-  panel.append(el('p', `📷 ${t('programHow')}`, 'small'));
   return panel;
 }
 
@@ -234,24 +293,22 @@ function infoPanel() {
 function render() {
   if (!shop) return;
   document.title = shop.name;
-  const parts = [hero()];
-  const links = quickLinks(); if (links) parts.push(links);
+  const parts = [];
   const closed = closedBanner(); if (closed) parts.push(closed);
   if (notice) {
     const b = el('div', undefined, `banner ${notice.kind}`);
     b.append(el('span', notice.kind === 'green' ? '🎉' : '⚠️', 'ico'), el('p', notice.text));
     parts.push(b);
   }
+  parts.push(bizCard());
   if (customer) {
-    parts.push(loyaltyCard(), actions());
+    parts.push(actions());
     if (canWallet()) parts.push(walletButton());
     const home = el('button', t('addHome'), 'btn ghost'); home.type = 'button';
     home.addEventListener('click', addToHome);
     parts.push(home);
   } else if (pendingCode) {
-    parts.push(loyaltyCard(), joinPanel());
-  } else {
-    parts.push(teaser());
+    parts.push(joinPanel());
   }
   const pics = gallery(); if (pics) parts.push(pics);
   const info = infoPanel(); if (info) parts.push(info);
@@ -362,6 +419,7 @@ async function start() {
     shop = await rpc(config, 'nfc_shop_public', {target_slug: slug});
     if (!shop) { status(t('unavailable'), t('unavailableText')); return; }
     applyColors(shop);
+    applyTheme(shop.theme);
     const token = storage(tokenKey);
     if (token) {
       if (pendingCode) {
@@ -381,7 +439,8 @@ async function start() {
       }
     }
     render();
-  } catch {
+  } catch (e) {
+    console.error(e);
     status(t('network'), '');
   }
 }

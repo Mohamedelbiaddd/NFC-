@@ -196,6 +196,7 @@ const SOCIAL = {
   snapchat: {icon: '👻', color: '#fffc00', ink: '#111'},
   youtube: {icon: '▶️', color: '#ff0000'},
   website: {icon: '🌐', color: '#0ea5e9'},
+  booking: {icon: '📅', color: '#f59e0b'},
   maps: {icon: '📍', color: '#ea4335'},
   email: {icon: '✉️', color: '#6366f1'},
 };
