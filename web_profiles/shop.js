@@ -323,7 +323,52 @@ function homeView() {
   if (!queue.length) qPanel.append(el('p', t('queueEmpty'), 'empty'));
   for (const c of queue) qPanel.append(queueRow(c));
   grid.append(qrPanel, qPanel);
+  if (data.shop.loyalty_mode === 'points') grid.prepend(amountPanel());
   return [grid, bookingsPanel(), closedPanel()];
+}
+
+// Points by amount: the owner types the bill, the next scan (3 min) gets the points.
+function amountPanel() {
+  // Waiting amount comes from the server: a scan clears it at once.
+  const pendingAmount = data.shop.pending;
+  const panel = el('div', undefined, 'panel amount-panel');
+  panel.append(el('h2', `💰 ${t('billTitle')}`), el('p', t('billNote', {n: data.shop.points_per ?? 10}), 'muted small'));
+  if (pendingAmount && new Date(pendingAmount.until) > new Date()) {
+    const box = el('div', undefined, 'banner green');
+    box.append(el('b', t('billReady', {n: pendingAmount.points, a: pendingAmount.amount})), el('div', t('billScanNow'), 'small'));
+    const cancel = el('button', t('cancel'), 'btn small ghost'); cancel.type = 'button';
+    cancel.addEventListener('click', async () => {
+      await rpc(config, 'nfc_shop_amount', {target_slug: slug, session: session(), amount: null}).catch(() => {});
+      await refresh();
+    });
+    panel.append(box, cancel);
+    return panel;
+  }
+  const row = el('div', undefined, 'amount-row');
+  const input = el('input'); input.className = 'field'; input.type = 'number'; input.inputMode = 'decimal'; input.min = '1'; input.step = '0.5';
+  input.placeholder = t('billPlaceholder'); input.dir = 'ltr';
+  const preview = el('p', '', 'muted small');
+  input.addEventListener('focus', () => { editing = true; });
+  input.addEventListener('blur', () => { editing = false; });
+  input.addEventListener('input', () => {
+    const a = parseFloat(input.value);
+    preview.textContent = a > 0 ? t('billPreview', {n: Math.floor(a / (data.shop.points_per ?? 10))}) : '';
+  });
+  const go = el('button', t('billGo'), 'btn'); go.type = 'button';
+  go.addEventListener('click', async () => {
+    const a = parseFloat(input.value);
+    if (!(a > 0)) { toast(t('billBad'), true); return; }
+    go.disabled = true;
+    try {
+      const r = await rpc(config, 'nfc_shop_amount', {target_slug: slug, session: session(), amount: a});
+      if (!r?.ok) { toast(t('saveError'), true); return; }
+      editing = false;
+      await refresh();
+    } catch { toast(t('network'), true); } finally { go.disabled = false; }
+  });
+  row.append(input, go);
+  panel.append(row, preview);
+  return panel;
 }
 
 function closedPanel() {
@@ -389,15 +434,48 @@ function customerCard(c) {
   const phone = el('a', c.phone); phone.href = 'tel:' + c.phone;
   who.append(nameLine, phone);
   const score = el('div', undefined, 'score');
-  score.append(el('b', `${c.stamps}/${c.goal}`), el('span', unit(data.shop)));
+  const pointsShop = data.shop.loyalty_mode === 'points';
+  score.append(el('b', `${c.stamps}/${c.goal}`), el('span', pointsShop ? t('pointsWord') : unit(data.shop)));
   top.append(who, score);
-  card.append(top, numbersRow(c.goal, c.stamps, c.next_free));
+  card.append(top);
+  if (!pointsShop) card.append(numbersRow(c.goal, c.stamps, c.next_free));
+  const sector = sectorRow(c);
+  if (sector) card.append(sector);
   const meta = el('div', undefined, 'cust-meta');
   meta.append(el('span', `${t('lastVisit')}: ${ago(c.last_visit_at)}`), el('span', `${t('totalVisits')}: ${c.total_visits} · 🎁 ${c.rewards}`));
   if (c.next_free) meta.append(el('span', `${t('giftReady')} · ${c.reward ?? data.shop.reward}`, 'chip green'));
   if (c.old_rule) meta.append(el('span', t('oldRule', {n: c.goal}), 'chip gold'));
   card.append(meta);
   return card;
+}
+
+// Sector tools on a customer: gym subscription, car wash vehicle, birthday.
+function sectorRow(c) {
+  const ind = data.shop.industry;
+  const row = el('div', undefined, 'cust-sector');
+  const set = async (settings) => {
+    try {
+      const r = await rpc(config, 'nfc_shop_customer_set', {target_slug: slug, session: session(), customer: c.id, settings});
+      if (r?.ok) { toast(t('saved')); await refresh(); } else toast(t('saveError'), true);
+    } catch { toast(t('network'), true); }
+  };
+  if (c.birthday) row.append(el('span', `🎂 ${t('birthdayToday')}`, 'chip green'));
+  if (ind === 'gym') {
+    const fmt = (iso) => { try { return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang, {day: 'numeric', month: 'short', year: 'numeric'}).format(new Date(iso + 'T12:00:00')); } catch { return iso; } };
+    row.append(el('span', c.expiry_date ? `🗓️ ${t('subscriptionUntil')} ${fmt(c.expiry_date)}` : `🗓️ ${t('noSubscription')}`, 'chip' + (c.expired || !c.expiry_date ? ' amber' : ' green')));
+    const renew = el('button', `➕ ${t('renewMonth')}`, 'btn small'); renew.type = 'button';
+    renew.addEventListener('click', () => set({renew_months: 1}));
+    row.append(renew);
+  }
+  if (ind === 'carwash') {
+    const sel = el('select'); sel.className = 'field small-select';
+    for (const [v, label] of [['', `🚘 ${t('vehiclePick')}`], ['small', t('vehicle_small')], ['suv', t('vehicle_suv')], ['4x4', t('vehicle_4x4')]]) { const o = el('option', label); o.value = v; sel.append(o); }
+    sel.value = c.vehicle_type ?? '';
+    sel.addEventListener('focus', () => { editing = true; });
+    sel.addEventListener('change', () => { editing = false; set({vehicle_type: sel.value}); });
+    row.append(sel);
+  }
+  return row.children.length ? row : null;
 }
 
 function customersView() {
@@ -637,9 +715,32 @@ function settingsView() {
   // Loyalty rules
   const rules = el('div', undefined, 'panel');
   rules.append(el('h2', `🎁 ${t('loyaltyRules')}`));
-  const goal = field(t('goal'), s.goal, 'number'); goal.input.min = 1; goal.input.max = 50;
+  // Visits (one stamp per visit) or points by amount (restaurants).
+  const modeWrap = el('label', undefined, 'row'); modeWrap.append(el('span', t('loyaltyMode')));
+  const mode = el('select'); mode.className = 'field';
+  for (const [v, label] of [['visits', t('modeVisits')], ['points', t('modePoints')]]) { const o = el('option', label); o.value = v; mode.append(o); }
+  mode.value = s.loyalty_mode === 'points' ? 'points' : 'visits';
+  modeWrap.append(mode);
+  const goal = field(t('goal'), s.goal, 'number'); goal.input.min = 1;
+  const per = field(t('pointsPer'), s.points_per ?? 10, 'number'); per.input.min = 1; per.input.max = 1000;
+  const syncMode = () => {
+    const pts = mode.value === 'points';
+    goal.wrap.firstChild.textContent = pts ? t('goalPoints') : t('goal');
+    goal.input.max = pts ? 10000 : 50;
+    per.wrap.hidden = !pts;
+  };
+  mode.addEventListener('change', () => {
+    if (mode.value === 'points' && (parseInt(goal.input.value, 10) || 0) <= 10) goal.input.value = '50';
+    if (mode.value === 'visits' && (parseInt(goal.input.value, 10) || 0) > 50) goal.input.value = '5';
+    syncMode();
+  });
+  syncMode();
   const reward = field(t('reward'), s.reward);
-  rules.append(goal.wrap, reward.wrap, el('p', t('goalNote'), 'muted small'));
+  const bday = field(`🎂 ${t('birthdayRewardLabel')}`, s.birthday_reward ?? '');
+  bday.input.placeholder = t('birthdayRewardHint'); bday.input.maxLength = 80;
+  const menu = field(`🍽️ ${t('menuUrlLabel')}`, s.menu_url ?? '', 'url');
+  menu.input.placeholder = 'https://…'; menu.input.dir = 'ltr';
+  rules.append(modeWrap, goal.wrap, per.wrap, reward.wrap, el('p', t('goalNote'), 'muted small'), bday.wrap, menu.wrap);
   // Card design
   let background = s.card_background ?? '';
   const design = el('div', undefined, 'panel');
@@ -719,9 +820,18 @@ function settingsView() {
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
+      // Sector rules first: the allowed goal depends on the mode.
+      const menuUrl = menu.input.value.trim();
+      if (menuUrl && !/^https:\/\//.test(menuUrl)) { toast(t('badLink'), true); return; }
+      const rs = await rpc(config, 'nfc_shop_sector_settings', {target_slug: slug, session: session(), settings: {
+        loyalty_mode: mode.value, points_per: Math.min(1000, Math.max(1, parseInt(per.input.value, 10) || 10)),
+        menu_url: menuUrl, birthday_reward: bday.input.value.trim(),
+      }});
+      if (!rs?.ok) { toast(rs?.error === 'menu' ? t('badLink') : t('saveError'), true); return; }
+      const maxGoal = mode.value === 'points' ? 10000 : 50;
       const r = await rpc(config, 'nfc_shop_update', {target_slug: slug, session: session(), settings: {
         name: name.input.value, phone: phone.input.value, address: address.input.value, week_hours: weekValue(),
-        goal: String(Math.min(50, Math.max(1, parseInt(goal.input.value, 10) || 5))), reward: reward.input.value,
+        goal: String(Math.min(maxGoal, Math.max(1, parseInt(goal.input.value, 10) || 5))), reward: reward.input.value,
         banners, card_background: background, logo_url: logoUrl, cover_url: coverUrl, email: email.input.value, theme, tagline: tagline.input.value,
         socials: socials.map(x => ({type: x.type, value: String(x.value ?? '').trim()})).filter(x => x.value),
         radius_m: String(Math.min(1000, Math.max(50, parseInt(radius.input.value, 10) || 200))),
@@ -732,8 +842,7 @@ function settingsView() {
       const bv = bookingValue();
       const rb = await rpc(config, 'nfc_shop_booking_settings', {target_slug: slug, session: session(), settings: bv});
       if (!rb?.ok) { toast(rb?.error === 'services' ? t('badServices') : t('saveError'), true); return; }
-      if (bv.enabled && !bv.services.length) toast(t('needServices'), true);
-      else toast(t('saved'));
+      toast(t('saved'));
       editing = false;
       await refresh();
     } catch { toast(t('saveError'), true); } finally { save.disabled = false; }

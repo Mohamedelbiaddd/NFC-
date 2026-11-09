@@ -12,6 +12,7 @@ export interface Hero {
   rtl: boolean;
   lang: 'ar' | 'fr' | 'en';
   sector?: string; // shop industry: picks the stamp icon and the word used
+  points?: boolean; // points-by-amount shop: a progress bar instead of circles
 }
 
 // Stamp icons (24-unit line drawings) by sector; same shapes as the shop page.
@@ -71,7 +72,7 @@ export function heroSvg(h: Hero): string {
   const R = cell * 0.4;
   const ready = h.stamps >= h.goal;
   let circles = '';
-  for (let k = 0; k < n; k++) {
+  for (let k = 0; !h.points && k < n; k++) {
     const row = Math.floor(k / cols);
     const inRow = row === rows - 1 ? n - cols * (rows - 1) : cols;
     const col = h.rtl ? inRow - 1 - (k % cols) : k % cols;
@@ -104,7 +105,25 @@ export function heroSvg(h: Hero): string {
     }
   }
 
-  const line = rows === 1
+  if (h.points) {
+    // Big number + bar: "32 / 50 points", then how many are left.
+    const pct = Math.max(0, Math.min(1, h.stamps / h.goal));
+    const bx = 120, bw = W - 240, by = 222, bh = 26;
+    const word = h.lang === 'fr' ? 'points' : h.lang === 'en' ? 'points' : 'نقطة';
+    const left = Math.max(0, h.goal - h.stamps);
+    const msg = left === 0
+      ? (h.lang === 'fr' ? 'Votre cadeau est prêt' : h.lang === 'en' ? 'Your gift is ready' : 'هديتك جاهزة، اطلبها في زيارتك القادمة')
+      : (h.lang === 'fr' ? `Encore ${left} points avant le cadeau` : h.lang === 'en' ? `${left} more points to your gift` : `تبقّت ${left} نقطة على الهدية`);
+    const fillX = h.rtl ? bx + bw * (1 - pct) : bx;
+    circles = `<text x="${W / 2}" y="200" font-family="Cairo" font-weight="700" font-size="54" fill="url(#goldText)" text-anchor="middle" direction="ltr">${h.stamps} / ${h.goal} <tspan font-size="30">${word}</tspan></text>
+    <rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${bh / 2}" fill="${gold}" fill-opacity="0.12" stroke="${gold}" stroke-opacity="0.6" stroke-width="2"/>
+    ${pct > 0 ? `<rect x="${fillX}" y="${by}" width="${Math.max(bh, bw * pct)}" height="${bh}" rx="${bh / 2}" fill="url(#goldFill)" filter="url(#glow)"/>` : ''}`;
+    var pointsLine = msg;
+  }
+
+  const line = h.points
+    ? `<text x="${W / 2}" y="296" font-family="Cairo" font-weight="600" font-size="24" fill="${light}" fill-opacity="0.9" text-anchor="middle">${esc(pointsLine!)}</text>`
+    : rows === 1
     ? `<text x="${W / 2}" y="306" font-family="Cairo" font-weight="600" font-size="23" fill="${light}" fill-opacity="0.9" text-anchor="middle">${esc(bottomLine(h))}</text>`
     : '';
 

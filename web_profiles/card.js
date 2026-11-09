@@ -72,6 +72,11 @@ function bizCard() {
     }
     card.append(acts);
   }
+  if (shop.menu_url) {
+    const m = ext(el('a', undefined, 'bc-menu'), shop.menu_url);
+    m.append(el('span', '🍽️'), el('b', t('menuBtn')));
+    card.append(m);
+  }
 
   const body = el('div', undefined, 'bc-body');
   // Address | today's hours
@@ -148,6 +153,21 @@ function points() {
   const title = el('h3');
   title.append(svg('sparkle', 'bc-spark'), document.createTextNode(t('pointsTitle')));
   box.append(title);
+  if (shop.loyalty_mode === 'points') {
+    const pts = customer?.stamps ?? 0;
+    const bar = el('div', undefined, 'bc-bar');
+    const fill = el('i'); fill.style.width = `${Math.min(100, Math.round((pts / goal) * 100))}%`;
+    bar.append(fill);
+    const big = el('p', undefined, 'bc-pts');
+    big.append(el('b', String(pts)), el('span', ` / ${goal} ${t('pointsWord')}`));
+    box.append(big, bar, el('p', t('perPoint', {n: shop.points_per ?? 10}), 'bc-progress small'));
+    if (customer?.next_free) box.append(el('p', t('giftReady'), 'bc-progress'));
+    const rw0 = el('p', undefined, 'bc-reward');
+    rw0.append(svg('gift', 'ico'), el('span', t('rewardLabel')), el('b', reward));
+    box.append(rw0);
+    sectorInfo(box);
+    return box;
+  }
   const row = el('div', undefined, 'bc-dots');
   row.style.setProperty('--cols', String(Math.min(goal + 1, 7)));
   for (let i = 0; i < goal; i++) {
@@ -167,7 +187,58 @@ function points() {
   const rw = el('p', undefined, 'bc-reward');
   rw.append(svg('gift', 'ico'), el('span', t('rewardLabel')), el('b', reward));
   box.append(rw);
+  sectorInfo(box);
   return box;
+}
+
+// Sector lines under the points: birthday, gym subscription, car wash.
+function sectorInfo(box) {
+  if (!customer) return;
+  const line = (icon, label, value, cls = '') => {
+    const p = el('p', undefined, 'bc-info ' + cls);
+    p.append(el('span', icon), el('span', label), el('b', value));
+    box.append(p);
+  };
+  const day = (iso) => { try { return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang, {day: 'numeric', month: 'long', year: 'numeric'}).format(new Date(iso)); } catch { return iso; } };
+  if (customer.birthday) {
+    const b = el('p', `🎂 ${t('happyBirthday')}${shop.birthday_reward ? ` — ${t('birthdayGift')}: ${shop.birthday_reward}` : ''}`, 'banner green');
+    box.prepend(b);
+  }
+  if (shop.industry === 'gym' && customer.expiry_date) {
+    line('🗓️', t('subscriptionUntil'), day(customer.expiry_date + 'T12:00:00'), customer.expired ? 'bad' : '');
+    if (customer.expired) box.append(el('p', t('subscriptionExpired'), 'banner amber'));
+  }
+  if (shop.industry === 'carwash') {
+    if (customer.vehicle_type) line('🚘', t('vehicle'), t('vehicle_' + customer.vehicle_type));
+    if (customer.last_visit_at) line('🧽', t('lastWash'), day(customer.last_visit_at));
+  }
+}
+
+// Optional extras at sign-up: birthday (all sectors) and vehicle (car wash).
+function extraFields() {
+  const wrap = el('div', undefined, 'extra-fields');
+  const dl = el('label', `🎂 ${t('dobLabel')}`, 'small muted');
+  const dob = el('input'); dob.type = 'date'; dob.className = 'field'; dob.max = new Date().toISOString().slice(0, 10); dob.min = '1920-01-01';
+  wrap.append(dl, dob);
+  let veh = null;
+  if (shop.industry === 'carwash') {
+    veh = el('select'); veh.className = 'field';
+    for (const [v, label] of [['', t('vehiclePick')], ['small', t('vehicle_small')], ['suv', t('vehicle_suv')], ['4x4', t('vehicle_4x4')]]) {
+      const o = el('option', label); o.value = v; veh.append(o);
+    }
+    wrap.append(el('label', `🚘 ${t('vehicle')}`, 'small muted'), veh);
+  }
+  return {
+    node: wrap,
+    async save() {
+      const birth = dob.value || null, vehicle = veh?.value || null;
+      if (!birth && !vehicle) return;
+      try {
+        const r = await rpc(config, 'nfc_customer_profile', {target_slug: slug, token: storage(tokenKey), birth_date: birth, vehicle});
+        if (r?.ok) customer = r.customer;
+      } catch { /* optional */ }
+    },
+  };
 }
 
 // Up to six photos; tap one to see it full screen.
@@ -282,6 +353,7 @@ function joinPanel() {
   panel.append(el('h2', `✨ ${t('join')}`), el('p', t('joinText'), 'muted small'));
   const name = el('input'); name.className = 'field'; name.placeholder = t('fullName'); name.autocomplete = 'name'; name.maxLength = 80;
   const phone = el('input'); phone.className = 'field'; phone.placeholder = t('phoneForCall'); phone.type = 'tel'; phone.autocomplete = 'tel'; phone.inputMode = 'tel'; phone.dir = 'ltr';
+  const extra = extraFields();
   const btn = el('button', t('joinBtn'), 'btn'); btn.type = 'button';
   btn.addEventListener('click', async () => {
     if (!name.value.trim()) { toast(t('badName'), true); return; }
@@ -294,7 +366,8 @@ function joinPanel() {
       if (!r?.ok) { toast(r?.error === 'phone' ? t('badPhone') : r?.error === 'name_mismatch' ? t('nameMismatch') : t('badName'), true); return; }
       storage(tokenKey, r.token);
       customer = r.customer;
-      if (r.visit) { notice = {kind: 'green', text: r.visit.free ? t('stampedFree') : t('stamped')}; fresh = customer.stamps - 1; }
+      await extra.save();
+      if (r.visit) { notice = {kind: 'green', text: r.visit.free ? t('stampedFree') : scanText(r.visit)}; fresh = customer.stamps - 1; }
       pendingCode = null;
       render();
       setTimeout(walletPrompt, 900);
@@ -304,7 +377,7 @@ function joinPanel() {
       btn.disabled = false;
     }
   });
-  panel.append(name, phone, btn);
+  panel.append(name, phone, extra.node, btn);
   return panel;
 }
 
@@ -458,11 +531,22 @@ function walletButton() {
 
 // "زيارة واحدة من أصل خمس" / "1 visit of 5"
 const AR_NUM = ['', 'واحدة', 'اثنتين', 'ثلاث', 'أربع', 'خمس', 'ست', 'سبع', 'ثماني', 'تسع', 'عشر'];
+// What one stamp is called, by sector: [one, two, 3-10, feminine?].
+const AR_UNIT = {
+  cafe: ['كوب', 'كوبان', 'أكواب', false], carwash: ['غسلة', 'غسلتان', 'غسلات', true],
+  snack: ['طلب', 'طلبان', 'طلبات', false], gym: ['حصة', 'حصتان', 'حصص', true],
+};
+const AR_MASC = ['', 'واحد', 'اثنين', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة'];
 function visitsText(n, g) {
-  if (lang !== 'ar') return t('visitsOf', {n, g});
-  const count = n === 0 ? 'لا زيارات بعد' : n === 1 ? 'زيارة واحدة' : n === 2 ? 'زيارتان'
-    : n <= 10 ? `${AR_NUM[n] ?? n} زيارات` : `${n} زيارة`;
-  return `${count} من أصل ${AR_NUM[g] ?? g}`;
+  if (shop.loyalty_mode === 'points') return t('pointsOf', {n, g});
+  const u = AR_UNIT[shop.industry];
+  if (lang !== 'ar') return t(u ? `unitsOf_${shop.industry}` : 'visitsOf', {n, g});
+  const [one, two, many, fem] = u ?? ['زيارة', 'زيارتان', 'زيارات', true];
+  // Arabic counting: feminine nouns take the masculine number word and vice versa.
+  const num = (k) => (fem ? AR_NUM : AR_MASC)[k] ?? k;
+  const count = n === 0 ? `لا ${many} بعد` : n === 1 ? `${one} ${fem ? 'واحدة' : 'واحد'}` : n === 2 ? two
+    : n <= 10 ? `${num(n)} ${many}` : `${n} ${one}`;
+  return `${count} من أصل ${num(g)}`;
 }
 
 /* ---------- Appointments ----------
@@ -486,8 +570,9 @@ async function loadMyBooking() {
 // Name + phone before the first booking (joins the shop without a visit).
 function detailsStep(panel, done, title = `📅 ${t('bookBtn')}`, note = `${t('yourDetails')} ${t('sameDetails')}`) {
   panel.replaceChildren(el('h2', title), el('p', note, 'muted small'));
-  const name = el('input'); name.className = 'field'; name.placeholder = t('name'); name.autocomplete = 'name'; name.maxLength = 80;
-  const phone = el('input'); phone.className = 'field'; phone.placeholder = t('phone'); phone.type = 'tel'; phone.inputMode = 'tel'; phone.dir = 'ltr';
+  const name = el('input'); name.className = 'field'; name.placeholder = t('fullName'); name.autocomplete = 'name'; name.maxLength = 80;
+  const phone = el('input'); phone.className = 'field'; phone.placeholder = t('phoneForCall'); phone.type = 'tel'; phone.inputMode = 'tel'; phone.dir = 'ltr';
+  const extra = extraFields();
   const go = el('button', t('continue'), 'btn'); go.type = 'button';
   go.addEventListener('click', async () => {
     if (!name.value.trim()) { toast(t('badName'), true); return; }
@@ -498,10 +583,18 @@ function detailsStep(panel, done, title = `📅 ${t('bookBtn')}`, note = `${t('y
       if (!r?.ok) { toast(r?.error === 'phone' ? t('badPhone') : r?.error === 'name_mismatch' ? t('nameMismatch') : t('badName'), true); return; }
       storage(tokenKey, r.token);
       customer = r.customer;
+      await extra.save();
       done();
     } catch { toast(t('network'), true); } finally { go.disabled = false; }
   });
-  panel.append(name, phone, go);
+  panel.append(name, phone, extra.node, go);
+}
+
+// Message after a scan: points shops say how many points the bill gave.
+function scanText(v) {
+  if (shop.loyalty_mode === 'points' && v?.points != null) return t('pointsAdded', {n: v.points, a: v.amount ?? ''});
+  if (shop.industry === 'gym') return t('checkedIn');
+  return t('stamped');
 }
 
 const svcLabel = (name) => name === 'موعد' ? t('appointment') : name;
@@ -778,8 +871,8 @@ async function start() {
         if (r?.error === 'card') storage(tokenKey, null);
         else {
           customer = r.customer;
-          if (r.ok) { notice = {kind: 'green', text: r.free ? t('stampedFree') : t('stamped')}; fresh = r.free ? -1 : customer.stamps - 1; wallet('sync').catch(() => {}); setTimeout(walletPrompt, 1200); }
-          else notice = {kind: 'amber', text: r.error === 'too_soon' ? t('tooSoon') : t('codeExpired')};
+          if (r.ok) { notice = {kind: 'green', text: r.free ? t('stampedFree') : scanText(r)}; fresh = r.free ? -1 : customer.stamps - 1; wallet('sync').catch(() => {}); setTimeout(walletPrompt, 1200); }
+          else notice = {kind: 'amber', text: ({too_soon: t('tooSoon'), no_amount: t('noAmount'), expired: t('subscriptionExpired')})[r.error] ?? t('codeExpired')};
         }
       }
       if (!customer && storage(tokenKey)) {

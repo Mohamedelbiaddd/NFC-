@@ -191,8 +191,9 @@ function draw(stamps: number, goal: number, bg: RGB, accent: RGB = [246, 194, 50
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
-  const goal = Math.min(50, Math.max(1, parseInt(url.searchParams.get('g') ?? '5', 10) || 5));
-  const stamps = Math.min(goal, Math.max(0, parseInt(url.searchParams.get('s') ?? '0', 10) || 0));
+  const isPoints = url.searchParams.get('m') === 'p';
+  const goal = Math.min(isPoints ? 10000 : 50, Math.max(1, parseInt(url.searchParams.get('g') ?? '5', 10) || 5));
+  const stamps = Math.min(isPoints ? 100000 : goal, Math.max(0, parseInt(url.searchParams.get('s') ?? '0', 10) || 0));
   const pick = (k: string, d: string) => (/^[0-9a-fA-F]{6}$/.test(url.searchParams.get(k) ?? '') ? url.searchParams.get(k)! : d);
   const bg = pick('c', '0b1a36'), accent = pick('a', 'f6c232'), ink = pick('k', '1b1400');
   const rtl = url.searchParams.get('r') === '1';
@@ -213,13 +214,13 @@ Deno.serve(async (req) => {
     try {
       const fontBuffers = await engine();
       const sector = (url.searchParams.get('i') ?? '').replace(/[^a-z]/g, '').slice(0, 12);
-      const svg = heroSvg({name, stamps, goal, bg, accent, ink, rtl, lang, sector});
+      const svg = heroSvg({name, stamps, goal, bg, accent, ink, rtl, lang, sector, points: isPoints});
       body = new Resvg(svg, {font: {fontBuffers, loadSystemFonts: false, defaultFontFamily: 'Cairo'}}).render().asPng();
     } catch (e) {
       console.error('hero render failed', String(e).slice(0, 200));
     }
   }
-  body ??= await png(draw(stamps, goal, hex(bg), hex(accent), hex(ink), rtl));
+  body ??= await png(draw(Math.min(stamps, 50), Math.min(goal, 50), hex(bg), hex(accent), hex(ink), rtl));
   return new Response(body, {
     headers: {
       'Content-Type': 'image/png',

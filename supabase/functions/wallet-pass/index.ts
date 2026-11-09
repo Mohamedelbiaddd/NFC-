@@ -3,6 +3,11 @@
 // Google Wallet loyalty cards for shop customers.
 //   POST {action: 'save', slug, token, lang?} -> {ok, url}  "Add to Google Wallet" link
 //   POST {action: 'sync', slug, token}         -> {ok}       refresh points / next booking
+//   POST {action: 'birthdays', secret}          -> {ok, sent} daily job (pg_cron): birthday
+//        cards are refreshed with a Wallet notification (secret = app_secrets CRON_SECRET)
+//
+// Sector extras: points-by-amount shops show points and the MAD rule, gyms the
+// subscription end, car washes the vehicle and last wash; a menu link when set.
 //
 // The pass uses the shop's theme colours and logo, shows the stamp circles
 // (wallet-image), progress, reward and next appointment, and links to call,
@@ -51,9 +56,9 @@ function visitsText(lang: string, n: number, g: number): string {
 }
 
 const TEXT: Record<string, Record<string, string>> = {
-  ar: {points: 'الزيارات', reward: 'الهدية', rewards: 'هدايا حصلت عليها', free: '🎁 زيارتك القادمة مجانية!', open: 'افتح بطاقتي', every: 'بعد {0} زيارات', call: 'اتصال', book: 'احجز موعدًا', mine: 'حجزي', next: 'موعدك القادم', progress: 'تقدّمك', scan: 'في كل زيارة امسح الكود الظاهر عند المحل، وتُضاف الدائرة هنا تلقائياً.'},
-  fr: {points: 'Visites', reward: 'Cadeau', rewards: 'Cadeaux obtenus', free: '🎁 Votre prochaine visite est offerte !', open: 'Ouvrir ma carte', every: 'Après {0} visites', call: 'Appeler', book: 'Prendre rendez-vous', mine: 'Mon rendez-vous', next: 'Votre prochain rendez-vous', progress: 'Progression', scan: 'À chaque visite, scannez le code affiché au magasin : le cercle s’ajoute ici automatiquement.'},
-  en: {points: 'Visits', reward: 'Reward', rewards: 'Rewards earned', free: '🎁 Your next visit is free!', open: 'Open my card', every: 'After {0} visits', call: 'Call', book: 'Book an appointment', mine: 'My booking', next: 'Your next appointment', progress: 'Progress', scan: 'At every visit, scan the code shown at the shop and a circle is added here automatically.'},
+  ar: {pts: 'النقاط', perPoint: 'كل {0} درهم = نقطة', menu: 'المنيو / اطلب الآن', subUntil: 'الاشتراك صالح حتى', subExpired: '⚠️ انتهى الاشتراك، جدّده عند الاستقبال', vehicle: 'السيارة', lastWash: 'آخر غسلة', bday: '🎂 عيد ميلاد سعيد!', bdayBody: 'هديتك اليوم: {0}', bdayNoGift: 'كل عام وأنت بخير، ننتظرك اليوم!', small: 'سيارة صغيرة', suv: 'SUV', x4: 'دفع رباعي 4x4', points: 'الزيارات', reward: 'الهدية', rewards: 'هدايا حصلت عليها', free: '🎁 زيارتك القادمة مجانية!', open: 'افتح بطاقتي', every: 'بعد {0} زيارات', call: 'اتصال', book: 'احجز موعدًا', mine: 'حجزي', next: 'موعدك القادم', progress: 'تقدّمك', scan: 'في كل زيارة امسح الكود الظاهر عند المحل، وتُضاف الدائرة هنا تلقائياً.'},
+  fr: {pts: 'Points', perPoint: '{0} MAD = 1 point', menu: 'Menu / Commander', subUntil: 'Abonnement valable jusqu’au', subExpired: '⚠️ Abonnement expiré, renouvelez-le à l’accueil', vehicle: 'Véhicule', lastWash: 'Dernier lavage', bday: '🎂 Joyeux anniversaire !', bdayBody: 'Votre cadeau aujourd’hui : {0}', bdayNoGift: 'Bon anniversaire, on vous attend aujourd’hui !', small: 'Petite voiture', suv: 'SUV', x4: '4x4', points: 'Visites', reward: 'Cadeau', rewards: 'Cadeaux obtenus', free: '🎁 Votre prochaine visite est offerte !', open: 'Ouvrir ma carte', every: 'Après {0} visites', call: 'Appeler', book: 'Prendre rendez-vous', mine: 'Mon rendez-vous', next: 'Votre prochain rendez-vous', progress: 'Progression', scan: 'À chaque visite, scannez le code affiché au magasin : le cercle s’ajoute ici automatiquement.'},
+  en: {pts: 'Points', perPoint: '{0} MAD = 1 point', menu: 'Menu / Order now', subUntil: 'Subscription valid until', subExpired: '⚠️ Subscription expired, renew it at the desk', vehicle: 'Vehicle', lastWash: 'Last wash', bday: '🎂 Happy birthday!', bdayBody: 'Your gift today: {0}', bdayNoGift: 'Happy birthday, see you today!', small: 'Small car', suv: 'SUV', x4: '4x4', points: 'Visits', reward: 'Reward', rewards: 'Rewards earned', free: '🎁 Your next visit is free!', open: 'Open my card', every: 'After {0} visits', call: 'Call', book: 'Book an appointment', mine: 'My booking', next: 'Your next appointment', progress: 'Progress', scan: 'At every visit, scan the code shown at the shop and a circle is added here automatically.'},
 };
 
 function json(body: unknown, status = 200): Response {
@@ -123,59 +128,33 @@ async function upsert(token: string, kind: string, resource: Record<string, unkn
 
 const plain = (id: string) => id.replace(/[^a-zA-Z0-9]/g, '');
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', {headers: CORS});
-  if (req.method !== 'POST') return json({ok: false, error: 'method'}, 405);
-  let body: Record<string, unknown>;
+type Row = Record<string, any>;
+const SHOP_FIELDS = 'id, name, shop_slug, primary_color, loyalty_goal, loyalty_reward, loyalty_enabled, suspended, phone, address, card_background, latitude, longitude, logo_url, theme, industry, booking_enabled, services, week_hours, timezone, loyalty_mode, points_per, menu_url, birthday_reward';
+const CUSTOMER_FIELDS = 'id, name, phone, stamps, rewards, total_visits, goal, reward, vehicle_type, dob, expiry_date, last_visit_at, wallet_lang, birthday_year';
+
+// Today's date (YYYY-MM-DD) in the shop's time zone.
+function todayIn(tz: string): string {
   try {
-    body = await req.json();
+    return new Intl.DateTimeFormat('en-CA', {timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
   } catch {
-    return json({ok: false, error: 'body'}, 400);
+    return new Date().toISOString().slice(0, 10);
   }
-  const action = body.action === 'sync' ? 'sync' : 'save';
-  const slug = String(body.slug ?? '').toLowerCase().trim();
-  const cardToken = String(body.token ?? '');
-  const lang = ['ar', 'fr', 'en'].includes(String(body.lang)) ? String(body.lang) : 'ar';
-  if (!SLUG.test(slug) || !TOKEN.test(cardToken)) return json({ok: false, error: 'card'}, 400);
-
-  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
-    auth: {persistSession: false},
-  });
-  // The key comes from the function secret, or else from the private
-  // nfc_private.app_secrets table (service role only).
-  let rawKey = Deno.env.get('GOOGLE_WALLET_KEY');
-  if (!rawKey) {
-    const {data} = await db.rpc('nfc_app_secret', {secret_name: 'GOOGLE_WALLET_KEY'});
-    if (typeof data === 'string' && data) rawKey = data;
-  }
-  if (!rawKey) {
-    console.error('GOOGLE_WALLET_KEY missing (secret and app_secrets)');
-    return json({ok: false, error: 'not_configured'}, 503);
-  }
-  let key: ServiceKey;
+}
+function fmtDate(lang: string, iso: string, tz: string): string {
   try {
-    key = JSON.parse(rawKey.trim());
-    if (!key.client_email || !key.private_key) throw new Error('fields');
-  } catch (e) {
-    console.error(`GOOGLE_WALLET_KEY is not valid service-account JSON (${rawKey.length} chars): ${String(e).slice(0, 80)}`);
-    return json({ok: false, error: 'bad_key'}, 500);
+    return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang, {day: 'numeric', month: 'long', year: 'numeric', timeZone: tz})
+      .format(new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso));
+  } catch {
+    return iso.slice(0, 10);
   }
+}
 
-  const {data: shop} = await db
-    .from('nfc_businesses')
-    .select('id, name, shop_slug, primary_color, loyalty_goal, loyalty_reward, loyalty_enabled, suspended, phone, address, card_background, latitude, longitude, logo_url, theme, industry, booking_enabled, services, week_hours, timezone')
-    .eq('shop_slug', slug)
-    .maybeSingle();
-  if (!shop || !shop.loyalty_enabled || shop.suspended) return json({ok: false, error: 'shop'}, 404);
-  const {data: customer} = await db
-    .from('nfc_customers')
-    .select('id, name, phone, stamps, rewards, total_visits, goal, reward')
-    .eq('business_id', shop.id)
-    .eq('token_hash', await sha256(cardToken))
-    .maybeSingle();
-  if (!customer) return json({ok: false, error: 'card'}, 404);
-
+/// The loyalty class (one per shop) and object (one per customer).
+async function buildPass(db: any, shop: Row, customer: Row, lang: string) {
   const t = TEXT[lang];
+  const tz = String(shop.timezone || 'Africa/Casablanca');
+  const today = todayIn(tz);
+  const points = shop.loyalty_mode === 'points';
   const goal = Number(customer.goal ?? shop.loyalty_goal ?? 5);
   const reward = String(customer.reward ?? shop.loyalty_reward ?? '');
   const stamps = Number(customer.stamps ?? 0);
@@ -184,6 +163,7 @@ Deno.serve(async (req) => {
   const objectId = `${ISSUER}.cust_${plain(customer.id)}`;
   const [bg, gold, ink] = THEMES[String(shop.theme)] ?? THEMES.navy;
   const canBook = !!shop.booking_enabled && !!shop.week_hours;
+  const birthday = !!customer.dob && String(customer.dob).slice(5, 10) === today.slice(5, 10);
   // Next appointment (shown on the pass).
   const {data: nextBooking} = await db
     .from('nfc_bookings')
@@ -194,7 +174,6 @@ Deno.serve(async (req) => {
     .order('starts_at')
     .limit(1)
     .maybeSingle();
-  const tz = String(shop.timezone || 'Africa/Casablanca');
   let nextText: string | null = null;
   if (nextBooking) {
     try {
@@ -204,6 +183,8 @@ Deno.serve(async (req) => {
     }
   }
   const logo = typeof shop.logo_url === 'string' && shop.logo_url.startsWith('https://') ? shop.logo_url : `${SITE}/icon-512.png`;
+  const fn = `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image`;
+  const name40 = encodeURIComponent(String(shop.name).slice(0, 40));
 
   const loyaltyClass: Record<string, unknown> = {
     id: classId,
@@ -213,7 +194,7 @@ Deno.serve(async (req) => {
     programLogo: {sourceUri: {uri: logo}},
     // The shop name in the theme's gold and Amiri on the front of the card.
     wideProgramLogo: {
-      sourceUri: {uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image?t=wide&a=${gold.slice(1)}&n=${encodeURIComponent(String(shop.name).slice(0, 40))}&v=1`},
+      sourceUri: {uri: `${fn}?t=wide&a=${gold.slice(1)}&n=${name40}&v=1`},
       contentDescription: {defaultValue: {language: lang, value: String(shop.name).slice(0, 60)}},
     },
     hexBackgroundColor: bg,
@@ -225,55 +206,180 @@ Deno.serve(async (req) => {
       : {}),
   };
   const free = stamps >= goal;
-  const shown = Math.min(stamps, goal);
+  const shown = points ? stamps : Math.min(stamps, goal);
+  const vehicle = ({small: t.small, suv: t.suv, '4x4': t.x4} as Record<string, string>)[String(customer.vehicle_type)] ?? null;
+  const expired = !!customer.expiry_date && String(customer.expiry_date) < today;
+  const year = today.slice(0, 4);
   const loyaltyObject: Record<string, unknown> = {
     id: objectId,
     classId,
     state: 'ACTIVE',
     accountName: String(customer.name),
     hexBackgroundColor: bg,
-    loyaltyPoints: {label: UNITS[String(shop.industry)]?.[lang] ?? t.points, balance: {string: `${shown} / ${goal}`}},
+    loyaltyPoints: {
+      label: points ? t.pts : UNITS[String(shop.industry)]?.[lang] ?? t.points,
+      balance: {string: `${shown} / ${goal}`},
+    },
     secondaryLoyaltyPoints: {label: t.rewards, balance: {int: Number(customer.rewards ?? 0)}},
     // No barcode: the customer scans the shop's live QR, never the other way round.
     heroImage: {
       sourceUri: {
-        uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image?s=${shown}&g=${goal}&c=${bg.slice(1)}&a=${gold.slice(1)}&k=${ink.slice(1)}${lang === 'ar' ? '&r=1' : ''}&l=${lang}&n=${encodeURIComponent(String(shop.name).slice(0, 40))}&i=${String(shop.industry ?? '')}&v=3`,
+        uri: `${fn}?s=${shown}&g=${goal}&c=${bg.slice(1)}&a=${gold.slice(1)}&k=${ink.slice(1)}${lang === 'ar' ? '&r=1' : ''}&l=${lang}&n=${name40}&i=${String(shop.industry ?? '')}${points ? '&m=p' : ''}&v=3`,
       },
-      contentDescription: {defaultValue: {language: lang, value: visitsText(lang, shown, goal)}},
+      contentDescription: {defaultValue: {language: lang, value: points ? `${shown} / ${goal}` : visitsText(lang, shown, goal)}},
     },
     textModulesData: [
+      ...(birthday ? [{id: 'bday', header: t.bday, body: shop.birthday_reward ? t.bdayBody.replace('{0}', String(shop.birthday_reward)) : t.bdayNoGift}] : []),
       ...(free ? [{id: 'free', header: '🎁', body: t.free}] : []),
       ...(nextText ? [{id: 'next', header: `📅 ${t.next}`, body: nextText}] : []),
-      {id: 'reward', header: `🎁 ${t.reward}`, body: `${reward} · ${t.every.replace('{0}', String(goal))}`},
+      ...(shop.industry === 'gym' && customer.expiry_date
+        ? [{id: 'sub', header: `🗓️ ${t.subUntil}`, body: expired ? `${fmtDate(lang, String(customer.expiry_date), tz)} · ${t.subExpired}` : fmtDate(lang, String(customer.expiry_date), tz)}]
+        : []),
+      ...(shop.industry === 'carwash' && vehicle ? [{id: 'vehicle', header: `🚘 ${t.vehicle}`, body: vehicle}] : []),
+      ...(shop.industry === 'carwash' && customer.last_visit_at ? [{id: 'wash', header: `🧽 ${t.lastWash}`, body: fmtDate(lang, String(customer.last_visit_at), tz)}] : []),
+      {id: 'reward', header: `🎁 ${t.reward}`, body: points ? `${reward} · ${goal} ${t.pts}` : `${reward} · ${t.every.replace('{0}', String(goal))}`},
+      ...(points ? [{id: 'rule', header: '💰', body: t.perPoint.replace('{0}', String(shop.points_per ?? 10))}] : []),
       {id: 'scan', header: '📷', body: t.scan},
       ...(shop.address ? [{id: 'address', header: '📍', body: String(shop.address)}] : []),
     ],
     linksModuleData: {
       uris: [
+        ...(shop.menu_url ? [{id: 'menu', uri: String(shop.menu_url), description: `🍽️ ${t.menu}`}] : []),
         ...(shop.phone ? [{id: 'phone', uri: `tel:${String(shop.phone).replace(/[^+0-9]/g, '')}`, description: `📞 ${t.call} · ${shop.phone}`}] : []),
         ...(canBook ? [{id: 'book', uri: `${cardUrl}#book`, description: `📅 ${t.book}`}] : []),
         ...(canBook ? [{id: 'mine', uri: `${cardUrl}#mybooking`, description: `🗓️ ${t.mine}`}] : []),
         {id: 'card', uri: cardUrl, description: t.open},
       ],
     },
+    // On the birthday a message that Google pushes as a notification (once per year).
+    ...(birthday
+      ? {messages: [{
+          id: `bday-${year}`,
+          header: t.bday,
+          body: shop.birthday_reward ? t.bdayBody.replace('{0}', String(shop.birthday_reward)) : t.bdayNoGift,
+          messageType: 'TEXT_AND_NOTIFY',
+        }]}
+      : {}),
   };
+  return {loyaltyClass, loyaltyObject, objectId, birthday, year: Number(year)};
+}
+
+async function loadKey(db: any): Promise<ServiceKey | Response> {
+  // The key comes from the function secret, or else from the private
+  // nfc_private.app_secrets table (service role only).
+  let rawKey = Deno.env.get('GOOGLE_WALLET_KEY');
+  if (!rawKey) {
+    const {data} = await db.rpc('nfc_app_secret', {secret_name: 'GOOGLE_WALLET_KEY'});
+    if (typeof data === 'string' && data) rawKey = data;
+  }
+  if (!rawKey) {
+    console.error('GOOGLE_WALLET_KEY missing (secret and app_secrets)');
+    return json({ok: false, error: 'not_configured'}, 503);
+  }
+  try {
+    const key = JSON.parse(rawKey.trim());
+    if (!key.client_email || !key.private_key) throw new Error('fields');
+    return key;
+  } catch (e) {
+    console.error(`GOOGLE_WALLET_KEY is not valid service-account JSON (${rawKey.length} chars): ${String(e).slice(0, 80)}`);
+    return json({ok: false, error: 'bad_key'}, 500);
+  }
+}
+
+// Daily job: customers whose birthday is today get their saved card refreshed
+// with the birthday message (Google shows a notification).
+async function birthdays(db: any, key: ServiceKey): Promise<Response> {
+  const {data: shops} = await db.from('nfc_businesses').select(SHOP_FIELDS)
+    .eq('loyalty_enabled', true).eq('suspended', false).not('shop_slug', 'is', null);
+  const token = await accessToken(key);
+  let sent = 0;
+  for (const shop of shops ?? []) {
+    const today = todayIn(String(shop.timezone || 'Africa/Casablanca'));
+    const {data: customers} = await db.from('nfc_customers').select(CUSTOMER_FIELDS)
+      .eq('business_id', shop.id).not('dob', 'is', null);
+    for (const c of customers ?? []) {
+      if (String(c.dob).slice(5, 10) !== today.slice(5, 10) || Number(c.birthday_year) === Number(today.slice(0, 4))) continue;
+      try {
+        const pass = await buildPass(db, shop, c, String(c.wallet_lang || 'ar'));
+        const exists = await upsert(token, 'loyaltyObject', pass.loyaltyObject, true);
+        await db.from('nfc_customers').update({birthday_year: pass.year}).eq('id', c.id);
+        if (exists) sent++;
+      } catch (e) {
+        console.error('birthday', String(e).slice(0, 200));
+      }
+    }
+  }
+  return json({ok: true, sent});
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', {headers: CORS});
+  if (req.method !== 'POST') return json({ok: false, error: 'method'}, 405);
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ok: false, error: 'body'}, 400);
+  }
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+    auth: {persistSession: false},
+  });
+
+  if (body.action === 'birthdays') {
+    const {data: secret} = await db.rpc('nfc_app_secret', {secret_name: 'CRON_SECRET'});
+    if (typeof secret !== 'string' || !secret || body.secret !== secret) return json({ok: false, error: 'forbidden'}, 403);
+    const key = await loadKey(db);
+    if (key instanceof Response) return key;
+    try {
+      return await birthdays(db, key);
+    } catch (e) {
+      console.error(String(e));
+      return json({ok: false, error: 'wallet'}, 502);
+    }
+  }
+
+  const action = body.action === 'sync' ? 'sync' : 'save';
+  const slug = String(body.slug ?? '').toLowerCase().trim();
+  const cardToken = String(body.token ?? '');
+  const lang = ['ar', 'fr', 'en'].includes(String(body.lang)) ? String(body.lang) : 'ar';
+  if (!SLUG.test(slug) || !TOKEN.test(cardToken)) return json({ok: false, error: 'card'}, 400);
+
+  const key = await loadKey(db);
+  if (key instanceof Response) return key;
+
+  const {data: shop} = await db.from('nfc_businesses').select(SHOP_FIELDS).eq('shop_slug', slug).maybeSingle();
+  if (!shop || !shop.loyalty_enabled || shop.suspended) return json({ok: false, error: 'shop'}, 404);
+  const {data: customer} = await db
+    .from('nfc_customers')
+    .select(CUSTOMER_FIELDS)
+    .eq('business_id', shop.id)
+    .eq('token_hash', await sha256(cardToken))
+    .maybeSingle();
+  if (!customer) return json({ok: false, error: 'card'}, 404);
+  // Remember the card's language for the birthday job.
+  const passLang = action === 'save' ? lang : String(customer.wallet_lang || lang);
+  if (action === 'save' && customer.wallet_lang !== lang) {
+    await db.from('nfc_customers').update({wallet_lang: lang}).eq('id', customer.id);
+  }
 
   try {
+    const pass = await buildPass(db, shop, customer, passLang);
     const token = await accessToken(key);
     if (action === 'sync') {
       // Only refreshes cards the customer already saved.
-      const exists = await upsert(token, 'loyaltyObject', loyaltyObject, true);
-      if (exists) await upsert(token, 'loyaltyClass', loyaltyClass);
+      const exists = await upsert(token, 'loyaltyObject', pass.loyaltyObject, true);
+      if (exists) await upsert(token, 'loyaltyClass', pass.loyaltyClass);
+      if (exists && pass.birthday) await db.from('nfc_customers').update({birthday_year: pass.year}).eq('id', customer.id);
       return json({ok: true, saved: exists});
     }
-    await upsert(token, 'loyaltyClass', loyaltyClass);
-    await upsert(token, 'loyaltyObject', loyaltyObject);
+    await upsert(token, 'loyaltyClass', pass.loyaltyClass);
+    await upsert(token, 'loyaltyObject', pass.loyaltyObject);
     const jwt = await signJwt(key, {
       iss: key.client_email,
       aud: 'google',
       typ: 'savetowallet',
       origins: [SITE],
-      payload: {loyaltyObjects: [{id: objectId}]},
+      payload: {loyaltyObjects: [{id: pass.objectId}]},
     });
     return json({ok: true, url: `https://pay.google.com/gp/v/save/${jwt}`});
   } catch (e) {

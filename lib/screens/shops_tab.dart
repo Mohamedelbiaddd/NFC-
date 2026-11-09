@@ -645,6 +645,9 @@ class _ShopFormState extends State<ShopForm> {
                         reward.text = _defaultReward(entry.key);
                       }
                       industry = entry.key;
+                      // Pizzerias / snacks count points by the bill amount.
+                      if (industry == 'snack' && goal <= 10) goal = 50;
+                      if (industry != 'snack' && goal > 50) goal = 5;
                     }),
                   ),
               ],
@@ -715,22 +718,40 @@ class _ShopFormState extends State<ShopForm> {
             const SizedBox(height: 6),
             Row(
               children: [
-                Expanded(child: Text(tr('عدد الزيارات قبل الهدية'))),
+                Expanded(child: Text(industry == 'snack' ? tr('النقاط المطلوبة للهدية') : tr('عدد الزيارات قبل الهدية'))),
                 IconButton(
-                  onPressed: goal > 1 ? () => setState(() => goal--) : null,
+                  onPressed: goal > (industry == 'snack' ? 10 : 1)
+                      ? () => setState(() => goal -= industry == 'snack' ? 10 : 1)
+                      : null,
                   icon: const Icon(Icons.remove_circle_outline),
                 ),
                 Text('$goal', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
                 IconButton(
-                  onPressed: goal < 50 ? () => setState(() => goal++) : null,
+                  onPressed: goal < (industry == 'snack' ? 10000 : 50)
+                      ? () => setState(() => goal += industry == 'snack' ? 10 : 1)
+                      : null,
                   icon: const Icon(Icons.add_circle_outline),
                 ),
               ],
             ),
             Text(
-              trf('الزبون يجمع {0} ثم تكون الزيارة رقم {1} مجانية.', [goal, goal + 1]),
+              industry == 'snack'
+                  ? trf('نقاط حسب مبلغ الفاتورة: كل 10 درهم = نقطة، والهدية عند {0} نقطة. صاحب المحل يكتب المبلغ في لوحته ثم يمسح الزبون الكود.', [goal])
+                  : trf('الزبون يجمع {0} ثم تكون الزيارة رقم {1} مجانية.', [goal, goal + 1]),
               style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
+            if (industry == 'gym' || industry == 'carwash' || industry == 'cafe')
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  switch (industry) {
+                    'gym' => tr('قاعة رياضة: كل مسح = حضور، وصاحب القاعة يجدّد الاشتراك الشهري من لوحته (يظهر تاريخ الانتهاء في بطاقة الزبون).'),
+                    'carwash' => tr('غسيل السيارات: الزبون يختار نوع سيارته، وتظهر آخر غسلة في بطاقته.'),
+                    _ => tr('مقهى: كل مسح = كوب، ويمكن إضافة رابط المنيو من لوحة المحل.'),
+                  },
+                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+              ),
             const SizedBox(height: 10),
             TextFormField(
               controller: reward,

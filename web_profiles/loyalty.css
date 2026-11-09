@@ -509,3 +509,24 @@ a.bc-phone { color: inherit; text-decoration: none; }
 .book-ok + .keep-note + .btn, .keep-note ~ .btn { margin-top: 8px; }
 .link-btn { display: block; margin: 4px auto 8px; background: none; border: 0; color: var(--primary); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 8px; }
 .keep-note ~ .btn.small { display: block; margin: 12px auto 0; }
+
+/* Sector extras */
+.bc-menu { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 16px 0; padding: 14px; border-radius: 16px; background: color-mix(in srgb, var(--t-gold, #f6c232) 14%, transparent); border: 1px solid var(--t-gold, #f6c232); color: var(--t-text, #fff); text-decoration: none; font-size: 16px; }
+.bc-menu b { color: var(--t-gold, #f6c232); }
+.bc-pts { display: flex; align-items: baseline; justify-content: center; gap: 6px; margin: 6px 0 10px; }
+.bc-pts b { font-size: 44px; line-height: 1; color: var(--t-gold, #f6c232); font-weight: 900; }
+.bc-pts span { color: var(--t-muted, #a3b3d1); font-weight: 700; }
+.bc-bar { height: 14px; border-radius: 10px; background: color-mix(in srgb, var(--t-gold, #f6c232) 14%, transparent); border: 1px solid color-mix(in srgb, var(--t-gold, #f6c232) 45%, transparent); overflow: hidden; }
+.bc-bar i { display: block; height: 100%; border-radius: 10px; background: linear-gradient(90deg, color-mix(in srgb, var(--t-gold, #f6c232) 60%, #fff), var(--t-gold, #f6c232)); box-shadow: 0 0 14px var(--t-gold, #f6c232); transition: width .8s ease; }
+.bc-info { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--panel-2); }
+.bc-info span:nth-child(2) { color: var(--t-muted, #a3b3d1); }
+.bc-info b { margin-inline-start: auto; }
+.bc-info.bad b { color: #f87171; }
+.extra-fields { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 10px; }
+.extra-fields label { margin-top: 4px; }
+.amount-panel { border-color: var(--t-gold, #f6c232); }
+.amount-row { display: flex; gap: 8px; }
+.amount-row .field { flex: 1; min-width: 0; font-size: 20px; font-weight: 800; }
+.amount-row .btn { width: auto; flex: none; padding-inline: 18px; }
+.cust-sector { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.small-select { width: auto; padding: 6px 10px; font-size: 13px; }
