@@ -680,6 +680,16 @@ const Map<String, String> frStrings = {
   'روابط التواصل الاجتماعي': 'Réseaux sociaux',
   'اكتب اسم الحساب (@name) أو الرابط': 'Le compte (@nom) ou le lien',
   'عبارة مميزة تظهر في البطاقة — اختياري': 'Phrase mise en avant sur la carte — facultatif',
+  'بطاقات الأعمال': 'Cartes de visite',
+  'ماذا تريد أن تضيف؟': 'Que voulez-vous ajouter ?',
+  'بطاقة أعمال': 'Carte de visite',
+  'لا شيء بعد.\nاضغط «إضافة» واختر: بطاقة أعمال، حلاق، مقهى…': 'Rien pour l’instant.\nAppuyez sur « Ajouter » et choisissez : carte de visite, barbier, café…',
+  '{0} زيارة للبطاقة': '{0} visites de la carte',
+  'غير منشورة': 'Non publiée',
+  'الرابط': 'Lien',
+  'المزيد': 'Plus',
+  'الرئيسية': 'Accueil',
+  'NFC': 'NFC',
 };
 
 const Map<String, String> enStrings = {
@@ -1361,4 +1371,14 @@ const Map<String, String> enStrings = {
   'روابط التواصل الاجتماعي': 'Social links',
   'اكتب اسم الحساب (@name) أو الرابط': 'The account (@name) or the link',
   'عبارة مميزة تظهر في البطاقة — اختياري': 'Highlighted quote on the card — optional',
+  'بطاقات الأعمال': 'Business cards',
+  'ماذا تريد أن تضيف؟': 'What do you want to add?',
+  'بطاقة أعمال': 'Business card',
+  'لا شيء بعد.\nاضغط «إضافة» واختر: بطاقة أعمال، حلاق، مقهى…': 'Nothing yet.\nTap “Add” and pick: business card, barber, café…',
+  '{0} زيارة للبطاقة': '{0} card visits',
+  'غير منشورة': 'Not published',
+  'الرابط': 'Link',
+  'المزيد': 'More',
+  'الرئيسية': 'Home',
+  'NFC': 'NFC',
 };

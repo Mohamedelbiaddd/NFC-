@@ -34,7 +34,7 @@ class _DashboardState extends State<Dashboard> {
   late final NetworkService network;
   String staffRole = '';
   String? staffNotice;
-  bool allowed = true;
+  bool allowed = true, accountChecked = false;
   List<Json> tenants = const [], businesses = const [], profiles = const [];
   String? tenant, error;
   String role = 'viewer';
@@ -44,7 +44,7 @@ class _DashboardState extends State<Dashboard> {
   Map<String, int> profileScans = const {};
   int totalScans = 0;
   bool get seesNetwork => isSuper || staffRole == 'agent';
-  int get tabCount => !canEdit ? 1 : 2 + (seesNetwork ? 1 : 0) + (isSuper ? 2 : 0);
+  int get tabCount => !canEdit ? 1 : 1 + (seesNetwork ? 1 : 0) + (isSuper ? 2 : 0);
 
   bool get canEdit => {'owner', 'admin', 'editor'}.contains(role);
   bool get canDelete => {'owner', 'admin'}.contains(role);
@@ -81,9 +81,21 @@ class _DashboardState extends State<Dashboard> {
       });
     }
     try {
-      final ts = await repo.rows('nfc_tenants');
+      var ts = await repo.rows('nfc_tenants');
+      final me = repo.client.auth.currentUser?.id;
+      // No workspace yet: one is created silently (nobody needs to name it).
+      if (ts.where((t) => '${t['owner_id']}' == me).isEmpty && selected == null && tenant == null) {
+        try {
+          final acc = await network.myAccount();
+          if (acc['allowed'] != false) {
+            await repo.client.rpc('nfc_create_workspace', params: {'workspace_name': tr('مساحتي')});
+            ts = await repo.rows('nfc_tenants');
+          }
+        } catch (_) {}
+      }
+      final mine = ts.where((t) => '${t['owner_id']}' == me).firstOrNull;
       final candidate =
-          selected ?? tenant ?? (ts.isEmpty ? null : '${ts.first['id']}');
+          selected ?? tenant ?? '${(mine ?? ts.firstOrNull)?['id'] ?? ''}';
       final active = ts.any((x) => '${x['id']}' == candidate)
           ? candidate
           : (ts.isEmpty ? null : '${ts.first['id']}');
@@ -143,6 +155,7 @@ class _DashboardState extends State<Dashboard> {
         role = current;
         isSuper = superAdmin;
         allowed = account['allowed'] != false;
+        accountChecked = true;
         final staff = account['staff'];
         staffRole = staff is Map ? '${staff['role'] ?? ''}' : '';
         staffNotice = staff is Map && staff['notice'] != null ? '${staff['notice']}' : null;
@@ -171,15 +184,7 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> addPerson() async {
-    if (tenant == null) {
-      _snack(tr('أنشئ مساحة عمل أولاً.'));
-      return;
-    }
-    if (businesses.isEmpty) {
-      _snack(tr('أضف نشاطاً تجارياً أولاً.'));
-      await businessForm();
-      return;
-    }
+    if (!await _ensureCardSpace() || !mounted) return;
     final saved = await showDialog<Object?>(
       context: context,
       barrierDismissible: false,
@@ -589,45 +594,214 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
-  /// "+" : new card (person), or — for admins and agents — a new app account
-  /// (name + e-mail, the password is generated and sent on WhatsApp).
+  /// "+" : what to add. A business card or a shop of any sector; then the
+  /// form for that choice only. Admins and agents also see "app account".
   Future<void> _plusMenu() async {
-    if (!seesNetwork) return addPerson();
     final choice = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.manage_accounts_rounded, color: AppColors.accent),
-              title: Text(tr('حساب جديد للتطبيق (بالبريد الإلكتروني)'), style: const TextStyle(fontWeight: FontWeight.w800)),
-              subtitle: Text(tr('الاسم والبريد، وكلمة المرور تُنشأ تلقائياً وترسلها له')),
-              onTap: () => Navigator.pop(context, 'account'),
+      isScrollControlled: true,
+      builder: (context) {
+        Widget tile(String key, String icon, String label, {Color? color}) => InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () => Navigator.pop(context, key),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: (color ?? AppColors.surfaceHigh).withValues(alpha: color == null ? 1 : 0.16),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: color ?? AppColors.border),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(icon, style: const TextStyle(fontSize: 30)),
+                    const SizedBox(height: 6),
+                    Text(label, textAlign: TextAlign.center, maxLines: 2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                  ],
+                ),
+              ),
+            );
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(tr('ماذا تريد أن تضيف؟'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 14),
+                GridView.count(
+                  crossAxisCount: 3,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 1.05,
+                  children: [
+                    tile('card', '💼', tr('بطاقة أعمال'), color: AppColors.primary),
+                    for (final e in ShopsService.industries.entries) tile('shop:${e.key}', e.value.$1, e.value.$2),
+                  ],
+                ),
+                if (seesNetwork) ...[
+                  const SizedBox(height: 10),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.manage_accounts_rounded, color: AppColors.accent),
+                    title: Text(tr('حساب جديد للتطبيق (بالبريد الإلكتروني)'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text(tr('الاسم والبريد، وكلمة المرور تُنشأ تلقائياً وترسلها له')),
+                    onTap: () => Navigator.pop(context, 'account'),
+                  ),
+                ],
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.badge_rounded, color: AppColors.primarySoft),
-              title: Text(tr('بطاقة شخص جديدة (NFC / QR)'), style: const TextStyle(fontWeight: FontWeight.w800)),
-              onTap: () => Navigator.pop(context, 'card'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.nfc_rounded, color: AppColors.success),
-              title: Text(tr('📡 أدوات NFC'), style: const TextStyle(fontWeight: FontWeight.w800)),
-              subtitle: Text(tr('فحص بطاقة، كتابة أي شيء، مسح، كلمة سر، قفل')),
-              onTap: () => Navigator.pop(context, 'nfc'),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
     if (!mounted || choice == null) return;
     if (choice == 'card') return addPerson();
-    if (choice == 'nfc') return _openNfcTools();
-    setState(() => page = 2); // the Network tab
+    if (choice.startsWith('shop:')) return addShop(choice.substring(5));
+    setState(() => page = 1); // the Network tab
     await Future<void>.delayed(const Duration(milliseconds: 250));
     networkAdd.value++;
+  }
+
+  /// A new shop of the chosen sector; it then shows in the home list.
+  Future<void> addShop(String industry) async {
+    if (tenant == null) return;
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => ShopForm(service: shops, tenant: tenant!, initialIndustry: industry)),
+    );
+    if (result != null && mounted) setState(() => tick++);
+  }
+
+  /// Business cards need a workspace and a business behind them: both are
+  /// created silently the first time, the user never has to name them.
+  Future<bool> _ensureCardSpace() async {
+    try {
+      if (tenant == null) {
+        final id = await repo.client.rpc('nfc_create_workspace', params: {'workspace_name': tr('مساحتي')});
+        await load(selected: id as String, silent: true);
+      }
+      if (tenant != null && businesses.isEmpty) {
+        await repo.save('nfc_businesses', {
+          'tenant_id': tenant,
+          'name': tr('بطاقات الأعمال'),
+          'industry': 'other',
+          'primary_color': '#7367F0',
+          'accent_color': '#2DD4BF',
+        });
+        await load(selected: tenant, silent: true);
+      }
+    } catch (e) {
+      notify(e);
+    }
+    return tenant != null && businesses.isNotEmpty;
+  }
+
+  /// A business card in the home list: photo, name, job, link / NFC / edit.
+  Widget _cardTile(Json profile) {
+    final image = '${profile['image_url'] ?? ''}';
+    final data = profile['data'] is Map ? profile['data'] as Map : const {};
+    final job = '${data['job_title'] ?? ''}';
+    final scans = profileScans['${profile['id']}'] ?? 0;
+    final published = personPublished(profile);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => editPerson(profile),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.6), width: 1.4),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceHigh,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.primarySoft, width: 2),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    alignment: Alignment.center,
+                    child: image.startsWith('https://')
+                        ? Image.network(image, fit: BoxFit.cover, width: 50, height: 50,
+                            errorBuilder: (_, __, ___) => const Text('💼', style: TextStyle(fontSize: 22)))
+                        : const Text('💼', style: TextStyle(fontSize: 22)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(personName(profile), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                        Text(
+                          [tr('بطاقة أعمال'), if (job.isNotEmpty) job].join(' · '),
+                          style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: tr('تعديل البطاقة'),
+                    onPressed: () => editPerson(profile),
+                    icon: const Icon(Icons.edit_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  Pill(trf('{0} زيارة للبطاقة', [scans]), color: AppColors.accent),
+                  if (!published) Pill(tr('غير منشورة'), color: AppColors.warning),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => cardReady(profile),
+                      icon: const Icon(Icons.link_rounded, size: 16),
+                      label: Text(tr('الرابط'), overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => openWriter(profile),
+                      icon: const Icon(Icons.nfc_rounded, size: 16),
+                      label: Text(tr('NFC'), overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger),
+                      onPressed: canDelete ? () => deletePerson(profile) : null,
+                      icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                      label: Text(tr('حذف'), overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _openNfcTools() => Navigator.push(
@@ -823,6 +997,15 @@ class _DashboardState extends State<Dashboard> {
                       title: Text(tr('عرض مساحات كل المستخدمين')),
                       onChanged: (v) => setSheet(() => showAllWorkspaces = v),
                     ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.add_box_outlined, color: AppColors.accent),
+                    title: Text(tr('مساحة عمل جديدة')),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      newTenant();
+                    },
+                  ),
                   ConstrainedBox(
                     constraints: BoxConstraints(maxHeight: MediaQuery.of(sheetContext).size.height * 0.5),
                     child: ListView(
@@ -864,60 +1047,10 @@ class _DashboardState extends State<Dashboard> {
     load(selected: picked);
   }
 
-  Widget _workspaceBar() => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-    child: SurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.workspaces_outline,
-            size: 18,
-            color: AppColors.muted,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: tenants.isEmpty ? null : _pickWorkspace,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${tenants.where((t) => '${t['id']}' == tenant).firstOrNull?['name'] ?? tr('اختر مساحة عمل')}',
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.text),
-                      ),
-                    ),
-                    const Icon(Icons.arrow_drop_down_rounded, color: AppColors.muted),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: tr('مساحة عمل جديدة'),
-            onPressed: newTenant,
-            icon: const Icon(Icons.add_box_outlined, size: 20),
-          ),
-          IconButton(
-            tooltip: tr('حذف مساحة العمل'),
-            onPressed: tenant == null ? null : () => deleteWorkspace(),
-            icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.danger),
-          ),
-          IconButton(
-            tooltip: businesses.isEmpty ? tr('أضف نشاطاً تجارياً') : tr('النشاط التجاري'),
-            onPressed: tenant == null || !canEdit ? null : () => businessForm(),
-            icon: const Icon(Icons.storefront_outlined, size: 20),
-          ),
-        ],
-      ),
-    ),
-  );
-
   Widget _body() {
+    if (!accountChecked) {
+      return const Center(child: CircularProgressIndicator());
+    }
     if (!allowed && !loading) {
       return EmptyState(
         icon: Icons.lock_outline_rounded,
@@ -977,13 +1110,15 @@ class _DashboardState extends State<Dashboard> {
     return IndexedStack(
       index: page.clamp(0, tabCount - 1).toInt(),
       children: [
-        people,
         ShopsTab(
           key: ValueKey('shops-$tick-${tenant!}'),
           service: shops,
           network: network,
           tenant: tenant!,
           seeAll: seesNetwork,
+          cards: profiles.where((p) => '${p['kind']}' != 'loyalty').toList(),
+          cardTile: _cardTile,
+          onAdd: _plusMenu,
         ),
         if (seesNetwork)
           NetworkTab(
@@ -1060,20 +1195,28 @@ class _DashboardState extends State<Dashboard> {
             onPressed: _openNfcTools,
             icon: const Icon(Icons.nfc_rounded, size: 24, color: AppColors.success),
           ),
-          IconButton(
-            tooltip: tr('تحديث'),
-            onPressed: loading ? null : () => load(),
-            icon: const Icon(Icons.sync_rounded, size: 20),
-          ),
-          IconButton(
-            tooltip: tr('تغيير كلمة المرور'),
-            onPressed: changeMyPassword,
-            icon: const Icon(Icons.key_rounded, size: 20),
-          ),
-          IconButton(
-            tooltip: tr('تسجيل الخروج'),
-            onPressed: signOut,
-            icon: const Icon(Icons.logout_rounded, size: 20),
+          PopupMenuButton<String>(
+            tooltip: tr('المزيد'),
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (v) {
+              switch (v) {
+                case 'refresh':
+                  load();
+                case 'workspaces':
+                  _pickWorkspace();
+                case 'password':
+                  changeMyPassword();
+                case 'logout':
+                  signOut();
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'refresh', child: ListTile(leading: const Icon(Icons.sync_rounded), title: Text(tr('تحديث')))),
+              if (tenants.length > 1 || isSuper)
+                PopupMenuItem(value: 'workspaces', child: ListTile(leading: const Icon(Icons.workspaces_outline), title: Text(tr('مساحات العمل')))),
+              PopupMenuItem(value: 'password', child: ListTile(leading: const Icon(Icons.key_rounded), title: Text(tr('تغيير كلمة المرور')))),
+              PopupMenuItem(value: 'logout', child: ListTile(leading: const Icon(Icons.logout_rounded, color: AppColors.danger), title: Text(tr('تسجيل الخروج')))),
+            ],
           ),
           const SizedBox(width: 6),
         ],
@@ -1092,7 +1235,6 @@ class _DashboardState extends State<Dashboard> {
               ),
               child: Text('⚠️ $staffNotice', style: const TextStyle(height: 1.5)),
             ),
-          _workspaceBar(),
           Expanded(child: _body()),
         ],
       ),
@@ -1102,14 +1244,9 @@ class _DashboardState extends State<Dashboard> {
               onDestinationSelected: (index) => setState(() => page = index),
               destinations: [
                 NavigationDestination(
-                  icon: Icon(Icons.people_alt_outlined),
-                  selectedIcon: Icon(Icons.people_alt_rounded),
-                  label: tr('الأشخاص'),
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.storefront_outlined),
-                  selectedIcon: Icon(Icons.storefront_rounded),
-                  label: tr('المحلات'),
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home_rounded),
+                  label: tr('الرئيسية'),
                 ),
                 if (seesNetwork)
                   NavigationDestination(

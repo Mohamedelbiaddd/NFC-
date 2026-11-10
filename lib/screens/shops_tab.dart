@@ -24,6 +24,9 @@ class ShopsTab extends StatefulWidget {
     required this.seeAll,
     this.onlyCreators,
     this.allowCreate = true,
+    this.cards = const [],
+    this.cardTile,
+    this.onAdd,
   });
 
   final ShopsService service;
@@ -34,6 +37,14 @@ class ShopsTab extends StatefulWidget {
   /// When set, only shops registered by these accounts (a member's network).
   final Set<String>? onlyCreators;
   final bool allowCreate;
+
+  /// Business cards shown in the same list as the shops (home screen),
+  /// drawn by [cardTile]; everything is ordered by creation date.
+  final List<Json> cards;
+  final Widget Function(Json card)? cardTile;
+
+  /// Replaces "new shop" with the app's "add" chooser (shop types + card).
+  final VoidCallback? onAdd;
 
   @override
   State<ShopsTab> createState() => _ShopsTabState();
@@ -473,6 +484,17 @@ class _ShopsTabState extends State<ShopsTab> {
     );
   }
 
+  /// Shops and business cards in one list, oldest first (new ones at the end).
+  List<(bool, Json)> _items() {
+    final all = <(bool, Json)>[
+      for (final s in shops) (false, s),
+      if (widget.cardTile != null)
+        for (final c in widget.cards) (true, c),
+    ];
+    all.sort((a, b) => '${a.$2['created_at'] ?? ''}'.compareTo('${b.$2['created_at'] ?? ''}'));
+    return all;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -481,9 +503,9 @@ class _ShopsTabState extends State<ShopsTab> {
           ? null
           : FloatingActionButton.extended(
               heroTag: 'add-shop',
-              onPressed: () => _form(),
-              icon: const Icon(Icons.add_business_rounded),
-              label: Text(tr('محل جديد')),
+              onPressed: widget.onAdd ?? () => _form(),
+              icon: const Icon(Icons.add_rounded),
+              label: Text(widget.onAdd != null ? tr('إضافة') : tr('محل جديد')),
             ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
@@ -497,16 +519,19 @@ class _ShopsTabState extends State<ShopsTab> {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Text(error!, style: const TextStyle(color: AppColors.danger)),
                     ),
-                  if (shops.isEmpty)
+                  if (shops.isEmpty && widget.cards.isEmpty)
                     Padding(
                       padding: EdgeInsets.only(top: 60),
                       child: Text(
-                        tr('لا توجد محلات بعد.\nاضغط «محل جديد» وسجّل أول محل في دقيقة.'),
+                        widget.onAdd != null
+                            ? tr('لا شيء بعد.\nاضغط «إضافة» واختر: بطاقة أعمال، حلاق، مقهى…')
+                            : tr('لا توجد محلات بعد.\nاضغط «محل جديد» وسجّل أول محل في دقيقة.'),
                         textAlign: TextAlign.center,
                         style: TextStyle(color: AppColors.muted, height: 1.8),
                       ),
                     ),
-                  for (final shop in shops) _card(shop),
+                  for (final item in _items())
+                    item.$1 ? widget.cardTile!(item.$2) : _card(item.$2),
                 ],
               ),
             ),
@@ -516,7 +541,7 @@ class _ShopsTabState extends State<ShopsTab> {
 
 /// One-screen form to create or edit a shop. Pops with the shop slug.
 class ShopForm extends StatefulWidget {
-  const ShopForm({super.key, required this.service, required this.tenant, this.shop, this.initialName});
+  const ShopForm({super.key, required this.service, required this.tenant, this.shop, this.initialName, this.initialIndustry});
 
   final ShopsService service;
   final String tenant;
@@ -524,6 +549,9 @@ class ShopForm extends StatefulWidget {
 
   /// Pre-filled shop name when created from a loyalty card form.
   final String? initialName;
+
+  /// Sector chosen in the "add" chooser.
+  final String? initialIndustry;
 
   @override
   State<ShopForm> createState() => _ShopFormState();
@@ -535,9 +563,9 @@ class _ShopFormState extends State<ShopForm> {
   late final phone = TextEditingController(text: '${widget.shop?['phone'] ?? ''}');
   late final address = TextEditingController(text: '${widget.shop?['address'] ?? ''}');
   late final hours = TextEditingController(text: '${widget.shop?['hours'] ?? ''}');
-  late final reward = TextEditingController(text: trf('{0}', [widget.shop?['reward'] ?? tr('زيارة مجانية')]));
-  late String industry = '${widget.shop?['industry'] ?? 'barber'}';
-  late int goal = (widget.shop?['goal'] as num?)?.toInt() ?? 5;
+  late String industry = '${widget.shop?['industry'] ?? widget.initialIndustry ?? 'barber'}';
+  late final reward = TextEditingController(text: trf('{0}', [widget.shop?['reward'] ?? _defaultReward(industry)]));
+  late int goal = (widget.shop?['goal'] as num?)?.toInt() ?? (industry == 'snack' ? 50 : 5);
   late int radius = (widget.shop?['radius_m'] as num?)?.toInt() ?? 200;
   late final location = TextEditingController(
     text: widget.shop?['latitude'] == null ? '' : '${widget.shop!['latitude']}, ${widget.shop!['longitude']}',
