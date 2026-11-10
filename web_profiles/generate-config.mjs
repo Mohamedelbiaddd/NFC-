@@ -23,6 +23,7 @@ const STATIC_FILES = [
   'legal.css',
   'index.html',
   'app.js',
+  'vcard.mjs',
   'routing.mjs',
   'styles.css',
   '_redirects',

@@ -1,3 +1,4 @@
+import {renderVcard} from '/vcard.mjs';
 import {slugFromPath,safeHttps,safeImageUrl,vcardEscape,fetchProfile,trackScan,ownerLogin,ownerUpdate,ownerUpload} from '/routing.mjs';
 
 const root=document.getElementById('app');
@@ -13,7 +14,7 @@ function toast(text,bad){const t=el('div',text,'toast'+(bad?' bad':''));document
 const KIND_NAMES={vcard:'بطاقة اتصال',menu:'القائمة',review:'رأيك يهمنا',equipment:'بطاقة المعدّة',loyalty:'برنامج الولاء'};
 // Editable data fields per kind (keys must match the database validator).
 const FIELDS={
- vcard:[['full_name','الاسم الكامل'],['phone','الهاتف'],['email','البريد'],['website','الموقع (https://…)'],['description','نبذة']],
+ vcard:[['full_name','الاسم الكامل'],['job_title','المنصب / المهنة'],['company','الشركة'],['phone','الهاتف'],['whatsapp','واتساب'],['email','البريد'],['website','الموقع (https://…)'],['address','العنوان'],['instagram','Instagram (@اسم أو رابط)'],['tiktok','TikTok'],['facebook','Facebook'],['linkedin','LinkedIn'],['x','X / Twitter'],['youtube','YouTube'],['description','نبذة'],['quote','عبارة مميزة']],
  menu:[['menu_url','رابط القائمة (https://…)'],['description','نبذة']],
  review:[['review_url','رابط التقييم (https://…)'],['description','نبذة']],
  equipment:[['equipment_name','اسم المعدّة'],['serial','الرقم التسلسلي'],['manual_url','رابط الدليل (https://…)'],['description','نبذة']],
@@ -48,6 +49,13 @@ function render(p,config){
  if(p.kind==='loyalty'){try{const u=new URL(p.data.loyalty_url);if(u.origin===location.origin&&/^\/c\/[a-z0-9-]+$/.test(u.pathname)){location.replace(u.pathname);return;}}catch{}}
  state.profile=p;
  const b=p.business,d=p.data;
+ if(p.kind==='vcard'){
+  const tap=renderVcard(root,p,config,toast);
+  renderCatalog(root,p.catalog,config);
+  tools.hidden=false;
+  if(p.editable){let taps=[];tap.addEventListener('click',()=>{const now=Date.now();taps=taps.filter(t=>now-t<1200);taps.push(now);if(taps.length>=3){taps=[];askPin();}});}
+  return;
+ }
  for(const key of ['primary_color','accent_color'])if(/^#[0-9a-f]{6}$/i.test(b[key]??''))document.documentElement.style.setProperty(key==='primary_color'?'--primary':'--accent',b[key]);
  document.title=`${p.title} · ${b.name}`;
  const head=[el('span',KIND_NAMES[p.kind]??'ملف رقمي','pill')];
@@ -233,6 +241,8 @@ function openEditor(profile,pin){
     if(clean.name||clean.image_url)catalog.push(clean);
    }
    const data={};
+   // Keys not shown in this editor (theme, shape, cover…) are kept as they are.
+   for(const [key,v] of Object.entries(profile.data??{}))if(!(key in inputs)&&typeof v==='string'&&v)data[key]=v;
    for(const [key,input] of Object.entries(inputs)){const v=input.value.trim();if(v)data[key]=v;}
    const r=await ownerUpdate(state.config,state.slug,pin,{title:title.input.value.trim(),data,catalog,imageUrl});
    if(!r?.ok){toast(r?.error==='Too many attempts, try later'?'محاولات كثيرة، حاول لاحقاً.':'تعذّر الحفظ: تأكد من الرمز.',true);return;}

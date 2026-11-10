@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/i18n.dart';
@@ -179,7 +180,7 @@ class _DashboardState extends State<Dashboard> {
       await businessForm();
       return;
     }
-    final changed = await showDialog<bool>(
+    final saved = await showDialog<Object?>(
       context: context,
       barrierDismissible: false,
       builder: (_) => PersonForm(
@@ -188,16 +189,119 @@ class _DashboardState extends State<Dashboard> {
         businesses: businesses,
       ),
     );
-    if (changed == true) {
+    if (saved != null) {
       setState(() => page = 0);
       await refresh();
-      _snack(tr('تم حفظ الشخص وأصبح في القائمة.'));
+      if (!mounted) return;
+      final profile = profiles.where((p) => '${p['id']}' == '$saved').firstOrNull;
+      if (profile != null) {
+        await cardReady(profile);
+      } else {
+        _snack(tr('تم حفظ الشخص وأصبح في القائمة.'));
+      }
     }
+  }
+
+  /// Right after a new card is saved: its link, copy, QR and "write to NFC".
+  Future<void> cardReady(Json profile) async {
+    final link = profileLink(profile).toString();
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 52),
+              const SizedBox(height: 8),
+              Text(
+                tr('البطاقة جاهزة ✅'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                personName(profile),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.muted),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceHigh,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.link_rounded, color: AppColors.accent, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: SelectableText(
+                        link,
+                        textDirection: TextDirection.ltr,
+                        style: const TextStyle(fontSize: 13, color: AppColors.accent),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: tr('نسخ الرابط'),
+                      icon: const Icon(Icons.copy_rounded, size: 20),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: link));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('تم نسخ الرابط'))));
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  openWriter(profile);
+                },
+                icon: const Icon(Icons.nfc_rounded),
+                label: Text(tr('اكتب الرابط على بطاقة NFC')),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        openQr(profile);
+                      },
+                      icon: const Icon(Icons.qr_code_2_rounded, size: 20),
+                      label: Text(tr('رمز QR')),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => openProfile(profile),
+                      icon: const Icon(Icons.open_in_new_rounded, size: 20),
+                      label: Text(tr('فتح البطاقة')),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> editPerson(Json profile) async {
     if (tenant == null) return;
-    final changed = await showDialog<bool>(
+    final saved = await showDialog<Object?>(
       context: context,
       barrierDismissible: false,
       builder: (_) => PersonForm(
@@ -207,7 +311,7 @@ class _DashboardState extends State<Dashboard> {
         profile: profile,
       ),
     );
-    if (changed == true) await refresh();
+    if (saved != null) await refresh();
   }
 
   Future<void> deletePerson(Json profile) async {

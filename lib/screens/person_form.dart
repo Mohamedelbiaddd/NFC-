@@ -2,6 +2,7 @@ import 'dart:math';
 import '../core/i18n.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -14,6 +15,7 @@ import '../core/storage_service.dart';
 import '../core/theme.dart';
 import 'catalog_editor.dart';
 import 'shops_tab.dart' show ShopForm, showShopAccess;
+import 'writer_screen.dart';
 
 /// One clear form for adding or editing a person (vCard) or another card kind.
 /// Image picking/uploads, slug suggestion and publishing live here so the
@@ -36,6 +38,40 @@ class PersonForm extends StatefulWidget {
   State<PersonForm> createState() => _PersonFormState();
 }
 
+/// Colour themes of the business card page (same keys as web_profiles/vcard.mjs):
+/// name, card colour, accent.
+const cardThemes = <String, (String, Color, Color)>{
+  'violet': ('بنفسجي', Color(0xFF120A24), Color(0xFF8B5CF6)),
+  'navy': ('كحلي وذهبي', Color(0xFF0B1A36), Color(0xFFF6C232)),
+  'black': ('أسود فاخر', Color(0xFF121212), Color(0xFFD4AF37)),
+  'emerald': ('زمردي', Color(0xFF082319), Color(0xFF34D399)),
+  'ocean': ('أزرق المحيط', Color(0xFF072235), Color(0xFF38BDF8)),
+  'rose': ('وردي', Color(0xFF2A0C1B), Color(0xFFF472B6)),
+  'sunset': ('برتقالي', Color(0xFF271205), Color(0xFFFB923C)),
+  'crimson': ('أحمر', Color(0xFF22070F), Color(0xFFF43F5E)),
+  'neon': ('أسود ونيون', Color(0xFF111411), Color(0xFFA3E635)),
+  'coffee': ('بني', Color(0xFF21140C), Color(0xFFD6A15A)),
+  'ivory': ('عاجي فاتح', Color(0xFFFFFFFF), Color(0xFFB8860B)),
+  'sky': ('أبيض وأزرق', Color(0xFFFFFFFF), Color(0xFF2563EB)),
+};
+const cardColors = ['#8B5CF6', '#2563EB', '#0EA5E9', '#10B981', '#84CC16', '#F59E0B', '#F97316', '#EF4444', '#EC4899', '#D4AF37'];
+const cardLayouts = <String, (String, IconData)>{
+  'classic': ('كلاسيكي', Icons.view_agenda_rounded),
+  'center': ('في الوسط', Icons.account_circle_rounded),
+  'minimal': ('بسيط', Icons.crop_square_rounded),
+};
+const socialFields = <String, String>{
+  'instagram': 'Instagram',
+  'tiktok': 'TikTok',
+  'facebook': 'Facebook',
+  'linkedin': 'LinkedIn',
+  'x': 'X / Twitter',
+  'youtube': 'YouTube',
+  'snapchat': 'Snapchat',
+  'telegram': 'Telegram',
+};
+Color _hex(String h) => Color(int.parse('FF${h.substring(1)}', radix: 16));
+
 class _PersonFormState extends State<PersonForm> {
   final form = GlobalKey<FormState>();
   final picker = ImagePicker();
@@ -50,6 +86,20 @@ class _PersonFormState extends State<PersonForm> {
   final pin = TextEditingController();
   bool hasPin = false;
   final extra = <String, TextEditingController>{};
+  // Business card extras.
+  final jobTitle = TextEditingController();
+  final company = TextEditingController();
+  final whatsapp = TextEditingController();
+  final address = TextEditingController();
+  final quote = TextEditingController();
+  final social = {for (final k in socialFields.keys) k: TextEditingController()};
+  String cardTheme = 'violet';
+  String cardLayout = 'classic';
+  String? cardColor;
+  String? coverUrl;
+  String? originalCover;
+  ImagePayload? pendingCover;
+  Map<String, dynamic> originalData = {};
 
   late String kind;
   String? business;
@@ -83,6 +133,24 @@ class _PersonFormState extends State<PersonForm> {
       email.text = profileField(p, 'email');
       website.text = profileField(p, 'website');
       description.text = profileField(p, 'description');
+      jobTitle.text = profileField(p, 'job_title');
+      company.text = profileField(p, 'company');
+      whatsapp.text = profileField(p, 'whatsapp');
+      address.text = profileField(p, 'address');
+      quote.text = profileField(p, 'quote');
+      for (final e in social.entries) {
+        e.value.text = profileField(p, e.key);
+      }
+      final th = profileField(p, 'theme');
+      if (cardThemes.containsKey(th)) cardTheme = th;
+      final lay = profileField(p, 'layout');
+      if (cardLayouts.containsKey(lay)) cardLayout = lay;
+      final col = profileField(p, 'color');
+      if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(col)) cardColor = col.toUpperCase();
+      final cov = profileField(p, 'cover_url');
+      if (cov.isNotEmpty) coverUrl = originalCover = cov;
+      final raw = p['data'];
+      if (raw is Map) originalData = Map<String, dynamic>.from(raw);
       slug.text = personSlug(p);
       widget.repo.profileHasPin('${p['id']}').then((value) {
         if (mounted) setState(() => hasPin = value);
@@ -116,6 +184,9 @@ class _PersonFormState extends State<PersonForm> {
     description.dispose();
     slug.dispose();
     pin.dispose();
+    for (final c in [jobTitle, company, whatsapp, address, quote, ...social.values]) {
+      c.dispose();
+    }
     for (final controller in extra.values) {
       controller.dispose();
     }
@@ -219,10 +290,27 @@ class _PersonFormState extends State<PersonForm> {
         'description': description.text.trim(),
       };
       if (kind == 'vcard') {
+        // Keep keys set elsewhere (the web editor), then this form's fields.
+        for (final e in originalData.entries) {
+          if (e.value is String && '${e.value}'.isNotEmpty) data[e.key] = e.value;
+        }
         data['full_name'] = name.text.trim();
         data['phone'] = phone.text.trim();
         data['email'] = email.text.trim();
         data['website'] = website.text.trim();
+        data['job_title'] = jobTitle.text.trim();
+        data['company'] = company.text.trim();
+        data['whatsapp'] = whatsapp.text.trim();
+        data['address'] = address.text.trim();
+        data['quote'] = quote.text.trim();
+        for (final e in social.entries) {
+          data[e.key] = e.value.text.trim();
+        }
+        data['theme'] = cardTheme;
+        data['layout'] = cardLayout;
+        data['color'] = cardColor ?? '';
+        data['cover_url'] = coverUrl ?? '';
+        data.removeWhere((k, v) => k != 'full_name' && k != 'description' && v is String && v.isEmpty);
       } else {
         for (final key in (fieldsByKind[kind] ?? const <String, String>{}).keys) {
           data[key] = extra[key]?.text.trim() ?? '';
@@ -254,6 +342,21 @@ class _PersonFormState extends State<PersonForm> {
       if (removed != null && removed != imageUrl) {
         await storage.deleteImage(removed);
       }
+      // The business card cover picture.
+      if (kind == 'vcard' && id != null) {
+        final cover = pendingCover;
+        if (cover != null) {
+          final url = await storage.uploadImage(tenantId: widget.tenant, profileId: id, payload: cover);
+          data['cover_url'] = url;
+          await widget.repo.save('nfc_profiles', {'data': data}, id: id);
+          pendingCover = null;
+          coverUrl = url;
+        }
+        if (originalCover != null && originalCover != coverUrl) {
+          await storage.deleteImage(originalCover!);
+        }
+        originalCover = coverUrl;
+      }
       final code = pin.text.trim();
       final shopSlug = _shopSlug;
       if (code.isNotEmpty && shopSlug != null) {
@@ -261,7 +364,7 @@ class _PersonFormState extends State<PersonForm> {
       } else if (code.isNotEmpty && id != null) {
         await widget.repo.setProfilePin(id, code);
       }
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, id ?? savedId ?? '');
     } catch (e) {
       if (mounted) setState(() => error = _errorFor(e));
     } finally {
@@ -646,6 +749,213 @@ class _PersonFormState extends State<PersonForm> {
     ),
   );
 
+  Future<void> chooseCover() async {
+    if (locked) return;
+    try {
+      final file = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, maxHeight: 1600, imageQuality: 85);
+      if (file == null) return;
+      final payload = decodeImagePayload(await file.readAsBytes());
+      if (payload == null) {
+        setState(() => error = tr('اختر صورة JPG أو PNG أو WebP أصغر من 5 ميجابايت.'));
+        return;
+      }
+      setState(() {
+        pendingCover = payload;
+        error = null;
+      });
+    } catch (e) {
+      if (mounted) setState(() => error = imageUploadError(e));
+    }
+  }
+
+  String? _socialCheck(String? v) {
+    final t = v?.trim() ?? '';
+    if (t.isEmpty) return null;
+    return RegExp(r'^(https://\S{3,250}|@?[A-Za-z0-9_.-]{1,80})$').hasMatch(t)
+        ? null
+        : tr('اكتب اسم الحساب (@name) أو رابطاً يبدأ بـ https://');
+  }
+
+  Widget _sectionTitle(String text) => Padding(
+        padding: const EdgeInsets.only(top: 18, bottom: 8),
+        child: Text(text, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+      );
+
+  /// Colour theme, own colour, shape and cover of the business card page.
+  Widget _designSection() {
+    final cover = pendingCover != null
+        ? Image.memory(pendingCover!.bytes, fit: BoxFit.cover)
+        : coverUrl != null
+            ? Image.network(coverUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox())
+            : null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sectionTitle(tr('🎨 لون البطاقة')),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            for (final e in cardThemes.entries)
+              Tooltip(
+                message: tr(e.value.$1),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: locked ? null : () => setState(() => cardTheme = e.key),
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [e.value.$2, e.value.$3],
+                      ),
+                      border: Border.all(
+                        color: cardTheme == e.key ? AppColors.text : AppColors.border,
+                        width: cardTheme == e.key ? 3 : 1,
+                      ),
+                    ),
+                    child: cardTheme == e.key
+                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 22)
+                        : null,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(tr(cardThemes[cardTheme]!.$1), style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+        _sectionTitle(tr('لون خاص للأزرار (اختياري)')),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ChoiceChip(
+              label: Text(tr('حسب اللون')),
+              selected: cardColor == null,
+              onSelected: locked ? null : (_) => setState(() => cardColor = null),
+            ),
+            for (final c in cardColors)
+              InkWell(
+                customBorder: const CircleBorder(),
+                onTap: locked ? null : () => setState(() => cardColor = c),
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: _hex(c),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: cardColor == c ? AppColors.text : Colors.transparent, width: 3),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        _sectionTitle(tr('شكل البطاقة')),
+        SegmentedButton<String>(
+          segments: [
+            for (final e in cardLayouts.entries)
+              ButtonSegment(value: e.key, label: Text(tr(e.value.$1)), icon: Icon(e.value.$2, size: 18)),
+          ],
+          selected: {cardLayout},
+          showSelectedIcon: false,
+          onSelectionChanged: locked ? null : (v) => setState(() => cardLayout = v.first),
+        ),
+        if (cardLayout != 'minimal') ...[
+          _sectionTitle(tr('صورة الغلاف (اختياري)')),
+          InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: locked ? null : chooseCover,
+            child: Container(
+              height: 96,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceHigh,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: cover ??
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add_photo_alternate_outlined, color: AppColors.primarySoft),
+                        const SizedBox(width: 8),
+                        Text(tr('اختر صورة للغلاف'), style: const TextStyle(color: AppColors.muted)),
+                      ],
+                    ),
+                  ),
+            ),
+          ),
+          if (cover != null)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton(
+                onPressed: locked ? null : () => setState(() {
+                  pendingCover = null;
+                  coverUrl = null;
+                }),
+                style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                child: Text(tr('إزالة الغلاف')),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  /// Editing a saved card: its link with copy and "write to NFC" on top.
+  Widget _linkBar(String link) => Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceHigh,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.link_rounded, size: 18, color: AppColors.accent),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                link,
+                textDirection: TextDirection.ltr,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, color: AppColors.accent),
+              ),
+            ),
+            IconButton(
+              tooltip: tr('نسخ الرابط'),
+              icon: const Icon(Icons.copy_rounded, size: 18),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: link));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('تم نسخ الرابط'))));
+              },
+            ),
+            IconButton(
+              tooltip: tr('اكتب الرابط على بطاقة NFC'),
+              icon: const Icon(Icons.nfc_rounded, size: 20, color: AppColors.success),
+              onPressed: locked || savedId == null
+                  ? null
+                  : () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => WriterScreen(
+                            repo: widget.repo,
+                            tenant: widget.tenant,
+                            profileId: savedId!,
+                            profileName: name.text.trim(),
+                          ),
+                        ),
+                      ),
+            ),
+          ],
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final isVcard = kind == 'vcard';
@@ -669,6 +979,8 @@ class _PersonFormState extends State<PersonForm> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (widget.profile != null && published && AppConfig.profileBase.isNotEmpty && AppConfig.validSlug(slug.text))
+                  _linkBar(preview),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -693,6 +1005,26 @@ class _PersonFormState extends State<PersonForm> {
                 if (isVcard) ...[
                   const SizedBox(height: 14),
                   TextFormField(
+                    controller: jobTitle,
+                    maxLength: 120,
+                    decoration: InputDecoration(
+                      labelText: tr('المنصب / المهنة — اختياري'),
+                      counterText: '',
+                      prefixIcon: const Icon(Icons.work_outline_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: company,
+                    maxLength: 120,
+                    decoration: InputDecoration(
+                      labelText: tr('الشركة — اختياري'),
+                      counterText: '',
+                      prefixIcon: const Icon(Icons.apartment_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
                     controller: phone,
                     keyboardType: TextInputType.phone,
                     textDirection: TextDirection.ltr,
@@ -706,6 +1038,21 @@ class _PersonFormState extends State<PersonForm> {
                       return RegExp(r'^[+0-9 ()-]{3,40}$').hasMatch(text)
                           ? null
                           : tr('رقم غير صالح');
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: whatsapp,
+                    keyboardType: TextInputType.phone,
+                    textDirection: TextDirection.ltr,
+                    decoration: InputDecoration(
+                      labelText: tr('واتساب — اختياري'),
+                      prefixIcon: const Icon(Icons.chat_rounded),
+                    ),
+                    validator: (v) {
+                      final text = v?.trim() ?? '';
+                      if (text.isEmpty) return null;
+                      return RegExp(r'^[+0-9 ()-]{6,30}$').hasMatch(text) ? null : tr('رقم غير صالح');
                     },
                   ),
                   const SizedBox(height: 14),
@@ -740,6 +1087,52 @@ class _PersonFormState extends State<PersonForm> {
                       return validHttps(text) ? null : tr('أدخل رابط HTTPS صالحاً');
                     },
                   ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: address,
+                    maxLength: 200,
+                    decoration: InputDecoration(
+                      labelText: tr('العنوان — اختياري'),
+                      counterText: '',
+                      prefixIcon: const Icon(Icons.place_outlined),
+                    ),
+                  ),
+                  ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    shape: const Border(),
+                    collapsedShape: const Border(),
+                    leading: const Icon(Icons.share_rounded, color: AppColors.primarySoft),
+                    title: Text(tr('روابط التواصل الاجتماعي')),
+                    subtitle: Text(
+                      tr('اكتب اسم الحساب (@name) أو الرابط'),
+                      style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                    children: [
+                      for (final e in socialFields.entries)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: TextFormField(
+                            controller: social[e.key],
+                            textDirection: TextDirection.ltr,
+                            autocorrect: false,
+                            decoration: InputDecoration(labelText: e.value, hintText: '@name'),
+                            validator: _socialCheck,
+                          ),
+                        ),
+                    ],
+                  ),
+                  TextFormField(
+                    controller: quote,
+                    maxLength: 300,
+                    maxLines: 2,
+                    minLines: 1,
+                    decoration: InputDecoration(
+                      labelText: tr('عبارة مميزة تظهر في البطاقة — اختياري'),
+                      counterText: '',
+                      prefixIcon: const Icon(Icons.format_quote_rounded),
+                    ),
+                  ),
+                  _designSection(),
                 ] else
                   ...(fieldsByKind[kind] ?? const <String, String>{})
                       .entries
