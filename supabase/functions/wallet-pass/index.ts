@@ -3,6 +3,8 @@
 // Google Wallet loyalty cards for shop customers.
 //   POST {action: 'save', slug, token, lang?} -> {ok, url}  "Add to Google Wallet" link
 //   POST {action: 'sync', slug, token}         -> {ok}       refresh points / next booking
+//   POST {action: 'call', slug, session, customer_id} -> {ok, saved} the owner says
+//        "your turn": the saved card gets a message Google pushes as a notification
 //   POST {action: 'birthdays', secret}          -> {ok, sent} daily job (pg_cron): birthday
 //        cards are refreshed with a Wallet notification (secret = app_secrets CRON_SECRET)
 //
@@ -332,6 +334,40 @@ Deno.serve(async (req) => {
     if (key instanceof Response) return key;
     try {
       return await birthdays(db, key);
+    } catch (e) {
+      console.error(String(e));
+      return json({ok: false, error: 'wallet'}, 502);
+    }
+  }
+
+  if (body.action === 'call') {
+    const slug = String(body.slug ?? '').toLowerCase().trim();
+    const session = String(body.session ?? '');
+    const customerId = String(body.customer_id ?? '');
+    if (!SLUG.test(slug) || !/^[0-9a-f]{48}$/.test(session) || !/^[0-9a-f-]{36}$/.test(customerId)) {
+      return json({ok: false, error: 'bad'}, 400);
+    }
+    const {data: businessId} = await db.rpc('nfc_shop_session_check', {target_slug: slug, session});
+    if (!businessId) return json({ok: false, error: 'session'}, 403);
+    const key = await loadKey(db);
+    if (key instanceof Response) return key;
+    const {data: shop} = await db.from('nfc_businesses').select(SHOP_FIELDS).eq('id', businessId).maybeSingle();
+    const {data: customer} = await db.from('nfc_customers').select(CUSTOMER_FIELDS)
+      .eq('id', customerId).eq('business_id', businessId).maybeSingle();
+    if (!shop || !customer) return json({ok: false, error: 'customer'}, 404);
+    try {
+      const lang = String(customer.wallet_lang || 'ar');
+      const pass = await buildPass(db, shop, customer, lang);
+      const turn = {
+        ar: ['🔔 حان دورك!', `تفضّل، ${shop.name} في انتظارك الآن.`],
+        fr: ['🔔 C’est votre tour !', `${shop.name} vous attend maintenant.`],
+        en: ['🔔 It’s your turn!', `${shop.name} is ready for you now.`],
+      }[lang] ?? ['🔔', String(shop.name)];
+      const obj = pass.loyaltyObject as Record<string, any>;
+      obj.messages = [...(obj.messages ?? []), {id: `turn-${Date.now()}`, header: turn[0], body: turn[1], messageType: 'TEXT_AND_NOTIFY'}];
+      const token = await accessToken(key);
+      const saved = await upsert(token, 'loyaltyObject', obj, true);
+      return json({ok: true, saved});
     } catch (e) {
       console.error(String(e));
       return json({ok: false, error: 'wallet'}, 502);

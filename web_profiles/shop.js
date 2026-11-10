@@ -129,6 +129,14 @@ function bookingsPanel() {
       info.append(tel);
     }
     const btns = el('div', undefined, 'appt-btns');
+    if (k.coming) info.append(el('span', `🚶 ${t('comingNow')}`, 'chip green'));
+    else if (k.called) info.append(el('span', `🔔 ${t('calledBadge')}`, 'chip blue'));
+    if (k.customer_id && k.day === today && !k.coming) {
+      const bell = el('button', '🔔', 'btn small ' + (k.called ? 'ghost' : 'blue')); bell.type = 'button';
+      bell.title = t('callTurn');
+      bell.addEventListener('click', () => callCustomer({id: k.customer_id, name: k.customer}, bell));
+      btns.append(bell);
+    }
     for (const [st, label, cls] of [['done', '✓', 'green'], ['no_show', t('noShowShort'), 'ghost'], ['cancelled', '✕', 'red']]) {
       const b = el('button', label, 'btn small ' + cls); b.type = 'button';
       b.title = t('status_' + st);
@@ -281,7 +289,7 @@ function statsRow() {
 }
 
 function tabsBar() {
-  const queue = (data.customers ?? []).filter(c => c.coming || c.arrived).length;
+  const queue = (data.customers ?? []).filter(c => c.coming || c.arrived || c.called || bookedToday(c)).length;
   const bar = el('div', undefined, 'tabs');
   for (const [key, label] of [['home', t('home')], ['customers', t('tabCustomers')], ['settings', t('tabSettings')]]) {
     const b = el('button', label, 'tab' + (tab === key ? ' active' : ''));
@@ -293,21 +301,95 @@ function tabsBar() {
   return bar;
 }
 
+/* ---------- "your turn" ---------- */
+// Who is in today's list: booked today, called, on the way or arrived.
+const endOfToday = () => { const d = new Date(); d.setHours(23, 59, 59, 999); return d; };
+const bookedToday = c => !!c.booking && new Date(c.booking.starts_at) <= endOfToday();
+const inToday = c => c.coming || c.arrived || c.called || bookedToday(c);
+// coming / arrived (green, amber) -> called (blue) -> booked (orange) -> nothing.
+function turnState(c) {
+  if (c.arrived) return 'arrived';
+  if (c.coming) return 'coming';
+  if (c.called) return 'called';
+  if (c.booking) return 'booked';
+  return '';
+}
+const STATE_RANK = {coming: 0, arrived: 1, called: 2, booked: 3, '': 4};
+function byTurn(a, b) {
+  const d = STATE_RANK[turnState(a)] - STATE_RANK[turnState(b)];
+  if (d) return d;
+  return String(a.booking?.starts_at ?? '~').localeCompare(String(b.booking?.starts_at ?? '~'));
+}
+function bookTime(c) {
+  if (!c.booking) return '';
+  try { return new Intl.DateTimeFormat('en-GB', {hour: '2-digit', minute: '2-digit', hour12: false}).format(new Date(c.booking.starts_at)); }
+  catch { return String(c.booking.starts_at).slice(11, 16); }
+}
+function stateChip(c) {
+  const st = turnState(c);
+  if (st === 'arrived') return el('span', `📍 ${t('arrivedBadge')}`, 'chip amber');
+  if (st === 'coming') return el('span', `🚶 ${t('comingNow')}`, 'chip green');
+  if (st === 'called') return el('span', `🔔 ${t('calledBadge')}`, 'chip blue');
+  if (st === 'booked') return el('span', `📅 ${t('bookedAt', {time: bookTime(c)})}`, 'chip orange');
+  return null;
+}
+
+// The owner tells one customer "it's your turn": his page rings and his
+// Google Wallet card shows a notification.
+async function callCustomer(c, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const r = await rpc(config, 'nfc_shop_call_customer', {target_slug: slug, session: session(), customer: c.id});
+    if (!r?.ok) { toast(t('saveError'), true); return; }
+    toast(t('callSent', {name: c.name}));
+    fetch(`${config.supabaseUrl}/functions/v1/wallet-pass`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', apikey: config.publishableKey, Authorization: `Bearer ${config.publishableKey}`},
+      body: JSON.stringify({action: 'call', slug, session: session(), customer_id: c.id}),
+    }).catch(() => {});
+    await refresh();
+  } catch { toast(t('network'), true); } finally { if (btn) btn.disabled = false; }
+}
+
+// 🔔 and 📞 next to a name.
+function turnButtons(c) {
+  const box = el('div', undefined, 'turn-btns');
+  if (!c.coming && !c.arrived) {
+    const bell = el('button', c.called ? `🔔 ${t('callAgain')}` : `🔔 ${t('callTurn')}`, 'btn small ' + (c.called ? 'ghost' : 'blue')); bell.type = 'button';
+    bell.addEventListener('click', () => callCustomer(c, bell));
+    box.append(bell);
+  }
+  if (c.phone) {
+    const tel = el('a', '📞', 'btn small ghost'); tel.href = 'tel:' + String(c.phone).replace(/[^+0-9]/g, ''); tel.title = t('call');
+    box.append(tel);
+  }
+  return box;
+}
+
 function queueRow(c) {
-  const row = el('div', undefined, 'queue-item ' + (c.arrived ? 'arrived' : 'coming'));
+  const st = turnState(c);
+  const row = el('div', undefined, 'queue-item ' + st);
   row.append(el('div', initials(c.name), 'avatar'));
   const who = el('div', undefined, 'who');
   who.append(el('b', c.name));
-  who.append(el('span', `${c.arrived ? '📍 ' + t('arrivedBadge') : '🚶 ' + t('comingBadge')} · ${ago(c.arrived ? c.arrived_at : c.coming_at)} · ${c.stamps}/${c.goal}`, 'muted small'));
+  const chip = stateChip(c);
+  const line = el('div', undefined, 'queue-line');
+  if (chip) line.append(chip);
+  const when = st === 'coming' ? c.coming_at : st === 'arrived' ? c.arrived_at : st === 'called' ? c.called_at : null;
+  line.append(el('span', `${when ? ago(when) + ' · ' : ''}${c.booking && st !== 'booked' ? '📅 ' + bookTime(c) + ' · ' : ''}${c.stamps}/${c.goal}${c.next_free ? ' · 🎁' : ''}`, 'muted small'));
+  who.append(line);
   row.append(who);
-  if (c.next_free) row.append(el('span', '🎁', 'chip green'));
-  const done = el('button', t('done'), 'btn small ghost'); done.type = 'button';
-  done.addEventListener('click', async () => {
-    done.disabled = true;
-    try { await rpc(config, 'nfc_shop_clear_queue', {target_slug: slug, session: session(), customer: c.id}); await refresh(); }
-    catch { toast(t('network'), true); }
-  });
-  row.append(done);
+  const btns = turnButtons(c);
+  if (st !== 'booked') {
+    const done = el('button', '✓', 'btn small ghost'); done.type = 'button'; done.title = t('done');
+    done.addEventListener('click', async () => {
+      done.disabled = true;
+      try { await rpc(config, 'nfc_shop_clear_queue', {target_slug: slug, session: session(), customer: c.id}); await refresh(); }
+      catch { toast(t('network'), true); }
+    });
+    btns.append(done);
+  }
+  row.append(btns);
   return row;
 }
 
@@ -352,7 +434,7 @@ function homeView() {
     render();
   });
   qPanel.append(sound);
-  const queue = (data.customers ?? []).filter(c => c.coming || c.arrived);
+  const queue = (data.customers ?? []).filter(inToday).sort(byTurn);
   if (!queue.length) qPanel.append(el('p', t('queueEmpty'), 'empty'));
   for (const c of queue) qPanel.append(queueRow(c));
   grid.append(qrPanel, qPanel);
@@ -457,20 +539,21 @@ function fullscreenQr() {
 }
 
 function customerCard(c) {
-  const card = el('div', undefined, 'cust' + (c.next_free ? ' free' : ''));
+  const st = turnState(c);
+  const card = el('div', undefined, 'cust' + (c.next_free ? ' free' : '') + (st ? ' st-' + st : ''));
   const top = el('div', undefined, 'cust-top');
   top.append(el('div', initials(c.name), 'avatar'));
   const who = el('div', undefined, 'who');
   const nameLine = el('div'); nameLine.append(el('b', c.name));
-  if (c.arrived) nameLine.append(document.createTextNode(' '), el('span', `📍 ${t('arrivedBadge')}`, 'chip amber'));
-  else if (c.coming) nameLine.append(document.createTextNode(' '), el('span', `🚶 ${t('comingBadge')}`, 'chip green'));
-  const phone = el('a', c.phone); phone.href = 'tel:' + c.phone;
+  const chip = stateChip(c);
+  if (chip) nameLine.append(document.createTextNode(' '), chip);
+  const phone = el('a', c.phone); phone.href = 'tel:' + c.phone; phone.dir = 'ltr';
   who.append(nameLine, phone);
   const score = el('div', undefined, 'score');
   const pointsShop = data.shop.loyalty_mode === 'points';
   score.append(el('b', `${c.stamps}/${c.goal}`), el('span', pointsShop ? t('pointsWord') : unit(data.shop)));
   top.append(who, score);
-  card.append(top);
+  card.append(top, turnButtons(c));
   if (!pointsShop) card.append(numbersRow(c.goal, c.stamps, c.next_free));
   const sector = sectorRow(c);
   if (sector) card.append(sector);
@@ -523,11 +606,11 @@ function customersView() {
     if (q && !c.name.toLowerCase().includes(q) && !c.phone.includes(q.replace(/[^0-9+]/g, '') || '§')) return false;
     if (filter === 'ready') return c.next_free;
     if (filter === 'near') return !c.next_free && c.goal - c.stamps <= 2;
-    if (filter === 'queue') return c.coming || c.arrived;
+    if (filter === 'queue') return inToday(c);
     return true;
   };
   const draw = () => {
-    const items = (data.customers ?? []).filter(match);
+    const items = (data.customers ?? []).filter(match).sort(byTurn);
     list.replaceChildren(...(items.length ? items.map(customerCard) : [el('p', t('noCustomers'), 'empty')]));
   };
   for (const [key, label] of [['all', t('filterAll')], ['ready', t('filterReady')], ['near', t('filterNear')], ['queue', t('filterQueue')]]) {

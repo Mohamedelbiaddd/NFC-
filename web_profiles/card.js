@@ -381,28 +381,80 @@ function joinPanel() {
   return panel;
 }
 
+// "Your turn": the shop called this customer. One big answer button.
+function turnBanner() {
+  if (!customer?.called) return null;
+  const box = el('section', undefined, 'turn-alert' + (customer.coming ? ' answered' : ''));
+  box.id = 'turn';
+  if (customer.coming) {
+    box.append(el('b', t('comingTurn'), 'turn-title'), el('p', t('turnSeeYou', {shop: shop.name}), 'small'));
+    return box;
+  }
+  box.append(el('div', '🔔', 'turn-bell'), el('b', t('turnTitle'), 'turn-title'), el('p', t('turnBody', {shop: shop.name})));
+  const go = el('button', t('imComing'), 'btn turn-go'); go.type = 'button';
+  go.addEventListener('click', async () => {
+    go.disabled = true;
+    try {
+      const r = await rpc(config, 'nfc_customer_coming', {target_slug: slug, token: storage(tokenKey)});
+      if (r?.ok) { customer = r.customer; toast(t('comingSent')); render(); return; }
+      toast(t('network'), true);
+    } catch { toast(t('network'), true); }
+    go.disabled = false;
+  });
+  box.append(go);
+  return box;
+}
+
+// Rings once when the shop calls: sound, vibration and a system notification.
+let audioCtx = null;
+function ringTurn() {
+  try {
+    audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    for (const [i, f] of [[0, 880], [0.2, 1175], [0.4, 1568], [0.9, 880], [1.1, 1175], [1.3, 1568]]) {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = f; o.type = 'sine';
+      g.gain.setValueAtTime(0.0001, now + i);
+      g.gain.exponentialRampToValueAtTime(0.4, now + i + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + i + 0.28);
+      o.connect(g).connect(audioCtx.destination); o.start(now + i); o.stop(now + i + 0.3);
+    }
+  } catch { /* audio not available */ }
+  try { navigator.vibrate?.([300, 120, 300, 120, 600]); } catch { /* optional */ }
+  try {
+    if (document.visibilityState !== 'visible' && window.Notification?.permission === 'granted') {
+      new Notification(t('turnTitle'), {body: t('turnBody', {shop: shop.name}), tag: 'turn'});
+    }
+  } catch { /* optional */ }
+}
+
+// While the page is open the card refreshes itself, so "your turn" shows up
+// without reloading.
+let watchTimer = null;
+function watchTurn() {
+  clearInterval(watchTimer);
+  watchTimer = setInterval(async () => {
+    const token = storage(tokenKey);
+    if (!customer || !token || document.visibilityState !== 'visible') return;
+    try {
+      const r = await rpc(config, 'nfc_customer_card', {target_slug: slug, token});
+      if (!r?.ok) return;
+      const before = JSON.stringify([customer, myBooking]);
+      const wasCalled = !!customer.called;
+      customer = r.customer;
+      await loadMyBooking();
+      if (!wasCalled && customer.called) ringTurn();
+      if (JSON.stringify([customer, myBooking]) !== before && !document.querySelector('.sheet')) {
+        render();
+        if (!wasCalled && customer.called) document.getElementById('turn')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+      }
+    } catch { /* try again next time */ }
+  }, 12000);
+}
+
 function actions() {
   const panel = el('div', undefined, 'panel');
-  const row = el('div', undefined, 'btn-row');
-  const coming = el('button', customer.coming ? t('comingSent') : t('coming'), 'btn' + (customer.coming ? ' green' : ''));
-  const arrived = el('button', customer.arrived ? t('arrivedSent') : t('arrived'), 'btn' + (customer.arrived ? ' amber' : ' ghost'));
-  for (const [btn, fn, msg] of [[coming, 'nfc_customer_coming', 'comingSent'], [arrived, 'nfc_customer_arrived', 'arrivedSent']]) {
-    btn.type = 'button';
-    btn.disabled = !!shop.closed;
-    btn.addEventListener('click', async () => {
-      btn.disabled = true;
-      try {
-        const r = await rpc(config, fn, {target_slug: slug, token: storage(tokenKey)});
-        if (r?.ok) { customer = r.customer; toast(t(msg)); render(); }
-      } catch {
-        toast(t('network'), true);
-      } finally {
-        btn.disabled = false;
-      }
-    });
-  }
-  row.append(coming, arrived);
-  panel.append(row, el('p', t('scanHint'), 'muted small'));
+  panel.append(el('p', t('scanHint'), 'muted small'));
   const stats = el('div', undefined, 'info-grid');
   for (const [v, label] of [[customer.total_visits, t('totalVisits')], [customer.rewards, t('rewards')]]) {
     const box = el('div', undefined, 'info'); box.append(el('b', String(v ?? 0)), el('span', label)); stats.append(box);
@@ -444,6 +496,7 @@ function render() {
   appTitle.content = shop.name;
   const parts = [];
   const closed = closedBanner(); if (closed) parts.push(closed);
+  const turn = turnBanner(); if (turn) parts.push(turn);
   if (notice) {
     const b = el('div', undefined, `banner ${notice.kind}`);
     b.append(el('span', notice.kind === 'green' ? '🎉' : '⚠️', 'ico'), el('p', notice.text));
@@ -451,7 +504,7 @@ function render() {
   }
   parts.push(bizCard());
   const pics = gallery(); if (pics) parts.push(pics);
-  if (customer && shop.booking_enabled) parts.push(myBookingPanel());
+  if (customer && shop.booking_enabled && myBooking) parts.push(myBookingPanel());
   if (customer) {
     parts.push(actions());
     if (canWallet()) parts.push(walletButton());
@@ -683,6 +736,9 @@ function bookingSheet() {
           myBooking = res.booking;
           success(res.booking);
           wallet('sync').catch(() => {});
+          // So "your turn" can ring even when the phone is in the pocket.
+          try { if (window.Notification?.permission === 'default') Notification.requestPermission().catch(() => {}); } catch { /* optional */ }
+          watchTurn();
           return;
         }
         toast(t('bookErr_' + (res?.error ?? '')) === 'bookErr_' + (res?.error ?? '') ? t('bookErr') : t('bookErr_' + res.error), true);
@@ -723,9 +779,6 @@ function myBookingPanel() {
   panel.append(el('h2', `🗓️ ${t('myBooking')}`));
   if (!k) {
     panel.append(el('p', t('noBooking'), 'muted small'));
-    const b = el('button', t('bookBtn'), 'btn'); b.type = 'button';
-    b.addEventListener('click', bookingSheet);
-    panel.append(b);
     return panel;
   }
   const status = k.status === 'booked' && !k.upcoming ? 'now' : k.status;
@@ -761,10 +814,6 @@ function myBookingPanel() {
       p.append(yes, no);
     });
     panel.append(cancel);
-  } else if (shop.booking_enabled) {
-    const b = el('button', t('bookBtn'), 'btn'); b.type = 'button';
-    b.addEventListener('click', bookingSheet);
-    panel.append(b);
   }
   return panel;
 }
@@ -883,6 +932,7 @@ async function start() {
     }
     await loadMyBooking();
     render();
+    watchTurn();
     // Links from Google Wallet: #book opens booking, #mybooking shows it.
     if (/(?:^#|&)book(?:&|$)/.test(location.hash) && shop.booking_enabled) bookingSheet();
     if (/(?:^#|&)mybooking(?:&|$)/.test(location.hash)) document.getElementById('my-booking')?.scrollIntoView({behavior: 'smooth'});

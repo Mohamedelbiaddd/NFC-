@@ -542,3 +542,39 @@ a.bc-phone { color: inherit; text-decoration: none; }
 .qr-cover-ico { font-size: 54px; }
 .qr-hold.is-hidden .qr-frame { visibility: hidden; }
 .qr-hold.is-hidden .qr-cover { display: flex; }
+
+/* ---------- "Your turn" ---------- */
+.chip.blue { background: #3b82f622; border-color: #3b82f677; color: #bfdbfe; }
+.chip.orange { background: #f9731622; border-color: #f9731677; color: #fed7aa; }
+:root[data-light="true"] .chip.blue { color: #1d4ed8; background: #dbeafe; border-color: #bfdbfe; }
+:root[data-light="true"] .chip.orange { color: #c2410c; background: #ffedd5; border-color: #fed7aa; }
+.btn.blue { background: linear-gradient(140deg, #3b82f6, #1d4ed8); box-shadow: 0 8px 22px #3b82f640; color: #fff; }
+.queue-item.called { background: #3b82f614; border-color: #3b82f677; }
+.queue-item.booked { background: #f9731612; border-color: #f9731670; }
+.queue-item .queue-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+.turn-btns { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.turn-btns .btn.small { margin: 0; }
+.turn-btns a.btn { text-decoration: none; display: inline-grid; place-items: center; }
+.cust > .turn-btns { margin-top: 10px; }
+.cust.st-coming { border-color: #22c55e99; background: linear-gradient(160deg, #22c55e22, #22c55e08); }
+.cust.st-arrived { border-color: #f59e0b99; background: linear-gradient(160deg, #f59e0b1f, #f59e0b06); }
+.cust.st-called { border-color: #3b82f699; background: linear-gradient(160deg, #3b82f61f, #3b82f606); }
+.cust.st-booked { border-color: #f9731688; background: linear-gradient(160deg, #f973161a, #f9731605); }
+.appt .chip { align-self: flex-start; margin-top: 4px; }
+
+.turn-alert { text-align: center; padding: 20px 18px; border-radius: 22px; margin: 0 0 14px;
+  background: linear-gradient(150deg, #2563eb, #1e3a8a); color: #fff; border: 2px solid #93c5fd;
+  box-shadow: 0 0 0 6px #3b82f633, 0 18px 40px -12px #2563eb99; animation: turnPulse 1.6s ease-in-out infinite; }
+.turn-alert .turn-bell { font-size: 42px; line-height: 1; animation: turnRing 1.2s ease-in-out infinite; display: inline-block; }
+.turn-alert .turn-title { display: block; font-size: 24px; margin: 8px 0 4px; }
+.turn-alert p { margin: 0 0 14px; opacity: .92; }
+.turn-alert .turn-go { background: #22c55e; color: #052e16; font-size: 19px; font-weight: 900; padding: 16px; box-shadow: 0 10px 26px #22c55e55; }
+.turn-alert.answered { background: linear-gradient(150deg, #16a34a, #14532d); border-color: #86efac; box-shadow: 0 0 0 6px #22c55e2a; animation: none; }
+.turn-alert.answered p { margin: 0; }
+@keyframes turnPulse { 0%, 100% { box-shadow: 0 0 0 6px #3b82f633, 0 18px 40px -12px #2563eb99; } 50% { box-shadow: 0 0 0 12px #3b82f61a, 0 18px 40px -12px #2563eb99; } }
+@keyframes turnRing { 0%, 60%, 100% { transform: rotate(0); } 10%, 30%, 50% { transform: rotate(-16deg); } 20%, 40% { transform: rotate(16deg); } }
+@media (prefers-reduced-motion: reduce) { .turn-alert, .turn-alert .turn-bell { animation: none; } }
+.queue-item { flex-wrap: wrap; }
+.queue-item .turn-btns { width: 100%; padding-inline-start: 52px; }
+.queue-item .turn-btns .btn.blue, .queue-item .turn-btns button.btn.ghost:first-child { flex: 1; }
+.cust > .turn-btns .btn.blue, .cust > .turn-btns button.btn.ghost:first-child { flex: 1; }
