@@ -348,28 +348,136 @@ function loyaltyCard() {
   return card;
 }
 
+// Name (+ phone when the shop's rule asks for it). Booking always needs a way
+// to call, unless the shop asks no phone at all.
+const phoneRule = () => shop.phone_policy ?? 'optional';
+function personFields(forBooking = false) {
+  const rule = phoneRule();
+  const needed = rule === 'required' || (forBooking && rule === 'optional');
+  const name = el('input'); name.className = 'field'; name.placeholder = t('fullName'); name.autocomplete = 'name'; name.maxLength = 80;
+  const nodes = [name];
+  let phone = null;
+  if (rule !== 'none') {
+    phone = el('input'); phone.className = 'field'; phone.type = 'tel'; phone.autocomplete = 'tel'; phone.inputMode = 'tel'; phone.dir = 'ltr';
+    phone.placeholder = needed ? t('phoneForCall') : t('phoneOptional');
+    nodes.push(phone);
+  }
+  return {
+    nodes, name, phone,
+    check() {
+      if (name.value.trim().length < 2) { toast(t('badName'), true); name.focus(); return false; }
+      const digits = (phone?.value ?? '').replace(/[^0-9]/g, '');
+      if ((needed || digits) && digits.length < 6) { toast(t('badPhone'), true); phone?.focus(); return false; }
+      return true;
+    },
+    values: () => ({customer_name: name.value.trim(), customer_phone: phone?.value ?? ''}),
+  };
+}
+
+// A refused join: the number already has a card here -> the lost-card path.
+function joinError(r, panel, f) {
+  if (r?.error === 'exists') {
+    panel.querySelector('.exists-box')?.remove();
+    const box = el('div', undefined, 'banner amber exists-box');
+    const b = el('button', `🔑 ${t('lostCardBtn')}`, 'btn small'); b.type = 'button';
+    b.addEventListener('click', () => { document.querySelector('.sheet')?.remove(); recoverSheet(f.values()); });
+    box.append(el('p', t('phoneExists')), b);
+    panel.append(box);
+    return;
+  }
+  toast(r?.error === 'phone' ? t('badPhone') : t('badName'), true);
+}
+
+// Lost card: name + phone send a request; the owner, who sees the person,
+// approves it on his screen and the card comes to this phone.
+const recoverKey = `nfc_recover_${slug}`;
+function recoverSheet(prefill = {}) {
+  const {box, panel} = sheet();
+  panel.append(el('h2', `🔑 ${t('haveCardTitle')}`), el('p', t('recoverNote'), 'muted small'));
+  const f = personFields(true);
+  f.name.value = prefill.customer_name ?? '';
+  if (f.phone) f.phone.value = prefill.customer_phone ?? '';
+  const go = el('button', t('recoverSend'), 'btn'); go.type = 'button';
+  go.addEventListener('click', async () => {
+    if (!f.check()) return;
+    go.disabled = true;
+    try {
+      const r = await rpc(config, 'nfc_customer_recover', {target_slug: slug, ...f.values()});
+      if (!r?.ok) { toast(r?.error === 'too_many' ? t('recoverTooMany') : t('recoverNotFound'), true); return; }
+      storage(recoverKey, JSON.stringify({id: r.request, token: r.token, name: f.name.value.trim()}));
+      waitRecover(box, panel);
+    } catch { toast(t('network'), true); } finally { go.disabled = false; }
+  });
+  panel.append(...f.nodes, go);
+}
+
+function waitRecover(box, panel) {
+  let req = null;
+  try { req = JSON.parse(storage(recoverKey) ?? 'null'); } catch { /* none */ }
+  if (!req?.id) { box.remove(); return; }
+  panel.replaceChildren(el('div', '⏳', 'wait-ico'), el('h2', t('recoverWait')), el('p', req.name, 'book-big'), el('p', t('recoverWaitNote'), 'muted small'));
+  const cancel = el('button', t('recoverCancel'), 'link-btn'); cancel.type = 'button';
+  cancel.addEventListener('click', () => { storage(recoverKey, null); box.remove(); });
+  panel.append(cancel);
+  const end = (msg) => {
+    storage(recoverKey, null);
+    panel.replaceChildren(el('div', '✋', 'wait-ico'), el('p', msg));
+    const ok = el('button', t('close'), 'btn ghost'); ok.type = 'button';
+    ok.addEventListener('click', () => box.remove());
+    panel.append(ok);
+  };
+  const poll = async () => {
+    if (!box.isConnected) return;
+    try {
+      const r = await rpc(config, 'nfc_customer_recover_status', {target_slug: slug, request: req.id, token: req.token});
+      if (!r?.ok) { end(t('recoverRefused')); return; }
+      if (r.status === 'approved') {
+        storage(tokenKey, req.token); storage(recoverKey, null);
+        customer = r.customer;
+        box.remove();
+        toast(t('cardBack'));
+        await loadMyBooking();
+        render(); watchTurn();
+        wallet('sync').catch(() => {});
+        return;
+      }
+      if (r.status !== 'pending') { end(t('recoverRefused')); return; }
+    } catch { /* try again */ }
+    setTimeout(poll, 4000);
+  };
+  setTimeout(poll, 3000);
+}
+
+// The free reward waits for the owner's yes: show it big, the owner taps ✓.
+function claimBanner() {
+  if (!customer?.claim) return null;
+  const box = el('section', undefined, 'claim-alert');
+  box.id = 'claim';
+  box.append(el('div', '🎁', 'claim-ico'), el('b', t('claimTitle'), 'turn-title'),
+    el('p', customer.reward ?? shop.reward ?? '', 'claim-reward'), el('p', t('claimShow'), 'small'),
+    el('div', undefined, 'dots'));
+  return box;
+}
+
 function joinPanel() {
   const panel = el('div', undefined, 'panel');
   panel.append(el('h2', `✨ ${t('join')}`), el('p', t('joinText'), 'muted small'));
-  const name = el('input'); name.className = 'field'; name.placeholder = t('fullName'); name.autocomplete = 'name'; name.maxLength = 80;
-  const phone = el('input'); phone.className = 'field'; phone.placeholder = t('phoneForCall'); phone.type = 'tel'; phone.autocomplete = 'tel'; phone.inputMode = 'tel'; phone.dir = 'ltr';
+  const f = personFields(false);
   const extra = extraFields();
   const btn = el('button', t('joinBtn'), 'btn'); btn.type = 'button';
   btn.addEventListener('click', async () => {
-    if (!name.value.trim()) { toast(t('badName'), true); return; }
-    if (phone.value.replace(/[^0-9]/g, '').length < 6) { toast(t('badPhone'), true); return; }
+    if (!f.check()) return;
     btn.disabled = true;
     try {
-      const r = await rpc(config, 'nfc_customer_join', {
-        target_slug: slug, customer_name: name.value.trim(), customer_phone: phone.value, code: pendingCode,
-      });
-      if (!r?.ok) { toast(r?.error === 'phone' ? t('badPhone') : r?.error === 'name_mismatch' ? t('nameMismatch') : t('badName'), true); return; }
+      const r = await rpc(config, 'nfc_customer_join', {target_slug: slug, ...f.values(), code: pendingCode});
+      if (!r?.ok) { joinError(r, panel, f); return; }
       storage(tokenKey, r.token);
       customer = r.customer;
       await extra.save();
       if (r.visit) { notice = {kind: 'green', text: r.visit.free ? t('stampedFree') : scanText(r.visit)}; fresh = customer.stamps - 1; }
       pendingCode = null;
       render();
+      watchTurn();
       setTimeout(walletPrompt, 900);
     } catch {
       toast(t('network'), true);
@@ -377,7 +485,7 @@ function joinPanel() {
       btn.disabled = false;
     }
   });
-  panel.append(name, phone, extra.node, btn);
+  panel.append(...f.nodes, extra.node, btn);
   return panel;
 }
 
@@ -432,24 +540,37 @@ function ringTurn() {
 // without reloading.
 let watchTimer = null;
 function watchTurn() {
-  clearInterval(watchTimer);
-  watchTimer = setInterval(async () => {
+  clearTimeout(watchTimer);
+  const tick = async () => {
     const token = storage(tokenKey);
-    if (!customer || !token || document.visibilityState !== 'visible') return;
-    try {
-      const r = await rpc(config, 'nfc_customer_card', {target_slug: slug, token});
-      if (!r?.ok) return;
-      const before = JSON.stringify([customer, myBooking]);
-      const wasCalled = !!customer.called;
-      customer = r.customer;
-      await loadMyBooking();
-      if (!wasCalled && customer.called) ringTurn();
-      if (JSON.stringify([customer, myBooking]) !== before && !document.querySelector('.sheet')) {
-        render();
-        if (!wasCalled && customer.called) document.getElementById('turn')?.scrollIntoView({behavior: 'smooth', block: 'center'});
-      }
-    } catch { /* try again next time */ }
-  }, 12000);
+    if (customer && token && document.visibilityState === 'visible') {
+      try {
+        const r = await rpc(config, 'nfc_customer_card', {target_slug: slug, token});
+        if (r?.ok) {
+          const before = JSON.stringify([customer, myBooking]);
+          const was = customer;
+          customer = r.customer;
+          await loadMyBooking();
+          if (!was.called && customer.called) ringTurn();
+          // The owner said yes to the reward.
+          if (was.claim && !customer.claim && customer.rewards > was.rewards) {
+            notice = {kind: 'green', text: t('stampedFree')};
+            try { navigator.vibrate?.([120, 60, 120]); } catch { /* optional */ }
+            wallet('sync').catch(() => {});
+          }
+          if (JSON.stringify([customer, myBooking]) !== before && !document.querySelector('.sheet')) {
+            render();
+            if (!was.called && customer.called) document.getElementById('turn')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+          }
+        } else if (r?.error === 'card' || r?.ok === false) {
+          // The card moved to another phone (lost-card request): this one is out.
+          storage(tokenKey, null); customer = null; render(); return;
+        }
+      } catch { /* try again next time */ }
+    }
+    watchTimer = setTimeout(tick, customer?.claim ? 4000 : 12000);
+  };
+  watchTimer = setTimeout(tick, customer?.claim ? 4000 : 12000);
 }
 
 function actions() {
@@ -496,6 +617,7 @@ function render() {
   appTitle.content = shop.name;
   const parts = [];
   const closed = closedBanner(); if (closed) parts.push(closed);
+  const claim = claimBanner(); if (claim) parts.push(claim);
   const turn = turnBanner(); if (turn) parts.push(turn);
   if (notice) {
     const b = el('div', undefined, `banner ${notice.kind}`);
@@ -522,12 +644,11 @@ function render() {
       home.addEventListener('click', addToHome);
       parts.push(home);
     }
-    const back = el('button', t('haveCard'), 'link-btn'); back.type = 'button';
-    back.addEventListener('click', () => {
-      const {box, panel} = sheet();
-      detailsStep(panel, () => { box.remove(); render(); toast(t('cardBack')); }, `🔑 ${t('haveCardTitle')}`, t('haveCardNote'));
-    });
-    parts.push(back);
+    if (phoneRule() !== 'none') {
+      const back = el('button', t('lostCard'), 'link-btn'); back.type = 'button';
+      back.addEventListener('click', () => recoverSheet());
+      parts.push(back);
+    }
   }
   const info = infoPanel(); if (info) parts.push(info);
   const legal = el('p', undefined, 'legal');
@@ -623,24 +744,22 @@ async function loadMyBooking() {
 // Name + phone before the first booking (joins the shop without a visit).
 function detailsStep(panel, done, title = `📅 ${t('bookBtn')}`, note = `${t('yourDetails')} ${t('sameDetails')}`) {
   panel.replaceChildren(el('h2', title), el('p', note, 'muted small'));
-  const name = el('input'); name.className = 'field'; name.placeholder = t('fullName'); name.autocomplete = 'name'; name.maxLength = 80;
-  const phone = el('input'); phone.className = 'field'; phone.placeholder = t('phoneForCall'); phone.type = 'tel'; phone.inputMode = 'tel'; phone.dir = 'ltr';
+  const f = personFields(true);
   const extra = extraFields();
   const go = el('button', t('continue'), 'btn'); go.type = 'button';
   go.addEventListener('click', async () => {
-    if (!name.value.trim()) { toast(t('badName'), true); return; }
-    if (phone.value.replace(/[^0-9]/g, '').length < 6) { toast(t('badPhone'), true); return; }
+    if (!f.check()) return;
     go.disabled = true;
     try {
-      const r = await rpc(config, 'nfc_customer_join', {target_slug: slug, customer_name: name.value.trim(), customer_phone: phone.value, code: null});
-      if (!r?.ok) { toast(r?.error === 'phone' ? t('badPhone') : r?.error === 'name_mismatch' ? t('nameMismatch') : t('badName'), true); return; }
+      const r = await rpc(config, 'nfc_customer_join', {target_slug: slug, ...f.values(), code: null});
+      if (!r?.ok) { joinError(r, panel, f); return; }
       storage(tokenKey, r.token);
       customer = r.customer;
       await extra.save();
       done();
     } catch { toast(t('network'), true); } finally { go.disabled = false; }
   });
-  panel.append(name, phone, extra.node, go);
+  panel.append(...f.nodes, extra.node, go);
 }
 
 // Message after a scan: points shops say how many points the bill gave.
@@ -920,7 +1039,8 @@ async function start() {
         if (r?.error === 'card') storage(tokenKey, null);
         else {
           customer = r.customer;
-          if (r.ok) { notice = {kind: 'green', text: r.free ? t('stampedFree') : scanText(r)}; fresh = r.free ? -1 : customer.stamps - 1; wallet('sync').catch(() => {}); setTimeout(walletPrompt, 1200); }
+          if (r.ok && r.claim) { /* the reward waits for the owner: claimBanner */ }
+          else if (r.ok) { notice = {kind: 'green', text: r.free ? t('stampedFree') : scanText(r)}; fresh = r.free ? -1 : customer.stamps - 1; wallet('sync').catch(() => {}); setTimeout(walletPrompt, 1200); }
           else notice = {kind: 'amber', text: ({too_soon: t('tooSoon'), no_amount: t('noAmount'), expired: t('subscriptionExpired')})[r.error] ?? t('codeExpired')};
         }
       }
@@ -933,6 +1053,7 @@ async function start() {
     await loadMyBooking();
     render();
     watchTurn();
+    if (!customer && storage(recoverKey)) { const {box, panel} = sheet(); waitRecover(box, panel); }
     // Links from Google Wallet: #book opens booking, #mybooking shows it.
     if (/(?:^#|&)book(?:&|$)/.test(location.hash) && shop.booking_enabled) bookingSheet();
     if (/(?:^#|&)mybooking(?:&|$)/.test(location.hash)) document.getElementById('my-booking')?.scrollIntoView({behavior: 'smooth'});

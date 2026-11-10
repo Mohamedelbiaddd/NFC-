@@ -3,8 +3,9 @@
 // Google Wallet loyalty cards for shop customers.
 //   POST {action: 'save', slug, token, lang?} -> {ok, url}  "Add to Google Wallet" link
 //   POST {action: 'sync', slug, token}         -> {ok}       refresh points / next booking
-//   POST {action: 'call', slug, session, customer_id} -> {ok, saved} the owner says
-//        "your turn": the saved card gets a message Google pushes as a notification
+//   POST {action: 'call', slug, session, customer_id, kind?} -> {ok, saved} the owner says
+//        "your turn" (or kind 'moved': the card moved to a new phone after a lost-card
+//        request): the saved card gets a message Google pushes as a notification
 //   POST {action: 'birthdays', secret}          -> {ok, sent} daily job (pg_cron): birthday
 //        cards are refreshed with a Wallet notification (secret = app_secrets CRON_SECRET)
 //
@@ -358,13 +359,18 @@ Deno.serve(async (req) => {
     try {
       const lang = String(customer.wallet_lang || 'ar');
       const pass = await buildPass(db, shop, customer, lang);
-      const turn = {
+      const moved = body.kind === 'moved';
+      const turn = (moved ? {
+        ar: ['📱 تم نقل بطاقتك إلى هاتف جديد', `إن لم تكن أنت من طلب ذلك، أخبر ${shop.name} فوراً.`],
+        fr: ['📱 Votre carte est passée sur un nouveau téléphone', `Si ce n’est pas vous, prévenez ${shop.name} tout de suite.`],
+        en: ['📱 Your card moved to a new phone', `If this wasn’t you, tell ${shop.name} right away.`],
+      } : {
         ar: ['🔔 حان دورك!', `تفضّل، ${shop.name} في انتظارك الآن.`],
         fr: ['🔔 C’est votre tour !', `${shop.name} vous attend maintenant.`],
         en: ['🔔 It’s your turn!', `${shop.name} is ready for you now.`],
-      }[lang] ?? ['🔔', String(shop.name)];
+      } as Record<string, string[]>)[lang] ?? ['🔔', String(shop.name)];
       const obj = pass.loyaltyObject as Record<string, any>;
-      obj.messages = [...(obj.messages ?? []), {id: `turn-${Date.now()}`, header: turn[0], body: turn[1], messageType: 'TEXT_AND_NOTIFY'}];
+      obj.messages = [...(obj.messages ?? []), {id: `${moved ? 'moved' : 'turn'}-${Date.now()}`, header: turn[0], body: turn[1], messageType: 'TEXT_AND_NOTIFY'}];
       const token = await accessToken(key);
       const saved = await upsert(token, 'loyaltyObject', obj, true);
       return json({ok: true, saved});

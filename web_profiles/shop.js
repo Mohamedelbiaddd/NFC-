@@ -60,6 +60,7 @@ async function refresh() {
   applyColors(data.shop);
   if (!editing) applyTheme(r.shop?.theme);
   notifyQueue(data.customers ?? []);
+  notifyRequests();
   try {
     const rb = await rpc(config, 'nfc_shop_bookings', {target_slug: slug, session: session()});
     data.bookings = rb?.ok ? rb.bookings ?? [] : [];
@@ -289,7 +290,7 @@ function statsRow() {
 }
 
 function tabsBar() {
-  const queue = (data.customers ?? []).filter(c => c.coming || c.arrived || c.called || bookedToday(c)).length;
+  const queue = (data.customers ?? []).filter(c => c.coming || c.arrived || c.called || c.claim || bookedToday(c)).length + (data.recoveries ?? []).length;
   const bar = el('div', undefined, 'tabs');
   for (const [key, label] of [['home', t('home')], ['customers', t('tabCustomers')], ['settings', t('tabSettings')]]) {
     const b = el('button', label, 'tab' + (tab === key ? ' active' : ''));
@@ -342,11 +343,7 @@ async function callCustomer(c, btn) {
     const r = await rpc(config, 'nfc_shop_call_customer', {target_slug: slug, session: session(), customer: c.id});
     if (!r?.ok) { toast(t('saveError'), true); return; }
     toast(t('callSent', {name: c.name}));
-    fetch(`${config.supabaseUrl}/functions/v1/wallet-pass`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json', apikey: config.publishableKey, Authorization: `Bearer ${config.publishableKey}`},
-      body: JSON.stringify({action: 'call', slug, session: session(), customer_id: c.id}),
-    }).catch(() => {});
+    walletNotice(c.id, 'turn');
     await refresh();
   } catch { toast(t('network'), true); } finally { if (btn) btn.disabled = false; }
 }
@@ -371,7 +368,9 @@ function queueRow(c) {
   const row = el('div', undefined, 'queue-item ' + st);
   row.append(el('div', initials(c.name), 'avatar'));
   const who = el('div', undefined, 'who');
-  who.append(el('b', c.name));
+  const nm = el('b', c.name);
+  if (c.phone) nm.append(el('span', ` ···${String(c.phone).slice(-3)}`, 'tail'));
+  who.append(nm);
   const chip = stateChip(c);
   const line = el('div', undefined, 'queue-line');
   if (chip) line.append(chip);
@@ -391,6 +390,75 @@ function queueRow(c) {
   }
   row.append(btns);
   return row;
+}
+
+/* ---------- requests the owner confirms face to face ---------- */
+// Free rewards waiting for a yes, and lost cards asking to move to a new phone.
+function requestsPanel() {
+  const claims = (data.customers ?? []).filter(c => c.claim);
+  const recs = data.recoveries ?? [];
+  if (!claims.length && !recs.length) return null;
+  const panel = el('div', undefined, 'panel requests');
+  panel.append(el('h2', `✋ ${t('requestsTitle')}`));
+  const row = (cls, ico, title, sub, onYes, onNo, yesLabel) => {
+    const r = el('div', undefined, 'req ' + cls);
+    r.append(el('div', ico, 'req-ico'));
+    const info = el('div', undefined, 'who'); info.append(el('b', title), el('span', sub, 'muted small'));
+    const yes = el('button', yesLabel, 'btn small green'); yes.type = 'button';
+    const no = el('button', '✕', 'btn small ghost'); no.type = 'button'; no.title = t('refuse');
+    const run = async (fn, b) => { yes.disabled = no.disabled = true; try { await fn(); } catch { toast(t('network'), true); } finally { yes.disabled = no.disabled = false; } };
+    yes.addEventListener('click', () => run(onYes));
+    no.addEventListener('click', () => run(onNo));
+    const btns = el('div', undefined, 'turn-btns'); btns.append(yes, no);
+    r.append(info, btns);
+    return r;
+  };
+  for (const c of claims) {
+    const decide = (approve) => async () => {
+      const r = await rpc(config, 'nfc_shop_reward_decide', {target_slug: slug, session: session(), customer: c.id, approve});
+      if (r?.ok) toast(approve ? t('rewardGiven', {name: c.name}) : t('refused')); else toast(t('saveError'), true);
+      await refresh();
+    };
+    panel.append(row('gift', '🎁', t('rewardAsk', {name: c.name}), `${c.reward ?? data.shop.reward ?? ''}${c.phone ? ' · \u2066···' + String(c.phone).slice(-3) + '\u2069' : ''}`,
+      decide(true), decide(false), `✓ ${t('rewardYes')}`));
+  }
+  for (const q of recs) {
+    const decide = (approve) => async () => {
+      if (approve && !confirm(t('recoverConfirm', {name: q.name}))) return;
+      const r = await rpc(config, 'nfc_shop_recovery_decide', {target_slug: slug, session: session(), request: q.id, approve});
+      if (!r?.ok) { toast(t('saveError'), true); await refresh(); return; }
+      toast(approve ? t('recoverDone', {name: q.name}) : t('refused'));
+      // The old phone's Google Wallet card says it moved (in case it wasn't him).
+      if (approve) walletNotice(q.customer_id, 'moved');
+      await refresh();
+    };
+    panel.append(row('lost', '🔑', t('recoverAsk', {name: q.name}), `📞 \u2066${q.phone ?? ''}\u2069 · ${q.stamps}/${q.goal} · ${ago(q.created_at)}`,
+      decide(true), decide(false), `✓ ${t('recoverYes')}`));
+  }
+  return panel;
+}
+
+function walletNotice(customerId, kind) {
+  fetch(`${config.supabaseUrl}/functions/v1/wallet-pass`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', apikey: config.publishableKey, Authorization: `Bearer ${config.publishableKey}`},
+    body: JSON.stringify({action: 'call', kind, slug, session: session(), customer_id: customerId}),
+  }).catch(() => {});
+}
+
+// Sound when a new request arrives.
+let knownRequests = null;
+function notifyRequests() {
+  const list = [...(data.customers ?? []).filter(c => c.claim).map(c => ['g' + c.id, t('rewardAsk', {name: c.name})]),
+    ...(data.recoveries ?? []).map(q => ['r' + q.id, t('recoverAsk', {name: q.name})])];
+  if (knownRequests) {
+    for (const [k, msg] of list) {
+      if (knownRequests.has(k)) continue;
+      beep(); toast(msg);
+      try { if (document.visibilityState !== 'visible' && window.Notification?.permission === 'granted') new Notification(data.shop.name, {body: msg}); } catch { /* optional */ }
+    }
+  }
+  knownRequests = new Set(list.map(x => x[0]));
 }
 
 function homeView() {
@@ -439,7 +507,8 @@ function homeView() {
   for (const c of queue) qPanel.append(queueRow(c));
   grid.append(qrPanel, qPanel);
   if (data.shop.loyalty_mode === 'points') grid.prepend(amountPanel());
-  return [grid, bookingsPanel(), closedPanel()];
+  const req = requestsPanel();
+  return [...(req ? [req] : []), grid, bookingsPanel(), closedPanel()];
 }
 
 // Points by amount: the owner types the bill, the next scan (3 min) gets the points.
@@ -547,8 +616,8 @@ function customerCard(c) {
   const nameLine = el('div'); nameLine.append(el('b', c.name));
   const chip = stateChip(c);
   if (chip) nameLine.append(document.createTextNode(' '), chip);
-  const phone = el('a', c.phone); phone.href = 'tel:' + c.phone; phone.dir = 'ltr';
-  who.append(nameLine, phone);
+  who.append(nameLine);
+  if (c.phone) { const phone = el('a', c.phone); phone.href = 'tel:' + c.phone; phone.dir = 'ltr'; who.append(phone); }
   const score = el('div', undefined, 'score');
   const pointsShop = data.shop.loyalty_mode === 'points';
   score.append(el('b', `${c.stamps}/${c.goal}`), el('span', pointsShop ? t('pointsWord') : unit(data.shop)));
@@ -603,7 +672,7 @@ function customersView() {
   const list = el('div');
   const match = c => {
     const q = query.trim().toLowerCase();
-    if (q && !c.name.toLowerCase().includes(q) && !c.phone.includes(q.replace(/[^0-9+]/g, '') || '§')) return false;
+    if (q && !c.name.toLowerCase().includes(q) && !String(c.phone ?? '').includes(q.replace(/[^0-9+]/g, '') || '§')) return false;
     if (filter === 'ready') return c.next_free;
     if (filter === 'near') return !c.next_free && c.goal - c.stamps <= 2;
     if (filter === 'queue') return inToday(c);
@@ -856,7 +925,13 @@ function settingsView() {
   bday.input.placeholder = t('birthdayRewardHint'); bday.input.maxLength = 80;
   const menu = field(`🍽️ ${t('menuUrlLabel')}`, s.menu_url ?? '', 'url');
   menu.input.placeholder = 'https://…'; menu.input.dir = 'ltr';
-  rules.append(modeWrap, goal.wrap, per.wrap, reward.wrap, el('p', t('goalNote'), 'muted small'), bday.wrap, menu.wrap);
+  // Who must give a phone number when joining (default by sector).
+  const ppWrap = el('label', undefined, 'row'); ppWrap.append(el('span', `📞 ${t('phoneRule')}`));
+  const pp = el('select'); pp.className = 'field';
+  for (const [v, label] of [['required', t('phoneRequired')], ['optional', t('phoneOptionalRule')], ['none', t('phoneNone')]]) { const o = el('option', label); o.value = v; pp.append(o); }
+  pp.value = s.phone_policy ?? 'optional';
+  ppWrap.append(pp);
+  rules.append(modeWrap, goal.wrap, per.wrap, reward.wrap, el('p', t('goalNote'), 'muted small'), ppWrap, bday.wrap, menu.wrap);
   // Card design
   let background = s.card_background ?? '';
   const design = el('div', undefined, 'panel');
@@ -941,7 +1016,7 @@ function settingsView() {
       if (menuUrl && !/^https:\/\//.test(menuUrl)) { toast(t('badLink'), true); return; }
       const rs = await rpc(config, 'nfc_shop_sector_settings', {target_slug: slug, session: session(), settings: {
         loyalty_mode: mode.value, points_per: Math.min(1000, Math.max(1, parseInt(per.input.value, 10) || 10)),
-        menu_url: menuUrl, birthday_reward: bday.input.value.trim(),
+        menu_url: menuUrl, birthday_reward: bday.input.value.trim(), phone_policy: pp.value,
       }});
       if (!rs?.ok) { toast(rs?.error === 'menu' ? t('badLink') : t('saveError'), true); return; }
       const maxGoal = mode.value === 'points' ? 10000 : 50;
