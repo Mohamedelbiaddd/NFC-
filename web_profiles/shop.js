@@ -248,8 +248,24 @@ function header() {
   else { const c = el('span', undefined, 'chip green'); c.append(el('i', undefined, 'dot live'), document.createTextNode(t('openBadge'))); sub.append(c); }
   txt.append(sub);
   brand.append(txt);
-  bar.append(brand, langs);
+  const side = el('div', undefined, 'top-actions');
+  side.append(langs);
+  if (session()) {
+    const out = el('button', '⎋', 'icon-btn logout-btn'); out.type = 'button';
+    out.title = t('logout'); out.setAttribute('aria-label', t('logout'));
+    out.addEventListener('click', () => { if (confirm(t('logoutConfirm'))) logout(); });
+    side.append(out);
+  }
+  bar.append(brand, side);
   return bar;
+}
+
+// Sign out of this device: the session is closed on the server too.
+async function logout() {
+  try { await rpc(config, 'nfc_shop_logout', {target_slug: slug, session: session()}); } catch { /* ignore */ }
+  stopTimers();
+  storage(sessionKey, null);
+  loginView();
 }
 
 function statsRow() {
@@ -299,9 +315,26 @@ function homeView() {
   const grid = el('div', undefined, 'home-grid');
   // QR
   const qrPanel = el('div', undefined, 'panel qr-card');
-  qrPanel.append(el('h2', `📲 ${t('scanMe')}`));
+  // The owner can hide the code so nobody photographs it from afar.
+  const qrKey = `nfc_qr_hidden_${slug}`;
+  const head0 = el('div', undefined, 'qr-head');
+  head0.append(el('h2', `📲 ${t('scanMe')}`));
+  const hold = el('div', undefined, 'qr-hold');
   const frame = el('div', undefined, 'qr-frame'); frame.dataset.qr = '1'; frame.append(el('div', undefined, 'ring'));
-  qrPanel.append(frame);
+  const cover = el('button', undefined, 'qr-cover'); cover.type = 'button';
+  cover.append(el('span', '🙈', 'qr-cover-ico'), el('b', t('qrHidden')), el('span', t('qrTapShow'), 'small'));
+  hold.append(frame, cover);
+  const eye = el('button', '', 'btn small ghost qr-eye'); eye.type = 'button';
+  const setHidden = (h) => {
+    hold.classList.toggle('is-hidden', h);
+    eye.textContent = h ? `👁️ ${t('qrShow')}` : `🙈 ${t('qrHide')}`;
+    storage(qrKey, h ? '1' : null);
+  };
+  eye.addEventListener('click', () => setHidden(!hold.classList.contains('is-hidden')));
+  cover.addEventListener('click', () => setHidden(false));
+  setHidden(storage(qrKey) === '1');
+  head0.append(eye);
+  qrPanel.append(head0, hold);
   const cd = el('p', '', 'muted small'); cd.dataset.countdown = '1';
   qrPanel.append(cd);
   const full = el('button', `⛶ ${t('fullscreen')}`, 'btn'); full.type = 'button';
@@ -861,10 +894,7 @@ function settingsView() {
     } catch { toast(t('network'), true); } finally { change.disabled = false; }
   });
   const out = el('button', t('logout'), 'btn red'); out.type = 'button';
-  out.addEventListener('click', async () => {
-    try { await rpc(config, 'nfc_shop_logout', {target_slug: slug, session: session()}); } catch { /* ignore */ }
-    storage(sessionKey, null); loginView();
-  });
+  out.addEventListener('click', logout);
   sec.append(oldP.wrap, newP.wrap, change, out);
   return [themePanel, info, linksPanel, weekPanel, bookPanel, promo, rules, loc, save, sec];
 }
