@@ -12,6 +12,8 @@ dependencies:
   supabase_flutter: ^2.10.0
   nfc_manager: ^4.3.0
   ndef_record: ^1.4.2
+  # Card passwords (NTAG21x) are derived from the typed password.
+  crypto: ^3.0.6
   url_launcher: ^6.3.2
   # Pick a profile image from the gallery before uploading it to Storage.
   image_picker: ^1.1.2

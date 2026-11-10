@@ -507,6 +507,12 @@ class _DashboardState extends State<Dashboard> {
               title: Text(tr('بطاقة شخص جديدة (NFC / QR)'), style: const TextStyle(fontWeight: FontWeight.w800)),
               onTap: () => Navigator.pop(context, 'card'),
             ),
+            ListTile(
+              leading: const Icon(Icons.nfc_rounded, color: AppColors.success),
+              title: Text(tr('📡 أدوات NFC'), style: const TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: Text(tr('فحص بطاقة، كتابة أي شيء، مسح، كلمة سر، قفل')),
+              onTap: () => Navigator.pop(context, 'nfc'),
+            ),
             const SizedBox(height: 8),
           ],
         ),
@@ -514,10 +520,16 @@ class _DashboardState extends State<Dashboard> {
     );
     if (!mounted || choice == null) return;
     if (choice == 'card') return addPerson();
+    if (choice == 'nfc') return _openNfcTools();
     setState(() => page = 2); // the Network tab
     await Future<void>.delayed(const Duration(milliseconds: 250));
     networkAdd.value++;
   }
+
+  Future<void> _openNfcTools() => Navigator.push(
+    context,
+    MaterialPageRoute<void>(builder: (_) => LinkWriterScreen(repo: repo, tenant: tenant)),
+  );
 
   Widget _addButton() {
     final wide = MediaQuery.sizeOf(context).width >= 430;
@@ -940,16 +952,9 @@ class _DashboardState extends State<Dashboard> {
           _addButton(),
           const SizedBox(width: 4),
           IconButton(
-            tooltip: tr('رابط مباشر على بطاقة NFC'),
-            onPressed: canEdit
-                ? () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) => LinkWriterScreen(repo: repo, tenant: tenant),
-                    ),
-                  )
-                : null,
-            icon: const Icon(Icons.add_link_rounded, size: 20),
+            tooltip: tr('📡 أدوات NFC'),
+            onPressed: _openNfcTools,
+            icon: const Icon(Icons.nfc_rounded, size: 24, color: AppColors.success),
           ),
           IconButton(
             tooltip: tr('تحديث'),
