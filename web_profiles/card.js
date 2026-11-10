@@ -1054,6 +1054,11 @@ async function start() {
     render();
     watchTurn();
     if (!customer && storage(recoverKey)) { const {box, panel} = sheet(); waitRecover(box, panel); }
+    // Keep a saved Google Wallet card up to date with the shop's design (every 6 h at most).
+    if (customer) {
+      const k = `nfc_wsync_${slug}`, last = Number(storage(k) ?? 0);
+      if (Date.now() - last > 6 * 3600e3) { storage(k, String(Date.now())); wallet('sync').catch(() => {}); }
+    }
     // Links from Google Wallet: #book opens booking, #mybooking shows it.
     if (/(?:^#|&)book(?:&|$)/.test(location.hash) && shop.booking_enabled) bookingSheet();
     if (/(?:^#|&)mybooking(?:&|$)/.test(location.hash)) document.getElementById('my-booking')?.scrollIntoView({behavior: 'smooth'});

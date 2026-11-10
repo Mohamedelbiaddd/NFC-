@@ -714,7 +714,30 @@ function customersView() {
   return [panel, visits];
 }
 
+// Big photos are shrunk to 1600 px and WebP becomes JPEG (PNG when it has
+// transparency): faster pages, and Google Wallet can show the picture.
+async function prepareImage(file) {
+  if (!/^image\/(jpeg|webp)$/.test(file.type) || (file.type === 'image/jpeg' && file.size < 1_500_000)) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    const g = c.getContext('2d'); g.drawImage(bmp, 0, 0, c.width, c.height);
+    let alpha = false;
+    if (file.type === 'image/webp') {
+      const px = g.getImageData(0, 0, c.width, c.height).data;
+      for (let i = 3; i < px.length; i += 4 * 97) if (px[i] < 250) { alpha = true; break; }
+    }
+    const type = alpha ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise(r => c.toBlob(r, type, 0.85));
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.\w+$/, '') + (alpha ? '.png' : '.jpg'), {type});
+  } catch { return file; }
+}
+
 async function upload(file) {
+  file = await prepareImage(file);
   const form = new FormData(); form.append('slug', slug); form.append('session', session()); form.append('file', file);
   const res = await fetch(`${config.supabaseUrl}/functions/v1/shop-upload`, {method: 'POST', headers: {apikey: config.publishableKey}, body: form});
   const body = await res.json().catch(() => ({}));

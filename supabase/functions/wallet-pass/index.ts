@@ -132,7 +132,7 @@ async function upsert(token: string, kind: string, resource: Record<string, unkn
 const plain = (id: string) => id.replace(/[^a-zA-Z0-9]/g, '');
 
 type Row = Record<string, any>;
-const SHOP_FIELDS = 'id, name, shop_slug, primary_color, loyalty_goal, loyalty_reward, loyalty_enabled, suspended, phone, address, card_background, latitude, longitude, logo_url, theme, industry, booking_enabled, services, week_hours, timezone, loyalty_mode, points_per, menu_url, birthday_reward';
+const SHOP_FIELDS = 'id, name, shop_slug, primary_color, loyalty_goal, loyalty_reward, loyalty_enabled, suspended, phone, address, card_background, cover_url, banners, latitude, longitude, logo_url, theme, industry, booking_enabled, services, week_hours, timezone, loyalty_mode, points_per, menu_url, birthday_reward';
 const CUSTOMER_FIELDS = 'id, name, phone, stamps, rewards, total_visits, goal, reward, vehicle_type, dob, expiry_date, last_visit_at, wallet_lang, birthday_year';
 
 // Today's date (YYYY-MM-DD) in the shop's time zone.
@@ -188,6 +188,10 @@ async function buildPass(db: any, shop: Row, customer: Row, lang: string) {
   const logo = typeof shop.logo_url === 'string' && shop.logo_url.startsWith('https://') ? shop.logo_url : `${SITE}/icon-512.png`;
   const fn = `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-image`;
   const name40 = encodeURIComponent(String(shop.name).slice(0, 40));
+  // The shop's picture behind the banner, as on its page (card picture, cover, first photo).
+  const storage = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/`;
+  const photo = [shop.card_background, shop.cover_url, ...(Array.isArray(shop.banners) ? shop.banners : [])]
+    .find((u) => typeof u === 'string' && u.startsWith(storage) && !/\.webp$/i.test(u)) as string | undefined;
 
   const loyaltyClass: Record<string, unknown> = {
     id: classId,
@@ -227,7 +231,7 @@ async function buildPass(db: any, shop: Row, customer: Row, lang: string) {
     // No barcode: the customer scans the shop's live QR, never the other way round.
     heroImage: {
       sourceUri: {
-        uri: `${fn}?s=${shown}&g=${goal}&c=${bg.slice(1)}&a=${gold.slice(1)}&k=${ink.slice(1)}${lang === 'ar' ? '&r=1' : ''}&l=${lang}&n=${name40}&i=${String(shop.industry ?? '')}${points ? '&m=p' : ''}&v=3`,
+        uri: `${fn}?s=${shown}&g=${goal}&c=${bg.slice(1)}&a=${gold.slice(1)}&k=${ink.slice(1)}${lang === 'ar' ? '&r=1' : ''}&l=${lang}&n=${name40}&i=${String(shop.industry ?? '')}${points ? '&m=p' : ''}${photo ? `&p=${encodeURIComponent(photo)}` : ''}&v=4`,
       },
       contentDescription: {defaultValue: {language: lang, value: points ? `${shown} / ${goal}` : visitsText(lang, shown, goal)}},
     },
@@ -245,11 +249,15 @@ async function buildPass(db: any, shop: Row, customer: Row, lang: string) {
       {id: 'scan', header: '📷', body: t.scan},
       ...(shop.address ? [{id: 'address', header: '📍', body: String(shop.address)}] : []),
     ],
+    // The main button, shown first under the card: book (or open the card).
+    appLinkData: {
+      webAppLinkInfo: {appTarget: {targetUri: {uri: canBook ? `${cardUrl}#book` : cardUrl, description: canBook ? t.book : t.open}}},
+      displayText: {defaultValue: {language: lang, value: (canBook ? `📅 ${t.book}` : t.open).slice(0, 30)}},
+    },
     linksModuleData: {
       uris: [
         ...(shop.menu_url ? [{id: 'menu', uri: String(shop.menu_url), description: `🍽️ ${t.menu}`}] : []),
         ...(shop.phone ? [{id: 'phone', uri: `tel:${String(shop.phone).replace(/[^+0-9]/g, '')}`, description: `📞 ${t.call} · ${shop.phone}`}] : []),
-        ...(canBook ? [{id: 'book', uri: `${cardUrl}#book`, description: `📅 ${t.book}`}] : []),
         ...(canBook ? [{id: 'mine', uri: `${cardUrl}#mybooking`, description: `🗓️ ${t.mine}`}] : []),
         {id: 'card', uri: cardUrl, description: t.open},
       ],

@@ -13,6 +13,7 @@ export interface Hero {
   lang: 'ar' | 'fr' | 'en';
   sector?: string; // shop industry: picks the stamp icon and the word used
   points?: boolean; // points-by-amount shop: a progress bar instead of circles
+  photo?: string;   // the shop's picture (data: URI) behind everything, under a dark veil
 }
 
 // Stamp icons (24-unit line drawings) by sector; same shapes as the shop page.
@@ -152,12 +153,20 @@ export function heroSvg(h: Hero): string {
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
       <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="${gold}" flood-opacity="0.55"/>
     </filter>
+    <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${shade(h.bg, -0.2)}" stop-opacity="0.45"/>
+      <stop offset="0.45" stop-color="${shade(h.bg, -0.3)}" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="${shade(h.bg, -0.45)}" stop-opacity="0.85"/>
+    </linearGradient>
     <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
       <circle cx="2" cy="2" r="1.2" fill="${gold}" fill-opacity="0.07"/>
     </pattern>
   </defs>
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
-  <rect width="${W}" height="${H}" fill="url(#dots)"/>
+  ${h.photo
+    ? `<image href="${h.photo}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>
+  <rect width="${W}" height="${H}" fill="url(#veil)"/>`
+    : `<rect width="${W}" height="${H}" fill="url(#dots)"/>`}
   <rect width="${W}" height="${H}" fill="url(#halo)"/>
   <rect x="14" y="14" width="${W - 28}" height="${H - 28}" rx="24" fill="none" stroke="${gold}" stroke-opacity="0.55" stroke-width="2"/>
   <rect x="22" y="22" width="${W - 44}" height="${H - 44}" rx="19" fill="none" stroke="${gold}" stroke-opacity="0.18" stroke-width="1"/>

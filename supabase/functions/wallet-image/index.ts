@@ -3,6 +3,7 @@
 // Draws the stamp circles shown on a Google Wallet loyalty card as a PNG:
 //   GET ?s=<stamps>&g=<goal>&c=<background hex>&a=<accent hex>&k=<ink hex>&r=1 (right to left)
 //       &n=<shop name>&l=<ar|fr|en>  (with a name: the elegant themed banner)
+//       &p=<picture url>  the shop's photo behind the banner (our storage only)
 // One circle per visit of the shop's goal plus a gold gift circle; stamped
 // circles are filled with a check mark. The URL carries the whole state, so
 // Google re-downloads the picture whenever the count changes.
@@ -98,6 +99,28 @@ async function png(rgba: Uint8Array): Promise<Uint8Array> {
     o += p.length;
   }
   return out;
+}
+
+// The shop's photo, only from our own public storage, as a data: URI for resvg.
+const STORE = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/+$/, '')}/storage/v1/object/public/`;
+// 'retry': the picture could not be fetched right now (Google asks again later).
+async function photoData(u: string | null): Promise<string | undefined | 'retry'> {
+  if (!u || u.length > 600 || !u.startsWith(STORE) || u.includes('..')) return undefined;
+  try {
+    const r = await fetch(u, {signal: AbortSignal.timeout(6000)});
+    if (!r.ok) return undefined;
+    const b = new Uint8Array(await r.arrayBuffer());
+    if (b.length < 16 || b.length > 6_000_000) return undefined;
+    const type = b[0] === 0xff && b[1] === 0xd8 ? 'image/jpeg'
+      : b[0] === 0x89 && b[1] === 0x50 ? 'image/png'
+      : b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50 ? 'image/webp' : null;
+    if (!type) return undefined;
+    let bin = '';
+    for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
+    return `data:${type};base64,${btoa(bin)}`;
+  } catch {
+    return 'retry';
+  }
 }
 
 type RGB = [number, number, number];
@@ -214,8 +237,18 @@ Deno.serve(async (req) => {
     try {
       const fontBuffers = await engine();
       const sector = (url.searchParams.get('i') ?? '').replace(/[^a-z]/g, '').slice(0, 12);
-      const svg = heroSvg({name, stamps, goal, bg, accent, ink, rtl, lang, sector, points: isPoints});
-      body = new Resvg(svg, {font: {fontBuffers, loadSystemFonts: false, defaultFontFamily: 'Cairo'}}).render().asPng();
+      const photo = await photoData(url.searchParams.get('p'));
+      if (photo === 'retry') return new Response('busy', {status: 503, headers: {'Retry-After': '60'}});
+      const render = (p?: string) => new Resvg(heroSvg({name, stamps, goal, bg, accent, ink, rtl, lang, sector, points: isPoints, photo: p}),
+        {font: {fontBuffers, loadSystemFonts: false, defaultFontFamily: 'Cairo'}}).render().asPng();
+      try {
+        body = render(photo);
+      } catch (e) {
+        // A picture resvg cannot read: the banner without it.
+        if (!photo) throw e;
+        console.error('photo render failed', String(e).slice(0, 200));
+        body = render();
+      }
     } catch (e) {
       console.error('hero render failed', String(e).slice(0, 200));
     }
