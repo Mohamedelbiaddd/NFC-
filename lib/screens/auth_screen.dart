@@ -118,35 +118,25 @@ class _AuthScreenState extends State<AuthScreen> {
                       children: [
                         Center(
                           child: Container(
-                            padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  AppColors.primary,
-                                  AppColors.primarySoft,
-                                ],
-                              ),
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.45,
-                                  ),
+                                  color: AppColors.primary.withValues(alpha: 0.4),
                                   blurRadius: 28,
                                   offset: const Offset(0, 12),
                                 ),
                               ],
                             ),
-                            child: const Icon(
-                              Icons.contactless_rounded,
-                              size: 40,
-                              color: Colors.white,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Image.asset('assets/brand/logo.png', width: 88, height: 88),
                             ),
                           ),
                         ),
                         const SizedBox(height: 20),
                         const Text(
-                          'NFC Studio',
+                          'TapMaroc',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 28,

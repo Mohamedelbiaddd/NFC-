@@ -47,7 +47,7 @@ class NfcStudio extends StatelessWidget {
     builder: (context, lang, _) => MaterialApp(
       key: ValueKey(lang),
       debugShowCheckedModeBanner: false,
-      title: 'NFC Studio',
+      title: 'TapMaroc',
       locale: Locale(lang),
       supportedLocales: const [Locale('ar'), Locale('fr'), Locale('en')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,

@@ -170,7 +170,7 @@ class _NetworkTabState extends State<NetworkTab> {
 
   Future<void> _showPassword(String name, String email, String password) async {
     final message =
-        trf('مرحباً {0} 👋\nحسابك في NFC Studio جاهز.\nالبريد: {1}\nكلمة المرور: {2}\n\nنزّل التطبيق وسجّل الدخول بهذه البيانات.', [name, email, password]);
+        trf('مرحباً {0} 👋\nحسابك في TapMaroc جاهز.\nالبريد: {1}\nكلمة المرور: {2}\n\nنزّل التطبيق وسجّل الدخول بهذه البيانات.', [name, email, password]);
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(

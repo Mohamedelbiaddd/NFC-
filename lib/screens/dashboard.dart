@@ -1153,27 +1153,16 @@ class _DashboardState extends State<Dashboard> {
         titleSpacing: 16,
         title: Row(
           children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.primarySoft],
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.contactless_rounded,
-                size: 20,
-                color: Colors.white,
-              ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset('assets/brand/logo.png', width: 34, height: 34),
             ),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('NFC Studio', style: TextStyle(fontSize: 16)),
+                const Text('TapMaroc', style: TextStyle(fontSize: 16)),
                 Text(
                   isSuper ? tr('مدير عام · صلاحيات كاملة') : tr('لوحة الإدارة'),
                   style: const TextStyle(

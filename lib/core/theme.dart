@@ -7,9 +7,9 @@ class AppColors {
   static const surface = Color(0xFF131828);
   static const surfaceHigh = Color(0xFF1B2133);
   static const border = Color(0xFF273049);
-  static const primary = Color(0xFF7C6BFF);
-  static const primarySoft = Color(0xFFA79AFF);
-  static const accent = Color(0xFF2DD4BF);
+  static const primary = Color(0xFFE11D2E); // TapMaroc red (logo)
+  static const primarySoft = Color(0xFFFF6B6B);
+  static const accent = Color(0xFF22B45A); // TapMaroc green (logo)
   static const warning = Color(0xFFFFB86B);
   static const danger = Color(0xFFFF6B81);
   static const success = Color(0xFF4ADE80);
