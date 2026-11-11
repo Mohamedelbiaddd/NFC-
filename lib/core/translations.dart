@@ -712,6 +712,14 @@ const Map<String, String> frStrings = {
   'توقيع فحمي': 'Signature ardoise',
   'أخضر مكتبي': 'Bureau sauge',
   'رملي معماري': 'Studio sable',
+  'تعذّر تنزيل التحديث. تحقق من الإنترنت وحاول مجدداً.': 'Échec du téléchargement de la mise à jour. Vérifiez Internet et réessayez.',
+  'اسمح لـ TapMaroc بتثبيت التحديثات ثم ارجع إلى التطبيق.': 'Autorisez TapMaroc à installer les mises à jour, puis revenez dans l\'application.',
+  'تعذّر بدء التثبيت. حاول مجدداً.': 'Impossible de lancer l\'installation. Réessayez.',
+  'جارٍ تنزيل التحديث… {0}%': 'Téléchargement de la mise à jour… {0}%',
+  'جارٍ تنزيل التحديث…': 'Téléchargement de la mise à jour…',
+  'تحديث جديد متوفر': 'Nouvelle mise à jour disponible',
+  'تثبيت': 'Installer',
+  'تحديث الآن': 'Mettre à jour',
 };
 
 const Map<String, String> enStrings = {
@@ -1425,4 +1433,12 @@ const Map<String, String> enStrings = {
   'توقيع فحمي': 'Slate Signature',
   'أخضر مكتبي': 'Sage Office',
   'رملي معماري': 'Sand Studio',
+  'تعذّر تنزيل التحديث. تحقق من الإنترنت وحاول مجدداً.': 'Couldn\'t download the update. Check your internet and try again.',
+  'اسمح لـ TapMaroc بتثبيت التحديثات ثم ارجع إلى التطبيق.': 'Allow TapMaroc to install updates, then come back to the app.',
+  'تعذّر بدء التثبيت. حاول مجدداً.': 'Couldn\'t start the install. Try again.',
+  'جارٍ تنزيل التحديث… {0}%': 'Downloading update… {0}%',
+  'جارٍ تنزيل التحديث…': 'Downloading update…',
+  'تحديث جديد متوفر': 'New update available',
+  'تثبيت': 'Install',
+  'تحديث الآن': 'Update now',
 };

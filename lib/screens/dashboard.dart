@@ -8,6 +8,7 @@ import '../core/app_config.dart';
 import '../core/people.dart';
 import '../core/repository.dart';
 import '../core/theme.dart';
+import '../core/update_service.dart';
 import '../core/workers_service.dart';
 import 'activity_tab.dart';
 import 'people_tab.dart';
@@ -1212,6 +1213,7 @@ class _DashboardState extends State<Dashboard> {
       ),
       body: Column(
         children: [
+          const UpdateBanner(),
           if (staffNotice != null)
             Container(
               width: double.infinity,

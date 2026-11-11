@@ -29,11 +29,27 @@ android {
         versionName = flutter.versionName
     }
 
+    // CI fetches the fixed TapMaroc release key (see supabase/functions/
+    // ci-signing). Every build must share one signature, otherwise Android
+    // refuses to install an update over the previous version.
+    val releaseStore = System.getenv("TAPMAROC_KEYSTORE")?.let { file(it) }
+    signingConfigs {
+        if (releaseStore != null && releaseStore.exists()) {
+            create("release") {
+                storeFile = releaseStore
+                storeType = "PKCS12"
+                storePassword = System.getenv("TAPMAROC_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("TAPMAROC_KEY_ALIAS")
+                keyPassword = System.getenv("TAPMAROC_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Local builds without the key fall back to debug signing.
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
             // Native shrinking/obfuscation on top of the Dart obfuscation that
             // `flutter build apk --obfuscate` already applies.
             isMinifyEnabled = true
