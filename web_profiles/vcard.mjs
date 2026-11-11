@@ -23,11 +23,11 @@ export const LAYOUTS = ['classic', 'center', 'minimal'];
 // Ready-made designs (crafts and executives) from /card-themes.json: colours,
 // layout, button shape, a cover picture and a footer ornament. Their keys are
 // the theme ids stored on the card (data.theme).
-const DESIGNS = await fetch('/card-themes.json')
+export const DESIGNS = await fetch('/card-themes.json')
   .then((r) => (r.ok ? r.json() : {themes: []}))
   .then((c) => Object.fromEntries((c.themes ?? []).map((t) => [t.id, t])))
   .catch(() => ({}));
-const DESIGN_LAYOUT = {photo: 'classic', editorial: 'minimal', centered: 'center'};
+export const DESIGN_LAYOUT = {photo: 'classic', editorial: 'minimal', centered: 'center'};
 function shadeHex(hex, k) {
   const n = parseInt(hex.slice(1), 16);
   const ch = (v) => Math.max(0, Math.min(255, Math.round(k >= 0 ? v + (255 - v) * k : v * (1 + k))));

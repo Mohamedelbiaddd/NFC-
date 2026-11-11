@@ -1,4 +1,4 @@
-import {renderVcard} from '/vcard.mjs';
+import {renderVcard, DESIGNS, DESIGN_LAYOUT, CARD_THEMES} from '/vcard.mjs';
 import {slugFromPath,safeHttps,safeImageUrl,vcardEscape,fetchProfile,trackScan,ownerLogin,ownerUpdate,ownerUpload} from '/routing.mjs';
 
 const root=document.getElementById('app');
@@ -193,12 +193,48 @@ function imagePicker(label,current,onChange){
  wrap.append(preview,row,file);return wrap;
 }
 
+// Ready-made designs (crafts, executives) and simple colours as thumbnails.
+function designChooser(look){
+ const wrap=el('div',undefined,'form-row design-chooser');
+ wrap.append(el('span','🎨 تصميم البطاقة'));
+ const groups=[['craft','الحرف والمهن'],['executive','مدراء الأعمال']];
+ const tiles=[];
+ const mark=()=>{for(const t of tiles)t.classList.toggle('on',t.dataset.id===look.theme);};
+ const tile=(id,label,bg,accent,img,layout)=>{
+  const b=el('button',undefined,'design-tile');b.type='button';b.dataset.id=id;
+  b.style.setProperty('--t-bg',bg);b.style.setProperty('--t-ac',accent);
+  if(img){const i=el('img');i.src=img;i.alt='';i.loading='lazy';i.decoding='async';b.append(i);}
+  else b.append(el('i','TM'));
+  b.append(el('b',label));
+  b.addEventListener('click',()=>{look.theme=id;look.layout=layout??'';look.colorReset=true;mark();});
+  tiles.push(b);return b;
+ };
+ for(const [g,label] of groups){
+  const row=el('div',undefined,'design-row');
+  for(const d of Object.values(DESIGNS).filter(x=>x.group===g))row.append(tile(d.id,d.name?.ar??d.id,d.palette.surface,d.palette.accent,d.assets?.cover,DESIGN_LAYOUT[d.layout]));
+  if(row.childElementCount)wrap.append(el('small',label),row);
+ }
+ const simple=el('div',undefined,'design-row');
+ for(const [id,t] of Object.entries(CARD_THEMES))simple.append(tile(id,'',t.card,t.accent,null,null));
+ wrap.append(el('small','ألوان بسيطة'),simple);
+ mark();
+ return wrap;
+}
+
 function openEditor(profile,pin){
  const {box,panel}=modal();panel.classList.add('editor');
  panel.append(el('h2','تعديل ملفك'));
  const title=textField('العنوان',profile.title);panel.append(title.wrap);
  let cover={keep:true};
  panel.append(imagePicker('الصورة الرئيسية',profile.image_url,v=>{cover=v;}));
+ // Business card: its design (ready-made or simple colour) and its cover
+ // picture; the owner can change both here.
+ let look=null,coverPick={keep:true};
+ if(profile.kind==='vcard'){
+  look={theme:profile.data?.theme??'',layout:profile.data?.layout??''};
+  panel.append(designChooser(look));
+  panel.append(imagePicker('صورة الغلاف (اختياري، بدل صورة التصميم)',profile.data?.cover_url||'',v=>{coverPick=v;}));
+ }
  const inputs={};
  for(const [key,label] of FIELDS[profile.kind]??[]){const f=textField(label,profile.data?.[key],key==='description'||key==='terms');inputs[key]=f.input;panel.append(f.wrap);}
 
@@ -244,6 +280,13 @@ function openEditor(profile,pin){
    // Keys not shown in this editor (theme, shape, cover…) are kept as they are.
    for(const [key,v] of Object.entries(profile.data??{}))if(!(key in inputs)&&typeof v==='string'&&v)data[key]=v;
    for(const [key,input] of Object.entries(inputs)){const v=input.value.trim();if(v)data[key]=v;}
+   if(look){
+    if(look.theme)data.theme=look.theme;
+    if(look.layout)data.layout=look.layout;else delete data.layout;
+    if(look.colorReset)delete data.color;
+    if(coverPick.file)data.cover_url=await ownerUpload(state.config,state.slug,pin,coverPick.file);
+    else if(coverPick.remove)delete data.cover_url;
+   }
    const r=await ownerUpdate(state.config,state.slug,pin,{title:title.input.value.trim(),data,catalog,imageUrl});
    if(!r?.ok){toast(r?.error==='Too many attempts, try later'?'محاولات كثيرة، حاول لاحقاً.':'تعذّر الحفظ: تأكد من الرمز.',true);return;}
    box.remove();toast('تم الحفظ ✓');
