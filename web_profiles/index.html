@@ -1,1 +1,327 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://ikcaingdfybpqrdzucyd.supabase.co; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://ikcaingdfybpqrdzucyd.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'"><meta name="theme-color" content="#080c19"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="بطاقتي"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" href="/icon-192.png"><title>الملف الرقمي</title><link rel="stylesheet" href="/styles.css"><script type="module" src="/app.js"></script></head><body><div class="orb one"></div><div class="orb two"></div><div class="stack"><main id="app" class="glass" aria-live="polite"><p class="eyebrow">مرحباً بك</p><div class="spinner" aria-label="تحميل"></div><h1>جارٍ تحميل الملف…</h1></main><section id="tools" class="glass tools" hidden><p class="eyebrow">احفظ البطاقة في هاتفك</p><button id="add-home" class="button" type="button">📲 أضف إلى الشاشة الرئيسية</button><button id="save-image" class="button secondary" type="button">🖼️ حفظ كصورة</button></section></div></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#0a0d16">
+<title>TapMaroc — بطاقات ذكية NFC وبطاقات ولاء للمحلات في المغرب</title>
+<meta name="description" content="TapMaroc: بطاقات أعمال ذكية NFC، بطاقات ولاء رقمية للمحلات مع Google Wallet، وحجز الدور للحلاقين. بلمسة واحدة، بدون تطبيق، صُنع في المغرب.">
+<meta property="og:title" content="TapMaroc — بلمسة واحدة، زبونك عندك">
+<meta property="og:description" content="بطاقات أعمال NFC، بطاقات ولاء رقمية وحجز الدور للمحلات في المغرب.">
+<meta property="og:image" content="https://tapmaroc.com/icon-512.png">
+<meta property="og:url" content="https://tapmaroc.com/">
+<link rel="canonical" href="https://tapmaroc.com/">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/home-cairo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/home.css">
+<script type="module" src="/home.js"></script>
+</head>
+<body>
+<a class="skip" href="#main" data-i="skip">انتقل إلى المحتوى</a>
+
+<header class="top" id="top">
+  <div class="wrap top-in">
+    <a class="brand" href="#top" aria-label="TapMaroc">
+      <img src="/logo-256.webp" alt="" width="40" height="40">
+      <span>Tap<b>Maroc</b></span>
+    </a>
+    <nav class="nav" id="nav" aria-label="القائمة">
+      <a href="#services" data-i="nav.services">الخدمات</a>
+      <a href="#builder" data-i="nav.builder">صمّم بطاقتك</a>
+      <a href="#sectors" data-i="nav.sectors">القطاعات</a>
+      <a href="#soon" data-i="nav.soon">قريباً</a>
+      <a href="#pricing" data-i="nav.pricing">الأسعار</a>
+      <a href="#faq" data-i="nav.faq">أسئلة</a>
+    </nav>
+    <div class="top-end">
+      <div class="langs" role="group" aria-label="Language">
+        <button type="button" data-lang="ar" aria-pressed="true">ع</button>
+        <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <a class="btn btn-red btn-sm hide-sm" href="#pricing" data-i="cta.order">اطلب بطاقتك</a>
+      <button class="menu" id="menu" type="button" aria-expanded="false" aria-controls="nav" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="zellige" aria-hidden="true"></div>
+  <div class="wrap hero-in">
+    <div class="hero-copy reveal">
+      <p class="tag"><span class="flag" aria-hidden="true"></span><span data-i="hero.tag">صُنع في المغرب، لمحلات المغرب</span></p>
+      <h1><span data-i="hero.t1">لمسة واحدة…</span><br><em data-i="hero.t2">وزبونك يبقى عندك.</em></h1>
+      <p class="lead" data-i="hero.lead">بطاقات أعمال ذكية، بطاقات ولاء رقمية للمحلات، وحجز الدور للحلاقين — تعمل بتقنية NFC ورمز QR، وتُحفظ في Google Wallet. بدون تطبيق للزبون وبدون ورق.</p>
+      <div class="hero-cta">
+        <a class="btn btn-red" href="#builder" data-i="hero.try">صمّم بطاقتك الآن</a>
+        <a class="btn btn-ghost" href="#services" data-i="hero.more">اكتشف ما نقدّمه</a>
+      </div>
+      <ul class="ticks">
+        <li data-i="hero.k1">يعمل على أندرويد وآيفون</li>
+        <li data-i="hero.k2">بدون تطبيق للزبون</li>
+        <li data-i="hero.k3">تعديل فوري في أي وقت</li>
+      </ul>
+    </div>
+    <div class="hero-art reveal" aria-hidden="true">
+      <div class="nfc-card">
+        <img src="/logo-256.webp" alt="" width="64" height="64">
+        <div class="nfc-waves"><i></i><i></i><i></i></div>
+        <b>TapMaroc</b>
+        <small>NFC · QR</small>
+      </div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen" id="heroScreen"></div>
+      </div>
+      <div class="float f1"><span>⭐</span><b data-i="hero.f1">طابع جديد +1</b></div>
+      <div class="float f2"><span>✂️</span><b data-i="hero.f2">دورك بعد 2</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section class="steps-sec">
+  <div class="wrap">
+    <ol class="steps">
+      <li class="reveal"><span class="num">1</span><h3 data-i="s1.t">اختر التصميم</h3><p data-i="s1.p">من تصاميمنا الجاهزة أو بألوان محلّك وشعارك.</p></li>
+      <li class="reveal"><span class="num">2</span><h3 data-i="s2.t">نجهّز ونبرمج</h3><p data-i="s2.p">نُعدّ صفحتك ونبرمج البطاقة أو الملصق، جاهزة للاستعمال.</p></li>
+      <li class="reveal"><span class="num">3</span><h3 data-i="s3.t">لمسة… وانطلق</h3><p data-i="s3.p">يقرّب زبونك هاتفه من البطاقة فتظهر صفحتك فوراً.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services" class="sec">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow" data-i="sv.eyebrow">ماذا نقدّم</p>
+      <h2 data-i="sv.title">كل ما يحتاجه محلّك ليتواصل مع زبائنه</h2>
+      <p data-i="sv.sub">حلول بسيطة لصاحب المحل، وأبسط لزبونه.</p>
+    </header>
+    <div class="cards">
+      <article class="card reveal"><div class="ic red">💳</div><h3 data-i="sv1.t">بطاقة الأعمال الذكية</h3><p data-i="sv1.p">قرّب البطاقة من الهاتف فتظهر صفحتك: اتصال، واتساب، الموقع على الخريطة، الشبكات الاجتماعية، وحفظ رقمك بضغطة واحدة.</p></article>
+      <article class="card reveal"><div class="ic green">🎁</div><h3 data-i="sv2.t">بطاقة الولاء الرقمية</h3><p data-i="sv2.p">طوابع رقمية بدل الكرتونة الورقية: كل زيارة طابع، وعند اكتمالها هدية. لا تضيع ولا تُنسى في البيت.</p></article>
+      <article class="card reveal"><div class="ic red">📲</div><h3 data-i="sv3.t">داخل Google Wallet</h3><p data-i="sv3.p">يحفظ الزبون بطاقته في محفظة هاتفه، وتصله التنبيهات والعروض مباشرة على الشاشة.</p></article>
+      <article class="card reveal"><div class="ic green">⏱️</div><h3 data-i="sv4.t">الدور والحجز</h3><p data-i="sv4.p">للحلاقين وصالونات التجميل: يأخذ الزبون دوره من هاتفه، وننبّهه عندما يقترب دوره. لا ازدحام في المحل.</p></article>
+      <article class="card reveal"><div class="ic red">🏷️</div><h3 data-i="sv5.t">ملصقات NFC ورمز QR</h3><p data-i="sv5.p">للطاولات، الواجهات، الكونتوار والسيارات — مع رمز QR جاهز للطباعة لمن لا يملك NFC.</p></article>
+      <article class="card reveal"><div class="ic green">📊</div><h3 data-i="sv6.t">لوحة تحكم لصاحب المحل</h3><p data-i="sv6.p">تتابع زبائنك وزياراتهم، توافق على الهدايا، وتعدّل صفحتك وصورك بنفسك متى شئت.</p></article>
+    </div>
+    <div class="trust reveal">
+      <div><b data-i="tr1.t">🔒 حماية من الغش</b><span data-i="tr1.p">كل هدية تحتاج تأكيد صاحب المحل.</span></div>
+      <div><b data-i="tr2.t">⚡ سريع وخفيف</b><span data-i="tr2.p">صفحات تُفتح في ثانية، حتى بإنترنت ضعيف.</span></div>
+      <div><b data-i="tr3.t">🌍 بثلاث لغات</b><span data-i="tr3.p">العربية والفرنسية والإنجليزية.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- BUILDER -->
+<section id="builder" class="sec builder-sec">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow" data-i="b.eyebrow">جرّب بنفسك</p>
+      <h2 data-i="b.title">صمّم بطاقتك وشاهدها مباشرة</h2>
+      <p data-i="b.sub">غيّر التصميم والاسم والألوان وشاهد النتيجة على الهاتف. الأسماء والأرقام هنا للتجربة فقط.</p>
+    </header>
+
+    <div class="builder reveal">
+      <div class="panel">
+        <div class="seg" role="tablist">
+          <button type="button" role="tab" data-mode="vcard" aria-selected="true" data-i="b.vcard">💳 بطاقة أعمال</button>
+          <button type="button" role="tab" data-mode="loyalty" aria-selected="false" data-i="b.loyalty">🎁 بطاقة ولاء</button>
+        </div>
+
+        <!-- Business card form -->
+        <div id="formVcard" class="form">
+          <p class="lbl" data-i="b.design">اختر التصميم</p>
+          <div class="designs" id="designs"></div>
+          <div class="grid2">
+            <label><span data-i="b.name">الاسم الكامل</span><input id="vName" maxlength="40" autocomplete="off"></label>
+            <label><span data-i="b.job">المهنة</span><input id="vJob" maxlength="50" autocomplete="off"></label>
+            <label><span data-i="b.phone">الهاتف</span><input id="vPhone" maxlength="20" inputmode="tel" dir="ltr" autocomplete="off"></label>
+            <label><span data-i="b.city">المدينة</span><input id="vCity" maxlength="30" autocomplete="off"></label>
+          </div>
+        </div>
+
+        <!-- Loyalty form -->
+        <div id="formLoyalty" class="form" hidden>
+          <p class="lbl" data-i="b.sector">نوع المحل</p>
+          <div class="chips" id="sectorsPick"></div>
+          <div class="grid2">
+            <label><span data-i="b.shop">اسم المحل</span><input id="lShop" maxlength="30" autocomplete="off"></label>
+            <label><span data-i="b.reward">الهدية</span><input id="lReward" maxlength="40" autocomplete="off"></label>
+            <label><span data-i="b.stamps">عدد الطوابع</span>
+              <div class="stepper"><button type="button" id="stMinus" aria-label="-">−</button><output id="stOut">10</output><button type="button" id="stPlus" aria-label="+">+</button></div>
+            </label>
+            <label><span data-i="b.color">لون البطاقة</span><div class="swatches" id="swatches"></div></label>
+          </div>
+        </div>
+
+        <div class="panel-foot">
+          <button type="button" class="btn btn-ghost btn-sm" id="shuffle" data-i="b.shuffle">🎲 أسماء أخرى</button>
+          <a class="btn btn-green" id="orderDesign" href="#" target="_blank" rel="noopener" data-i="b.order">اطلب هذا التصميم</a>
+        </div>
+      </div>
+
+      <div class="preview">
+        <div class="phone big">
+          <div class="notch"></div>
+          <div class="screen" id="screen"></div>
+        </div>
+        <p class="demo-note" data-i="b.note">* معاينة تجريبية — الصفحة الحقيقية تفتح بلمسة البطاقة.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTORS -->
+<section id="sectors" class="sec">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow" data-i="sc.eyebrow">لمن هذا؟</p>
+      <h2 data-i="sc.title">لكل محل ولكل مهنة</h2>
+    </header>
+    <div class="sectors" id="sectorsGrid"></div>
+  </div>
+</section>
+
+<!-- COMING SOON -->
+<section id="soon" class="sec soon-sec">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow" data-i="so.eyebrow">قريباً</p>
+      <h2 data-i="so.title">ما نعمل عليه الآن</h2>
+    </header>
+    <div class="soon">
+      <article class="soon-main reveal">
+        <span class="badge" data-i="so.badge">قريباً</span>
+        <div class="soon-ic">🍽️</div>
+        <h3 data-i="so1.t">كتالوجات وقوائم المطاعم الرقمية</h3>
+        <p data-i="so1.p">قائمة طعام بالصور والأسعار تُفتح بلمسة على الطاولة أو برمز QR. تعدّل الأسعار والأطباق بنفسك في ثوانٍ، بدون إعادة طباعة.</p>
+        <ul class="mini-menu" aria-hidden="true">
+          <li><span>🥘</span><b data-i="so1.m1">طاجين لحم بالبرقوق</b><i>85 DH</i></li>
+          <li><span>🍲</span><b data-i="so1.m2">كسكس بالخضر</b><i>60 DH</i></li>
+          <li><span>🫖</span><b data-i="so1.m3">أتاي بالنعناع</b><i>12 DH</i></li>
+        </ul>
+      </article>
+      <article class="soon-item reveal"><span class="badge" data-i="so.badge">قريباً</span><div class="soon-ic">🍎</div><h3 data-i="so2.t">Apple Wallet</h3><p data-i="so2.p">بطاقات الولاء في محفظة آيفون أيضاً.</p></article>
+      <article class="soon-item reveal"><span class="badge" data-i="so.badge">قريباً</span><div class="soon-ic">💳</div><h3 data-i="so3.t">الدفع الإلكتروني</h3><p data-i="so3.p">اطلب وادفع مباشرة من الموقع.</p></article>
+      <article class="soon-item reveal"><span class="badge" data-i="so.badge">قريباً</span><div class="soon-ic">🛍️</div><h3 data-i="so4.t">كتالوجات المحلات</h3><p data-i="so4.p">اعرض منتجاتك وأسعارك في صفحة محلّك.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING / ORDER -->
+<section id="pricing" class="sec">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow" data-i="pr.eyebrow">اطلب الآن</p>
+      <h2 data-i="pr.title">اختر الباقة المناسبة لك</h2>
+      <p data-i="pr.sub">تواصل معنا وسنقترح عليك الأنسب لمحلّك أو لمهنتك.</p>
+    </header>
+    <div class="plans">
+      <article class="plan reveal">
+        <h3 data-i="p1.t">بطاقة الأعمال</h3>
+        <p class="who" data-i="p1.who">للمهنيين، الحرفيين والمستقلين</p>
+        <p class="price" data-i="pr.ask">السعر عند الطلب</p>
+        <ul>
+          <li data-i="p1.f1">بطاقة NFC بتصميمك</li>
+          <li data-i="p1.f2">صفحة رقمية باسمك</li>
+          <li data-i="p1.f3">رمز QR للطباعة</li>
+          <li data-i="p1.f4">تعدّل معلوماتك بنفسك</li>
+        </ul>
+        <a class="btn btn-ghost wa" data-plan="p1" href="#" target="_blank" rel="noopener" data-i="pr.order">اطلب الآن</a>
+      </article>
+      <article class="plan best reveal">
+        <span class="ribbon" data-i="pr.best">الأكثر طلباً</span>
+        <h3 data-i="p2.t">باقة المحل</h3>
+        <p class="who" data-i="p2.who">للحلاقين، المقاهي، المخابز وكل المحلات</p>
+        <p class="price" data-i="pr.ask">السعر عند الطلب</p>
+        <ul>
+          <li data-i="p2.f1">بطاقة ولاء رقمية لزبائنك</li>
+          <li data-i="p2.f2">Google Wallet والتنبيهات</li>
+          <li data-i="p2.f3">الدور والحجز</li>
+          <li data-i="p2.f4">ملصقات NFC و QR للمحل</li>
+          <li data-i="p2.f5">لوحة تحكم كاملة</li>
+        </ul>
+        <a class="btn btn-red wa" data-plan="p2" href="#" target="_blank" rel="noopener" data-i="pr.order">اطلب الآن</a>
+      </article>
+      <article class="plan reveal">
+        <h3 data-i="p3.t">باقة الشركات</h3>
+        <p class="who" data-i="p3.who">لفريق عمل كامل بهوية موحّدة</p>
+        <p class="price" data-i="pr.ask">السعر عند الطلب</p>
+        <ul>
+          <li data-i="p3.f1">بطاقات لكل الموظفين</li>
+          <li data-i="p3.f2">تصميم بشعار وألوان الشركة</li>
+          <li data-i="p3.f3">إدارة مركزية</li>
+          <li data-i="p3.f4">مرافقة ودعم</li>
+        </ul>
+        <a class="btn btn-ghost wa" data-plan="p3" href="#" target="_blank" rel="noopener" data-i="pr.order">اطلب الآن</a>
+      </article>
+    </div>
+
+    <div class="pay reveal">
+      <div>
+        <h3 data-i="pay.t">طرق الدفع</h3>
+        <p data-i="pay.p">طرق الدفع ستُضاف قريباً إلى الموقع. حالياً، اطلب عبر واتساب ونتواصل معك لتأكيد الطلب وطريقة الدفع.</p>
+      </div>
+      <div class="pay-methods">
+        <span class="off" data-i="pay.m1">💵 الدفع عند الاستلام</span>
+        <span class="off" data-i="pay.m2">🏦 تحويل بنكي</span>
+        <span class="off" data-i="pay.m3">💳 بطاقة بنكية</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="sec">
+  <div class="wrap narrow">
+    <header class="sec-head reveal">
+      <p class="eyebrow" data-i="fq.eyebrow">أسئلة شائعة</p>
+      <h2 data-i="fq.title">عندك سؤال؟</h2>
+    </header>
+    <div class="faq">
+      <details class="reveal"><summary data-i="q1">هل يحتاج الزبون إلى تحميل تطبيق؟</summary><p data-i="a1">لا. يكفي أن يقرّب هاتفه من البطاقة أو يمسح رمز QR، فتُفتح الصفحة مباشرة في المتصفح.</p></details>
+      <details class="reveal"><summary data-i="q2">هل تعمل مع كل الهواتف؟</summary><p data-i="a2">تعمل مع أغلب هواتف أندرويد وآيفون الحديثة عبر NFC، ومع كل الهواتف عبر رمز QR.</p></details>
+      <details class="reveal"><summary data-i="q3">هل أستطيع تغيير معلوماتي بعد الطباعة؟</summary><p data-i="a3">نعم. البطاقة لا تتغيّر، لكن صفحتك تعدّلها بنفسك متى شئت: الصور، الأرقام، الروابط والألوان.</p></details>
+      <details class="reveal"><summary data-i="q4">كيف تعمل بطاقة الولاء؟</summary><p data-i="a4">في كل زيارة يحصل الزبون على طابع في بطاقته الرقمية. عند اكتمال الطوابع يحصل على هديته بعد تأكيد صاحب المحل.</p></details>
+      <details class="reveal"><summary data-i="q5">كم يستغرق تجهيز بطاقتي؟</summary><p data-i="a5">بعد تأكيد الطلب والتصميم، نجهّز صفحتك وبطاقتك في وقت قصير ونتواصل معك للتسليم.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="wrap final-in reveal">
+    <img src="/logo-256.webp" alt="" width="72" height="72">
+    <h2 data-i="fin.t">جاهز تبدأ؟</h2>
+    <p data-i="fin.p">راسلنا الآن وسنساعدك على اختيار التصميم والباقة المناسبة.</p>
+    <a class="btn btn-green wa" data-plan="contact" href="#" target="_blank" rel="noopener" data-i="fin.cta">💬 تواصل معنا عبر واتساب</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <a class="brand" href="#top"><img src="/logo-256.webp" alt="" width="32" height="32"><span>Tap<b>Maroc</b></span></a>
+    <nav>
+      <a href="/privacy" data-i="ft.privacy">الخصوصية</a>
+      <a href="/terms" data-i="ft.terms">الشروط</a>
+      <a href="#" class="wa" data-plan="contact" target="_blank" rel="noopener" data-i="ft.contact">تواصل</a>
+    </nav>
+    <p>© <span id="year">2026</span> TapMaroc · <span data-i="ft.made">صُنع بحب في المغرب 🇲🇦</span></p>
+  </div>
+</footer>
+
+<a class="wa-float wa" data-plan="contact" href="#" target="_blank" rel="noopener" aria-label="WhatsApp">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2s.2-1.1.2-1.2-.2-.2-.5-.3z"/></svg>
+</a>
+</body>
+</html>

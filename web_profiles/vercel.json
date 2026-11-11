@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/p/:slug",
-      "destination": "/index.html"
+      "destination": "/profile.html"
     },
     {
       "source": "/c/:slug",
