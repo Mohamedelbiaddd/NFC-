@@ -33,7 +33,9 @@ const CORS = {
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const TOKEN = /^[0-9a-f]{48}$/;
 const API = 'https://walletobjects.googleapis.com/walletobjects/v1';
-const SITE = (Deno.env.get('PUBLIC_SITE_URL') ?? 'https://nfc-smart-tags.vercel.app').replace(/\/+$/, '');
+// The public site (own domain); the old vercel.app address keeps working too.
+const SITE = 'https://tapmaroc.com';
+const OLD_SITE = 'https://nfc-smart-tags.vercel.app';
 const ISSUER = Deno.env.get('GOOGLE_WALLET_ISSUER_ID') ?? '3388000000023223039';
 
 // Page themes (same keys as web_profiles/themes.mjs): card colour, gold, ink.
@@ -428,7 +430,7 @@ Deno.serve(async (req) => {
       iss: key.client_email,
       aud: 'google',
       typ: 'savetowallet',
-      origins: [SITE],
+      origins: [SITE, OLD_SITE],
       payload: {loyaltyObjects: [{id: pass.objectId}]},
     });
     return json({ok: true, url: `https://pay.google.com/gp/v/save/${jwt}`});

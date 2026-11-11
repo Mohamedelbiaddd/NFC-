@@ -20,12 +20,14 @@ const W = 1032, H = 336;
 // fails the plain circles below are drawn instead.
 // Fonts (Amiri, Cairo: SIL OFL) and the resvg engine are served by our site;
 // jsDelivr is the fallback.
-const SITE = (Deno.env.get('PUBLIC_SITE_URL') ?? 'https://nfc-smart-tags.vercel.app').replace(/\/+$/, '');
+// The public site (own domain); the old vercel.app address keeps working too.
+const SITE = 'https://tapmaroc.com';
+const OLD_SITE = 'https://nfc-smart-tags.vercel.app';
 const CDN = 'https://cdn.jsdelivr.net';
 const FILES = {
-  wasm: [`${SITE}/wallet-resvg.wasm`, `${CDN}/npm/@resvg/resvg-wasm@2.6.2/index_bg.wasm`],
-  amiri: [`${SITE}/wallet-amiri.ttf`, `${CDN}/gh/google/fonts@main/ofl/amiri/Amiri-Bold.ttf`],
-  cairo: [`${SITE}/wallet-cairo.ttf`, `${CDN}/gh/google/fonts@main/ofl/cairo/Cairo%5Bslnt,wght%5D.ttf`],
+  wasm: [`${SITE}/wallet-resvg.wasm`, `${OLD_SITE}/wallet-resvg.wasm`, `${CDN}/npm/@resvg/resvg-wasm@2.6.2/index_bg.wasm`],
+  amiri: [`${SITE}/wallet-amiri.ttf`, `${OLD_SITE}/wallet-amiri.ttf`, `${CDN}/gh/google/fonts@main/ofl/amiri/Amiri-Bold.ttf`],
+  cairo: [`${SITE}/wallet-cairo.ttf`, `${OLD_SITE}/wallet-cairo.ttf`, `${CDN}/gh/google/fonts@main/ofl/cairo/Cairo%5Bslnt,wght%5D.ttf`],
 };
 async function grab(urls: string[]): Promise<Uint8Array> {
   for (const u of urls) {
