@@ -24,6 +24,8 @@ const STATIC_FILES = [
   'index.html',
   'app.js',
   'vcard.mjs',
+  'card-themes.json',
+  'themes',
   'routing.mjs',
   'styles.css',
   '_redirects',
@@ -130,7 +132,7 @@ await rm(out, {recursive: true, force: true});
 await mkdir(out, {recursive: true});
 for (const file of STATIC_FILES) {
   try {
-    await cp(join(root, file), join(out, file));
+    await cp(join(root, file), join(out, file), {recursive: true});
   } catch {
     console.warn(`[config] … skipped missing ${file}`);
   }

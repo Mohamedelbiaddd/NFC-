@@ -54,6 +54,30 @@ const cardThemes = <String, (String, Color, Color)>{
   'ivory': ('عاجي فاتح', Color(0xFFFFFFFF), Color(0xFFB8860B)),
   'sky': ('أبيض وأزرق', Color(0xFFFFFFFF), Color(0xFF2563EB)),
 };
+/// Ready-made designs (same ids as web_profiles/card-themes.json): id, name,
+/// group (craft / executive), card colour, accent, layout, has a cover picture.
+/// To add a design: add it to card-themes.json (+ its pictures in
+/// web_profiles/themes/) and one line here.
+const cardDesigns = <(String, String, String, Color, Color, String, bool)>[
+  ('electrician', 'كهربائي', 'craft', Color(0xFF101E30), Color(0xFFF5BD5D), 'classic', true),
+  ('plumber', 'سباك', 'craft', Color(0xFF103B3D), Color(0xFFF0AD79), 'classic', true),
+  ('builder', 'البناء والترميم', 'craft', Color(0xFFF2E4CE), Color(0xFF923B26), 'classic', true),
+  ('carpenter', 'نجار', 'craft', Color(0xFFF1E2C7), Color(0xFF4B5328), 'classic', true),
+  ('metalworker', 'حداد', 'craft', Color(0xFF252322), Color(0xFFEDAB73), 'classic', true),
+  ('decorator', 'صباغ وديكور', 'craft', Color(0xFFEEE6D7), Color(0xFF205445), 'classic', true),
+  ('barber', 'حلاق', 'craft', Color(0xFF3E1720), Color(0xFFF5CE87), 'classic', true),
+  ('carwash', 'غسل السيارات', 'craft', Color(0xFF0C2946), Color(0xFF7DE3FF), 'classic', true),
+  ('bookshop', 'مكتبة', 'craft', Color(0xFFF1F7FA), Color(0xFF145D89), 'classic', true),
+  ('tailor', 'خياطة وأثواب', 'craft', Color(0xFF101E36), Color(0xFFF2CC82), 'classic', true),
+  ('pastries', 'حلويات مغربية', 'craft', Color(0xFFFFF1D9), Color(0xFF255537), 'classic', true),
+  ('zellige', 'صناعة الزليج', 'craft', Color(0xFFF3EAD9), Color(0xFF235B48), 'classic', true),
+  ('ivory-director', 'عاجي هادئ', 'executive', Color(0xFFF7F4EB), Color(0xFF526750), 'minimal', false),
+  ('navy-boardroom', 'كحلي رسمي', 'executive', Color(0xFF142136), Color(0xFF8EB8D5), 'center', false),
+  ('white-consulting', 'أبيض للاستشارات', 'executive', Color(0xFFFFFFFF), Color(0xFF254A62), 'minimal', false),
+  ('slate-signature', 'توقيع فحمي', 'executive', Color(0xFF222629), Color(0xFFE5C996), 'center', false),
+  ('sage-office', 'أخضر مكتبي', 'executive', Color(0xFFEBF1E9), Color(0xFF365D4E), 'minimal', false),
+  ('sand-studio', 'رملي معماري', 'executive', Color(0xFFF6EEE4), Color(0xFF764634), 'center', false),
+];
 const cardColors = ['#8B5CF6', '#2563EB', '#0EA5E9', '#10B981', '#84CC16', '#F59E0B', '#F97316', '#EF4444', '#EC4899', '#D4AF37'];
 const cardLayouts = <String, (String, IconData)>{
   'classic': ('كلاسيكي', Icons.view_agenda_rounded),
@@ -142,7 +166,7 @@ class _PersonFormState extends State<PersonForm> {
         e.value.text = profileField(p, e.key);
       }
       final th = profileField(p, 'theme');
-      if (cardThemes.containsKey(th)) cardTheme = th;
+      if (cardThemes.containsKey(th) || cardDesigns.any((d) => d.$1 == th)) cardTheme = th;
       final lay = profileField(p, 'layout');
       if (cardLayouts.containsKey(lay)) cardLayout = lay;
       final col = profileField(p, 'color');
@@ -788,10 +812,91 @@ class _PersonFormState extends State<PersonForm> {
         : coverUrl != null
             ? Image.network(coverUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox())
             : null;
+    final design = cardDesigns.where((d) => d.$1 == cardTheme).firstOrNull;
+    Widget designTile((String, String, String, Color, Color, String, bool) d) {
+      final selected = cardTheme == d.$1;
+      return Padding(
+        padding: const EdgeInsetsDirectional.only(end: 10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: locked
+              ? null
+              : () => setState(() {
+                    cardTheme = d.$1;
+                    cardLayout = d.$6;
+                    cardColor = null;
+                  }),
+          child: Container(
+            width: 112,
+            decoration: BoxDecoration(
+              color: d.$4,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: selected ? AppColors.text : AppColors.border, width: selected ? 3 : 1),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  height: 62,
+                  child: d.$7 && AppConfig.profileBase.isNotEmpty
+                      ? Image.network('${AppConfig.profileBase}/themes/${d.$1}-cover.webp', fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox())
+                      : Center(
+                          child: Container(
+                            width: 34,
+                            height: 34,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: d.$5)),
+                            child: Text('TM', style: TextStyle(color: d.$5, fontWeight: FontWeight.w800, fontSize: 11)),
+                          ),
+                        ),
+                ),
+                Container(height: 3, color: d.$5),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  child: Row(
+                    children: [
+                      if (selected) Icon(Icons.check_circle_rounded, size: 14, color: d.$5),
+                      if (selected) const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          tr(d.$2),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: d.$5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget designRow(String group) => SizedBox(
+          height: 98,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [for (final d in cardDesigns.where((d) => d.$3 == group)) designTile(d)],
+          ),
+        );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _sectionTitle(tr('🎨 لون البطاقة')),
+        _sectionTitle(tr('🎨 تصميم جاهز: الحرف والمهن')),
+        designRow('craft'),
+        _sectionTitle(tr('💼 تصميم جاهز: مدراء الأعمال')),
+        designRow('executive'),
+        if (design != null) ...[
+          const SizedBox(height: 6),
+          Text(trf('التصميم المختار: {0}', [tr(design.$2)]), style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+        ],
+        _sectionTitle(tr('🎨 أو لون بسيط')),
         Wrap(
           spacing: 10,
           runSpacing: 10,
@@ -826,7 +931,8 @@ class _PersonFormState extends State<PersonForm> {
           ],
         ),
         const SizedBox(height: 6),
-        Text(tr(cardThemes[cardTheme]!.$1), style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+        if (cardThemes[cardTheme] != null)
+          Text(tr(cardThemes[cardTheme]!.$1), style: const TextStyle(fontSize: 12, color: AppColors.muted)),
         _sectionTitle(tr('لون خاص للأزرار (اختياري)')),
         Wrap(
           spacing: 8,

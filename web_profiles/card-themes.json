@@ -1,0 +1,715 @@
+{
+ "schemaVersion": 1,
+ "defaultThemeId": "electrician",
+ "themes": [
+  {
+   "id": "electrician",
+   "number": 1,
+   "group": "craft",
+   "name": {
+    "ar": "كهربائي",
+    "fr": "Électricien",
+    "it": "Elettricista",
+    "en": "Electrician"
+   },
+   "sampleTitle": "كهربائي",
+   "identity": "⚡",
+   "layout": "photo",
+   "buttonStyle": "outline",
+   "palette": {
+    "surface": "#101e30",
+    "text": "#fff5e5",
+    "muted": "#e1cba8",
+    "accent": "#f5bd5d",
+    "button": "#172638",
+    "buttonText": "#fff5e5"
+   },
+   "assets": {
+    "cover": "/themes/electrician-cover.webp",
+    "footer": "/themes/electrician-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "كهربائي",
+    "fr": "Électricien Pro",
+    "it": "Elettricista",
+    "en": "Master Electrician"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "التركيبات والصيانة الكهربائية",
+    "fr": "Installations et maintenance électrique",
+    "it": "Impianti elettrici e manutenzione",
+    "en": "Electrical installations & maintenance"
+   },
+   "sampleSubtitle": "التركيبات والصيانة الكهربائية"
+  },
+  {
+   "id": "plumber",
+   "number": 2,
+   "group": "craft",
+   "name": {
+    "ar": "سباك",
+    "fr": "Plombier",
+    "it": "Idraulico",
+    "en": "Plumber"
+   },
+   "sampleTitle": "سباك",
+   "identity": "◉",
+   "layout": "photo",
+   "buttonStyle": "round",
+   "palette": {
+    "surface": "#103b3d",
+    "text": "#fff3df",
+    "muted": "#dfd9c9",
+    "accent": "#f0ad79",
+    "button": "#195457",
+    "buttonText": "#fff6e4"
+   },
+   "assets": {
+    "cover": "/themes/plumber-cover.webp",
+    "footer": "/themes/plumber-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "سباك",
+    "fr": "Plombier Pro",
+    "it": "Idraulico",
+    "en": "Expert Plumber"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "سباكة، تدفئة وإصلاح تسربات",
+    "fr": "Plomberie, chauffage et dépannage",
+    "it": "Idraulica, riscaldamento e riparazioni",
+    "en": "Plumbing, heating & leak repair"
+   },
+   "sampleSubtitle": "سباكة، تدفئة وإصلاح تسربات"
+  },
+  {
+   "id": "builder",
+   "number": 3,
+   "group": "craft",
+   "name": {
+    "ar": "البناء والترميم",
+    "fr": "Bâtiment et rénovation",
+    "it": "Edilizia e ristrutturazione",
+    "en": "Building & Renovation"
+   },
+   "sampleTitle": "البناء والترميم",
+   "identity": "▦",
+   "layout": "photo",
+   "buttonStyle": "soft",
+   "palette": {
+    "surface": "#f2e4ce",
+    "text": "#572617",
+    "muted": "#6d4435",
+    "accent": "#923b26",
+    "button": "#933c28",
+    "buttonText": "#fff9f1"
+   },
+   "assets": {
+    "cover": "/themes/builder-cover.webp",
+    "footer": "/themes/builder-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "البناء والترميم",
+    "fr": "Bâtiment & Rénovation",
+    "it": "Edilizia e Ristrutturazione",
+    "en": "Building & Renovation"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "أشغال البناء والتشطيب المتكامل",
+    "fr": "Travaux de construction et finition",
+    "it": "Lavori di costruzione e finiture",
+    "en": "Construction & complete finishing works"
+   },
+   "sampleSubtitle": "أشغال البناء والتشطيب المتكامل"
+  },
+  {
+   "id": "carpenter",
+   "number": 4,
+   "group": "craft",
+   "name": {
+    "ar": "نجار",
+    "fr": "Menuisier",
+    "it": "Falegname",
+    "en": "Carpenter"
+   },
+   "sampleTitle": "نجار",
+   "identity": "◆",
+   "layout": "photo",
+   "buttonStyle": "square",
+   "palette": {
+    "surface": "#f1e2c7",
+    "text": "#313b18",
+    "muted": "#53553b",
+    "accent": "#4b5328",
+    "button": "#4b5328",
+    "buttonText": "#fff9e8"
+   },
+   "assets": {
+    "cover": "/themes/carpenter-cover.webp",
+    "footer": "/themes/carpenter-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "نجار",
+    "fr": "Menuiserie d'Art",
+    "it": "Falegnameria",
+    "en": "Custom Carpentry"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "تفصيل وتصميم الخشب والأثاث",
+    "fr": "Création de meubles et boiseries sur mesure",
+    "it": "Mobili e lavorazioni in legno su misura",
+    "en": "Custom woodwork & furniture design"
+   },
+   "sampleSubtitle": "تفصيل وتصميم الخشب والأثاث"
+  },
+  {
+   "id": "metalworker",
+   "number": 5,
+   "group": "craft",
+   "name": {
+    "ar": "حداد",
+    "fr": "Ferronnier",
+    "it": "Fabbro",
+    "en": "Metalworker"
+   },
+   "sampleTitle": "حداد",
+   "identity": "✦",
+   "layout": "photo",
+   "buttonStyle": "square",
+   "palette": {
+    "surface": "#252322",
+    "text": "#fff5e4",
+    "muted": "#ded2c1",
+    "accent": "#edab73",
+    "button": "#39322e",
+    "buttonText": "#fff5e4"
+   },
+   "assets": {
+    "cover": "/themes/metalworker-cover.webp",
+    "footer": "/themes/metalworker-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "حداد",
+    "fr": "Ferronnerie & Métal",
+    "it": "Fabbro e Carpenteria Metallica",
+    "en": "Metalwork & Ironmongery"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "حدادة فنية وهياكل معدنية",
+    "fr": "Ferronnerie d'art et structures métalliques",
+    "it": "Ferro battuto e strutture metalliche",
+    "en": "Artistic ironwork & metal structures"
+   },
+   "sampleSubtitle": "حدادة فنية وهياكل معدنية"
+  },
+  {
+   "id": "decorator",
+   "number": 6,
+   "group": "craft",
+   "name": {
+    "ar": "صباغ وديكور",
+    "fr": "Peinture et décoration",
+    "it": "Pittore e decoratore",
+    "en": "Painter & Decorator"
+   },
+   "sampleTitle": "صباغ وديكور",
+   "identity": "▧",
+   "layout": "photo",
+   "buttonStyle": "round",
+   "palette": {
+    "surface": "#eee6d7",
+    "text": "#153c31",
+    "muted": "#3f5549",
+    "accent": "#205445",
+    "button": "#205445",
+    "buttonText": "#fffaf0"
+   },
+   "assets": {
+    "cover": "/themes/decorator-cover.webp",
+    "footer": "/themes/decorator-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "صباغ وديكور",
+    "fr": "Peinture & Décoration",
+    "it": "Pittura e Decorazione",
+    "en": "Painting & Interior Decor"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "صباغة عصرية وديكور داخلي",
+    "fr": "Peinture moderne et décoration intérieure",
+    "it": "Tinteggiatura moderna e decorazione d'interni",
+    "en": "Modern painting & interior decoration"
+   },
+   "sampleSubtitle": "صباغة عصرية وديكور داخلي"
+  },
+  {
+   "id": "barber",
+   "number": 7,
+   "group": "craft",
+   "name": {
+    "ar": "حلاق",
+    "fr": "Barbier",
+    "it": "Barbiere",
+    "en": "Barber"
+   },
+   "sampleTitle": "صالون الأناقة",
+   "identity": "✂",
+   "layout": "photo",
+   "buttonStyle": "outline",
+   "palette": {
+    "surface": "#3e1720",
+    "text": "#fff5e8",
+    "muted": "#e9d0c5",
+    "accent": "#f5ce87",
+    "button": "#591e2a",
+    "buttonText": "#fff6e7"
+   },
+   "assets": {
+    "cover": "/themes/barber-cover.webp",
+    "footer": "/themes/barber-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "صالون الأناقة",
+    "fr": "Salon Élégance",
+    "it": "Salone Eleganza",
+    "en": "Elegance Barber Shop"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "حلاقة عصرية وعناية متكاملة",
+    "fr": "Coiffure moderne et soin de la barbe",
+    "it": "Taglio moderno e cura della barba",
+    "en": "Modern haircuts & complete grooming"
+   },
+   "sampleSubtitle": "حلاقة عصرية وعناية متكاملة"
+  },
+  {
+   "id": "carwash",
+   "number": 8,
+   "group": "craft",
+   "name": {
+    "ar": "غسل السيارات",
+    "fr": "Lavage automobile",
+    "it": "Autolavaggio",
+    "en": "Car Wash"
+   },
+   "sampleTitle": "غسل السيارات",
+   "identity": "◈",
+   "layout": "photo",
+   "buttonStyle": "round",
+   "palette": {
+    "surface": "#0c2946",
+    "text": "#f3fcff",
+    "muted": "#c6e3f1",
+    "accent": "#7de3ff",
+    "button": "#145580",
+    "buttonText": "#f7fdff"
+   },
+   "assets": {
+    "cover": "/themes/carwash-cover.webp",
+    "footer": "/themes/carwash-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "غسل السيارات",
+    "fr": "Lavage Auto Pro",
+    "it": "Autolavaggio Detailing",
+    "en": "Pro Car Wash & Detailing"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "تنظيف وتلميع السيارات باحترافية",
+    "fr": "Nettoyage complet et lustrage professionnel",
+    "it": "Lavaggio completo e lucidatura professionale",
+    "en": "Professional car cleaning & detailing"
+   },
+   "sampleSubtitle": "تنظيف وتلميع السيارات باحترافية"
+  },
+  {
+   "id": "bookshop",
+   "number": 9,
+   "group": "craft",
+   "name": {
+    "ar": "مكتبة",
+    "fr": "Librairie",
+    "it": "Libreria",
+    "en": "Bookshop"
+   },
+   "sampleTitle": "مكتبة المعرفة",
+   "identity": "▤",
+   "layout": "photo",
+   "buttonStyle": "round",
+   "palette": {
+    "surface": "#f1f7fa",
+    "text": "#163e60",
+    "muted": "#435b70",
+    "accent": "#145d89",
+    "button": "#176b9d",
+    "buttonText": "#ffffff"
+   },
+   "assets": {
+    "cover": "/themes/bookshop-cover.webp",
+    "footer": "/themes/bookshop-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "مكتبة المعرفة",
+    "fr": "Librairie du Savoir",
+    "it": "Libreria del Sapere",
+    "en": "Knowledge Bookshop"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "كتب، قرطاسية ولوازم مدرسية",
+    "fr": "Livres, papeterie et fournitures",
+    "it": "Libri, cartoleria e forniture",
+    "en": "Books, stationery & school supplies"
+   },
+   "sampleSubtitle": "كتب، قرطاسية ولوازم مدرسية"
+  },
+  {
+   "id": "tailor",
+   "number": 10,
+   "group": "craft",
+   "name": {
+    "ar": "خياطة وأثواب",
+    "fr": "Couture et tissus",
+    "it": "Sartoria e tessuti",
+    "en": "Tailor & Fabrics"
+   },
+   "sampleTitle": "خياطة وأثواب",
+   "identity": "✦",
+   "layout": "photo",
+   "buttonStyle": "outline",
+   "palette": {
+    "surface": "#101e36",
+    "text": "#fff3da",
+    "muted": "#e3d5be",
+    "accent": "#f2cc82",
+    "button": "#172742",
+    "buttonText": "#fff3da"
+   },
+   "assets": {
+    "cover": "/themes/tailor-cover.webp",
+    "footer": "/themes/tailor-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "خياطة وأثواب",
+    "fr": "Atelier de Couture",
+    "it": "Atelier di Sartoria",
+    "en": "Bespoke Tailoring & Fabrics"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "تفصيل وخياطة تقليدية وعصرية",
+    "fr": "Création sur mesure traditionnelle et moderne",
+    "it": "Creazioni su misura tradizionali e moderne",
+    "en": "Traditional & modern custom tailoring"
+   },
+   "sampleSubtitle": "تفصيل وخياطة تقليدية وعصرية"
+  },
+  {
+   "id": "pastries",
+   "number": 11,
+   "group": "craft",
+   "name": {
+    "ar": "حلويات مغربية",
+    "fr": "Pâtisserie marocaine",
+    "it": "Pasticceria marocchina",
+    "en": "Moroccan Pastries"
+   },
+   "sampleTitle": "حلويات مغربية",
+   "identity": "❋",
+   "layout": "photo",
+   "buttonStyle": "round",
+   "palette": {
+    "surface": "#fff1d9",
+    "text": "#21432a",
+    "muted": "#485944",
+    "accent": "#255537",
+    "button": "#24563a",
+    "buttonText": "#fff8e8"
+   },
+   "assets": {
+    "cover": "/themes/pastries-cover.webp",
+    "footer": "/themes/pastries-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "حلويات مغربية",
+    "fr": "Pâtisserie Marocaine",
+    "it": "Pasticceria Marocchina",
+    "en": "Moroccan Fine Pastries"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "حلويات تقليدية ومخبوزات طازجة",
+    "fr": "Douceurs traditionnelles et pâtisserie fine",
+    "it": "Dolci tradizionali e pasticceria fresca",
+    "en": "Traditional sweets & fresh bakery"
+   },
+   "sampleSubtitle": "حلويات تقليدية ومخبوزات طازجة"
+  },
+  {
+   "id": "zellige",
+   "number": 12,
+   "group": "craft",
+   "name": {
+    "ar": "صناعة الزليج",
+    "fr": "Artisan zellige",
+    "it": "Artigiano Zellige",
+    "en": "Zellige Artisan"
+   },
+   "sampleTitle": "صناعة الزليج",
+   "identity": "❖",
+   "layout": "photo",
+   "buttonStyle": "soft",
+   "palette": {
+    "surface": "#f3ead9",
+    "text": "#163d32",
+    "muted": "#405c51",
+    "accent": "#235b48",
+    "button": "#194c3d",
+    "buttonText": "#fff8e8"
+   },
+   "assets": {
+    "cover": "/themes/zellige-cover.webp",
+    "footer": "/themes/zellige-footer.webp"
+   },
+   "sampleTitleI18n": {
+    "ar": "صناعة الزليج",
+    "fr": "Art du Zellige",
+    "it": "Arte dello Zellige",
+    "en": "Moroccan Zellige Craft"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "زليج تقليدي وفسيفساء مغربية أصيلة",
+    "fr": "Zellige traditionnel et mosaïque artisanale",
+    "it": "Zellige tradizionale e mosaico artigianale",
+    "en": "Traditional zellige & authentic mosaic"
+   },
+   "sampleSubtitle": "زليج تقليدي وفسيفساء مغربية أصيلة"
+  },
+  {
+   "id": "ivory-director",
+   "number": 13,
+   "group": "executive",
+   "name": {
+    "ar": "عاجي هادئ",
+    "fr": "Direction ivoire",
+    "it": "Avorio Direzionale",
+    "en": "Ivory Director"
+   },
+   "sampleTitle": "أمين العلوي",
+   "sampleSubtitle": "إدارة الشركات",
+   "identity": "TM",
+   "layout": "editorial",
+   "buttonStyle": "square",
+   "palette": {
+    "surface": "#f7f4eb",
+    "text": "#23312e",
+    "muted": "#505c56",
+    "accent": "#526750",
+    "button": "#263a33",
+    "buttonText": "#fffdf8"
+   },
+   "assets": {},
+   "sampleTitleI18n": {
+    "ar": "أمين العلوي",
+    "fr": "Amine Alaoui",
+    "it": "Amine Alaoui",
+    "en": "Amine Alaoui"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "إدارة الشركات",
+    "fr": "Direction d'entreprise",
+    "it": "Direzione Aziendale",
+    "en": "Corporate Management"
+   }
+  },
+  {
+   "id": "navy-boardroom",
+   "number": 14,
+   "group": "executive",
+   "name": {
+    "ar": "كحلي رسمي",
+    "fr": "Conseil marine",
+    "it": "Blu Direzionale",
+    "en": "Navy Boardroom"
+   },
+   "sampleTitle": "أمين العلوي",
+   "sampleSubtitle": "المدراء التنفيذيون",
+   "identity": "TM",
+   "layout": "centered",
+   "buttonStyle": "soft",
+   "palette": {
+    "surface": "#142136",
+    "text": "#f7fbff",
+    "muted": "#c4d3e5",
+    "accent": "#8eb8d5",
+    "button": "#e6edf4",
+    "buttonText": "#16263a"
+   },
+   "assets": {},
+   "sampleTitleI18n": {
+    "ar": "أمين العلوي",
+    "fr": "Amine Alaoui",
+    "it": "Amine Alaoui",
+    "en": "Amine Alaoui"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "المدراء التنفيذيون",
+    "fr": "Direction exécutive",
+    "it": "Executive Management",
+    "en": "Executive Leadership"
+   }
+  },
+  {
+   "id": "white-consulting",
+   "number": 15,
+   "group": "executive",
+   "name": {
+    "ar": "أبيض للاستشارات",
+    "fr": "Conseil blanc",
+    "it": "Bianco Consulenza",
+    "en": "White Consulting"
+   },
+   "sampleTitle": "أمين العلوي",
+   "sampleSubtitle": "الاستشارات والأعمال",
+   "identity": "TM",
+   "layout": "editorial",
+   "buttonStyle": "outline",
+   "palette": {
+    "surface": "#ffffff",
+    "text": "#20272e",
+    "muted": "#555f68",
+    "accent": "#254a62",
+    "button": "#224458",
+    "buttonText": "#ffffff"
+   },
+   "assets": {},
+   "sampleTitleI18n": {
+    "ar": "أمين العلوي",
+    "fr": "Amine Alaoui",
+    "it": "Amine Alaoui",
+    "en": "Amine Alaoui"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "الاستشارات والأعمال",
+    "fr": "Conseil & Stratégie",
+    "it": "Consulenza Strategica",
+    "en": "Strategy & Consulting"
+   }
+  },
+  {
+   "id": "slate-signature",
+   "number": 16,
+   "group": "executive",
+   "name": {
+    "ar": "توقيع فحمي",
+    "fr": "Signature ardoise",
+    "it": "Firma Ardesia",
+    "en": "Slate Signature"
+   },
+   "sampleTitle": "أمين العلوي",
+   "sampleSubtitle": "الإدارة التنفيذية",
+   "identity": "TM",
+   "layout": "centered",
+   "buttonStyle": "square",
+   "palette": {
+    "surface": "#222629",
+    "text": "#fffaf1",
+    "muted": "#d9d5cb",
+    "accent": "#e5c996",
+    "button": "#efdbb2",
+    "buttonText": "#222629"
+   },
+   "assets": {},
+   "sampleTitleI18n": {
+    "ar": "أمين العلوي",
+    "fr": "Amine Alaoui",
+    "it": "Amine Alaoui",
+    "en": "Amine Alaoui"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "الإدارة التنفيذية",
+    "fr": "Direction générale",
+    "it": "Direzione Generale",
+    "en": "General Management"
+   }
+  },
+  {
+   "id": "sage-office",
+   "number": 17,
+   "group": "executive",
+   "name": {
+    "ar": "أخضر مكتبي",
+    "fr": "Bureau sauge",
+    "it": "Verde Ufficio",
+    "en": "Sage Office"
+   },
+   "sampleTitle": "أمين العلوي",
+   "sampleSubtitle": "أصحاب المكاتب المهنية",
+   "identity": "TM",
+   "layout": "editorial",
+   "buttonStyle": "soft",
+   "palette": {
+    "surface": "#ebf1e9",
+    "text": "#22382f",
+    "muted": "#46584f",
+    "accent": "#365d4e",
+    "button": "#315749",
+    "buttonText": "#ffffff"
+   },
+   "assets": {},
+   "sampleTitleI18n": {
+    "ar": "أمين العلوي",
+    "fr": "Amine Alaoui",
+    "it": "Amine Alaoui",
+    "en": "Amine Alaoui"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "أصحاب المكاتب المهنية",
+    "fr": "Cabinet professionnel",
+    "it": "Studio Professionale",
+    "en": "Professional Practice"
+   }
+  },
+  {
+   "id": "sand-studio",
+   "number": 18,
+   "group": "executive",
+   "name": {
+    "ar": "رملي معماري",
+    "fr": "Studio sable",
+    "it": "Sabbia Architettura",
+    "en": "Sand Studio"
+   },
+   "sampleTitle": "أمين العلوي",
+   "sampleSubtitle": "العقار والهندسة المعمارية",
+   "identity": "TM",
+   "layout": "centered",
+   "buttonStyle": "round",
+   "palette": {
+    "surface": "#f6eee4",
+    "text": "#3b2b22",
+    "muted": "#604f42",
+    "accent": "#764634",
+    "button": "#684233",
+    "buttonText": "#fffaf1"
+   },
+   "assets": {},
+   "sampleTitleI18n": {
+    "ar": "أمين العلوي",
+    "fr": "Amine Alaoui",
+    "it": "Amine Alaoui",
+    "en": "Amine Alaoui"
+   },
+   "sampleSubtitleI18n": {
+    "ar": "العقار والهندسة المعمارية",
+    "fr": "Immobilier & Architecture",
+    "it": "Immobiliare e Architettura",
+    "en": "Real Estate & Architecture"
+   }
+  }
+ ],
+ "supportedLanguages": [
+  "ar",
+  "fr",
+  "it",
+  "en"
+ ],
+ "domain": "https://tapmaroc.com"
+}

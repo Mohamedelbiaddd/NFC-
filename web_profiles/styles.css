@@ -145,3 +145,16 @@ body.vc-page .tools .eyebrow{color:var(--vc-muted)}
 .vc-sheet .vc-sheet-ico{display:inline-flex;width:44px;height:44px;padding:10px;border-radius:14px;background:color-mix(in srgb,var(--vc-accent) 22%,transparent);color:var(--vc-accent)}
 .vc-sheet .vc-muted{color:var(--vc-muted)}
 .vc-sheet .vc-primary{border-radius:16px}
+/* Ready-made designs (card-themes.json) */
+.vc-design .vc-primary{background:var(--vc-button);color:var(--vc-ink,#fff);box-shadow:0 10px 24px -10px #0008}
+.vc-design .vc-avatar{background:var(--vc-accent)}
+.vc-design .vc-hero{height:200px}
+.vc-design .vc-glow{background:linear-gradient(180deg,transparent 45%,color-mix(in srgb,var(--vc-card) 96%,transparent))}
+.vc-design .vc-hero .vc-glow::after{display:none}
+.vc-shape-square .vc-btn,.vc-shape-square .vc-chip{border-radius:6px}
+.vc-shape-soft .vc-btn,.vc-shape-soft .vc-chip{border-radius:14px}
+.vc-shape-outline .vc-primary{background:transparent;color:var(--vc-text);border:1.5px solid var(--vc-accent);box-shadow:none}
+.vc-footer{display:block;width:100%;height:46px;object-fit:cover;margin-top:22px}
+.vc-design{padding-bottom:0!important}
+.vc-design .vc-quote,.vc-design .vc-about{margin-bottom:0}
+.vc-design:not(:has(.vc-footer)){padding-bottom:24px!important}

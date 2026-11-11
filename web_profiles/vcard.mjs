@@ -20,6 +20,35 @@ export const CARD_THEMES = {
 };
 export const LAYOUTS = ['classic', 'center', 'minimal'];
 
+// Ready-made designs (crafts and executives) from /card-themes.json: colours,
+// layout, button shape, a cover picture and a footer ornament. Their keys are
+// the theme ids stored on the card (data.theme).
+const DESIGNS = await fetch('/card-themes.json')
+  .then((r) => (r.ok ? r.json() : {themes: []}))
+  .then((c) => Object.fromEntries((c.themes ?? []).map((t) => [t.id, t])))
+  .catch(() => ({}));
+const DESIGN_LAYOUT = {photo: 'classic', editorial: 'minimal', centered: 'center'};
+function shadeHex(hex, k) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = (v) => Math.max(0, Math.min(255, Math.round(k >= 0 ? v + (255 - v) * k : v * (1 + k))));
+  return `#${((1 << 24) | (ch((n >> 16) & 255) << 16) | (ch((n >> 8) & 255) << 8) | ch(n & 255)).toString(16).slice(1)}`;
+}
+function isLight(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 > 0.6;
+}
+function designTheme(id) {
+  const t = DESIGNS[id];
+  if (!t) return null;
+  const p = t.palette;
+  const light = isLight(p.surface);
+  return {
+    bg: shadeHex(p.surface, light ? -0.06 : -0.35), card: p.surface, line: light ? '#00000014' : '#ffffff1f',
+    text: p.text, muted: p.muted, accent: p.accent, accent2: p.button, ink: p.buttonText,
+    button: p.button, light, design: t,
+  };
+}
+
 const I = (d, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${d}</svg>`;
 const B = (d) => `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${d}</svg>`;
 const ICON = {
@@ -73,7 +102,7 @@ function socialUrl(key, value) {
 function hexOk(v) { return /^#[0-9a-fA-F]{6}$/.test(v ?? ''); }
 
 function applyCardTheme(d, b) {
-  const th = CARD_THEMES[d.theme] ?? CARD_THEMES[b.theme === 'royal' ? 'violet' : b.theme] ?? CARD_THEMES.violet;
+  const th = designTheme(d.theme) ?? CARD_THEMES[d.theme] ?? CARD_THEMES[b.theme === 'royal' ? 'violet' : b.theme] ?? CARD_THEMES.violet;
   const accent = hexOk(d.color) ? d.color : th.accent;
   const r = document.documentElement.style;
   for (const [k, v] of Object.entries({bg: th.bg, card: th.card, line: th.line, text: th.text, muted: th.muted, accent, accent2: hexOk(d.color) ? d.color : th.accent2})) r.setProperty(`--vc-${k}`, v);
@@ -81,7 +110,9 @@ function applyCardTheme(d, b) {
   r.setProperty('--primary', accent);
   r.setProperty('--accent', accent);
   document.documentElement.classList.toggle('vc-light', !!th.light);
+  r.setProperty('--vc-button', hexOk(d.color) ? d.color : th.button ?? accent);
   document.querySelector('meta[name=theme-color]')?.setAttribute('content', th.bg);
+  return th;
 }
 
 // vCard 3.0 with the photo (small JPEG) so the contact looks complete.
@@ -159,16 +190,17 @@ function exchangeSheet(p, toast) {
 /** Draws the business card into `root`; returns the element tapped 3 times to edit. */
 export function renderVcard(root, p, config, toast) {
   const d = p.data, b = p.business;
-  applyCardTheme(d, b);
-  const layout = LAYOUTS.includes(d.layout) ? d.layout : 'classic';
+  const th = applyCardTheme(d, b);
+  const design = th.design;
+  const layout = LAYOUTS.includes(d.layout) ? d.layout : design ? DESIGN_LAYOUT[design.layout] ?? 'classic' : 'classic';
   document.body.classList.add('vc-page');
-  root.className = `glass vc vc-${layout}`;
+  root.className = `glass vc vc-${layout}${design ? ` vc-design vc-shape-${design.buttonStyle}` : ''}`;
   const name = d.full_name || p.title;
   const company = d.company || b.name;
 
   // Cover: the card's own picture, else the company cover, else a glow.
   const hero = el('div', undefined, 'vc-hero');
-  const cover = safeImageUrl(d.cover_url, config?.supabaseUrl) ?? safeImageUrl(b.cover_url, config?.supabaseUrl);
+  const cover = safeImageUrl(d.cover_url, config?.supabaseUrl) ?? (design?.assets?.cover ? design.assets.cover : null) ?? safeImageUrl(b.cover_url, config?.supabaseUrl);
   if (cover && layout !== 'minimal') {
     const img = el('img', undefined, 'vc-cover'); img.src = cover; img.alt = ''; img.referrerPolicy = 'no-referrer';
     hero.append(img);
@@ -237,6 +269,10 @@ export function renderVcard(root, p, config, toast) {
   if (chips.childElementCount) parts.push(chips);
   if (d.description) parts.push(el('p', d.description, 'vc-about'));
   if (d.quote) { const q = el('blockquote', `“${d.quote}”`, 'vc-quote'); parts.push(q); }
+  if (design?.assets?.footer) {
+    const f = el('img', undefined, 'vc-footer'); f.src = design.assets.footer; f.alt = ''; f.decoding = 'async'; f.loading = 'lazy';
+    parts.push(f);
+  }
   root.replaceChildren(...parts);
   document.title = `${name} · ${company}`;
   return ava;
