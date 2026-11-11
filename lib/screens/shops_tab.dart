@@ -11,6 +11,7 @@ import '../core/repository.dart';
 import '../core/shops_service.dart';
 import '../core/theme.dart';
 import 'link_writer_screen.dart';
+import 'pay_months.dart';
 import 'network_tab.dart' show statusColor, editNotice;
 
 /// Loyalty shops of the workspace. Field agents see the shops they created;
@@ -109,8 +110,10 @@ class _ShopsTabState extends State<ShopsTab> {
         if (ok != true) return;
         await widget.network.undoPayment('shop', id);
       } else {
-        await widget.network.markPaid('shop', id);
-        _snack(trf('✓ تم تسجيل دفع شهر لـ {0}', [shop['name']]));
+        final months = await pickPaidMonths(context, '${shop['name']}');
+        if (months == null) return;
+        await widget.network.markPaid('shop', id, months: months);
+        _snack(trf('✓ تم تسجيل دفع {0} لـ {1}', [paidMonthsLabel(months), shop['name']]));
       }
       await load(quiet: true);
     } catch (e) {

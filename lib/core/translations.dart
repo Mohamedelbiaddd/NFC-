@@ -720,6 +720,16 @@ const Map<String, String> frStrings = {
   'تحديث جديد متوفر': 'Nouvelle mise à jour disponible',
   'تثبيت': 'Installer',
   'تحديث الآن': 'Mettre à jour',
+  'سنة': '1 an',
+  'سنتان': '2 ans',
+  'شهر': '1 mois',
+  '{0} أشهر': '{0} mois',
+  '💵 تسجيل دفع لـ «{0}»': '💵 Enregistrer un paiement pour « {0} »',
+  'اختر المدة التي دفعها:': 'Choisissez la durée payée :',
+  'مدة أخرى': 'Autre durée',
+  'تأكيد الدفع: {0}': 'Confirmer le paiement : {0}',
+  '✓ تم تسجيل دفع {0} لـ {1}': '✓ Paiement de {0} enregistré pour {1}',
+  '✓ تم تسجيل دفع {0}': '✓ Paiement de {0} enregistré',
 };
 
 const Map<String, String> enStrings = {
@@ -1441,4 +1451,14 @@ const Map<String, String> enStrings = {
   'تحديث جديد متوفر': 'New update available',
   'تثبيت': 'Install',
   'تحديث الآن': 'Update now',
+  'سنة': '1 year',
+  'سنتان': '2 years',
+  'شهر': '1 month',
+  '{0} أشهر': '{0} months',
+  '💵 تسجيل دفع لـ «{0}»': '💵 Record a payment for “{0}”',
+  'اختر المدة التي دفعها:': 'Choose the period paid:',
+  'مدة أخرى': 'Other period',
+  'تأكيد الدفع: {0}': 'Confirm payment: {0}',
+  '✓ تم تسجيل دفع {0} لـ {1}': '✓ {0} payment recorded for {1}',
+  '✓ تم تسجيل دفع {0}': '✓ {0} payment recorded',
 };

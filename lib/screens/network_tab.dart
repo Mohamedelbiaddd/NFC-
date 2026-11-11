@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../core/network_service.dart';
 import '../core/repository.dart';
+import 'pay_months.dart';
 import '../core/theme.dart';
 
 Color statusColor(String? status) => switch (status) {
@@ -297,7 +298,10 @@ class _NetworkTabState extends State<NetworkTab> {
       final ok = await _confirm(tr('إلغاء آخر دفعة؟'), tr('سيرجع تاريخ الاشتراك كما كان قبل آخر علامة ✓.'));
       if (ok) await _guard(() => widget.service.undoPayment('staff', id), tr('تم إلغاء الدفعة'));
     } else {
-      await _guard(() => widget.service.markPaid('staff', id), tr('✓ تم تسجيل دفع شهر'));
+      final months = await pickPaidMonths(context, '${m['name']}');
+      if (months == null) return;
+      await _guard(() => widget.service.markPaid('staff', id, months: months),
+          trf('✓ تم تسجيل دفع {0}', [paidMonthsLabel(months)]));
     }
   }
 
@@ -467,8 +471,6 @@ class _NetworkTabState extends State<NetworkTab> {
                 PopupMenuButton<String>(
                   onSelected: (v) {
                     switch (v) {
-                      case 'pay3':
-                        _guard(() => widget.service.markPaid('staff', '${m['user_id']}', months: 3), tr('✓ تم تسجيل 3 أشهر'));
                       case 'notice':
                         _notice(m);
                       case 'reset':
@@ -480,7 +482,6 @@ class _NetworkTabState extends State<NetworkTab> {
                     }
                   },
                   itemBuilder: (_) => [
-                    PopupMenuItem(value: 'pay3', child: Text(tr('💵 دفع 3 أشهر'))),
                     PopupMenuItem(value: 'notice', child: Text(m['notice'] == null ? tr('📩 إرسال تنبيه دفع') : tr('📩 تعديل / إزالة التنبيه'))),
                     PopupMenuItem(value: 'reset', child: Text(tr('🔑 كلمة مرور جديدة'))),
                     PopupMenuItem(value: 'suspend', child: Text(active ? tr('⛔ إيقاف') : tr('✅ تفعيل'))),
