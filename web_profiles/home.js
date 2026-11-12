@@ -223,7 +223,14 @@ const CITIES = [
   {ar: 'مدريد', fr: 'Madrid', en: 'Madrid', cc: '+34 6'},
   {ar: 'مونتريال', fr: 'Montréal', en: 'Montreal', cc: '+1 514'},
 ];
-const samplePhone = (cc = '+212 6') => `${cc} 00 00 00 00`;
+// Example number and city follow the page language; digits stay hidden.
+const DEMO = {
+  ar: {phone: '+212 6 ** ** ** **', city: 0},
+  fr: {phone: '+33 6 ** ** ** **', city: 1},
+  en: {phone: '+44 7*** ******', city: 4},
+  it: {phone: '+39 3** *** ****', city: 3},
+};
+const demo = () => DEMO[lang] ?? DEMO.ar;
 
 const SHOP_TYPES = [
   {id: 'barber', e: '✂️', name: {ar: 'حلاق', fr: 'Barbier', en: 'Barber', it: 'Barbiere'}, shop: {ar: 'صالون الأناقة', fr: 'Salon Élégance', en: 'Elegance Barber', it: 'Barberia Eleganza'}, reward: {ar: 'حلاقة مجانية', fr: 'Une coupe offerte', en: 'A free haircut', it: 'Un taglio gratis'}, turn: true},
@@ -251,7 +258,7 @@ const SECTORS = [
 
 // ---------------------------------------------------------------- state
 const state = {
-  mode: 'vcard', design: 'barber', person: 0, city: 0, phone: samplePhone(),
+  mode: 'vcard', design: 'barber', person: 0, city: 0, phone: DEMO.ar.phone,
   name: null, job: null, cityText: null, phoneText: null, // user edits (null = sample)
   shopType: 'barber', shop: null, reward: null, stamps: 10, color: COLORS[0],
 };
@@ -456,7 +463,7 @@ function renderHero() {
   if (!screen) return;
   const barber = designById('barber');
   const show = heroTick % 2 === 0
-    ? vcardScreen(barber, {name: pick(PEOPLE[0]), job: pick(barber?.sampleSubtitleI18n) || '', phone: samplePhone(), city: pick(CITIES[0])})
+    ? vcardScreen(barber, {name: pick(PEOPLE[0]), job: pick(barber?.sampleSubtitleI18n) || '', phone: demo().phone, city: pick(CITIES[demo().city])})
     : loyaltyScreen({type: 'cafe', color: '#138a45', stamps: 10, shop: pick(SHOP_TYPES[1].shop), reward: pick(SHOP_TYPES[1].reward), city: pick(CITIES[2]), customer: pick(PEOPLE[0])});
   show.style.animation = 'fadeIn .6s ease';
   screen.replaceChildren(show);
@@ -485,6 +492,7 @@ function setLang(l) {
   $('link[rel=canonical]')?.setAttribute('href', `https://tapmaroc.com${path}`);
   const desc = {ar: AR_DESC, fr: 'Carte de visite NFC, carte de fidélité digitale avec Google Wallet et file d’attente pour barbiers, cafés et commerces. Au Maroc et partout. Sans application.', en: 'NFC business cards, digital loyalty cards with Google Wallet and queue booking for barbers, cafés and shops. In Morocco and worldwide. No app needed.', it: 'Biglietti da visita NFC, tessere fedeltà digitali con Google Wallet e coda prenotabile per barbieri, bar e negozi. In Marocco e nel mondo. Nessuna app.'}[lang];
   $('meta[name=description]')?.setAttribute('content', desc);
+  state.phone = demo().phone; state.city = demo().city;
   buildDesigns(); buildShopTypes(); buildSectors(); syncInputs(); renderPreview(); renderHero(); updateWaLinks();
 }
 
@@ -498,13 +506,14 @@ function wire() {
   $('#stMinus').addEventListener('click', () => { state.stamps = Math.max(5, state.stamps - 1); syncInputs(); renderPreview(); });
   $('#stPlus').addEventListener('click', () => { state.stamps = Math.min(12, state.stamps + 1); syncInputs(); renderPreview(); });
   $('#shuffle').addEventListener('click', () => {
-    state.city = (state.city + 1) % CITIES.length;
-    state.phone = samplePhone(CITIES[state.city].cc);
-    state.cityText = state.phoneText = null;
-    if (state.mode === 'vcard' && DESIGNS.length) {
+    if (DESIGNS.length > 1) {
       let next = state.design;
-      while (DESIGNS.length > 1 && next === state.design) next = DESIGNS[Math.floor(Math.random() * DESIGNS.length)].id;
+      while (next === state.design) next = DESIGNS[Math.floor(Math.random() * DESIGNS.length)].id;
       state.design = next; state.job = null;
+    }
+    if (state.mode === 'loyalty') {
+      const i = SHOP_TYPES.findIndex((x) => x.id === state.shopType);
+      state.shopType = SHOP_TYPES[(i + 1) % SHOP_TYPES.length].id; state.shop = state.reward = null;
     }
     syncInputs(); renderPreview();
   });
