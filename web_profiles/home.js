@@ -18,7 +18,7 @@ const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) 
 // Arabic lives in the HTML; French and English here, keyed by data-i.
 const T = {
   fr: {
-    q0: "Qu’est-ce que TapMaroc ?", a0: "TapMaroc (tapmaroc.com) est une marque de cartes intelligentes NFC : cartes de visite digitales avec NFC et QR code, cartes NFC programmables pour les avis Google et les réseaux sociaux, et cartes de fidélité digitales pour les commerces avec Google Wallet. Disponible dans le monde entier, en français, anglais, italien et arabe.",
+    q0: "Qu’est-ce que TapMaroc (Tap Maroc) ?", a0: "TapMaroc (tapmaroc.com) est une marque de cartes intelligentes NFC : cartes de visite digitales avec NFC et QR code, cartes NFC programmables pour les avis Google et les réseaux sociaux, et cartes de fidélité digitales pour les commerces avec Google Wallet. Disponible dans le monde entier, en français, anglais, italien et arabe.",
     "p1.f5": "Designs pro, image de couverture et catalogue",
     "nav.qr": "Générateur QR gratuit", "p0.f5": "+ Générateur QR carte de visite sans inscription",
     "apn.t": "🔐 L’application officielle est sur abonnement", "apn.p": "pour les agents et équipes qui travaillent avec nous. Pas agent ? Pas besoin de l’application : nous créons votre carte ou le compte de votre commerce directement, ou créez vous-même votre carte gratuite.", "apn.sub": "S’abonner à l’application", "apn.make": "Créez mon compte", "apn.free": "Ma carte gratuite",
@@ -79,7 +79,7 @@ const T = {
     'ft.privacy': 'Confidentialité', 'ft.terms': 'Conditions', 'ft.contact': 'Contact', 'ft.made': 'Des cartes intelligentes pour chaque commerce, partout 🌍',
   },
   en: {
-    q0: "What is TapMaroc?", a0: "TapMaroc (tapmaroc.com) is a smart NFC card brand: digital business cards with NFC and QR code, programmable NFC cards for Google reviews and social media, and digital loyalty cards for shops with Google Wallet. Available worldwide in English, French, Italian and Arabic.",
+    q0: "What is TapMaroc (Tap Maroc)?", a0: "TapMaroc (tapmaroc.com) is a smart NFC card brand: digital business cards with NFC and QR code, programmable NFC cards for Google reviews and social media, and digital loyalty cards for shops with Google Wallet. Available worldwide in English, French, Italian and Arabic.",
     "p1.f5": "Pro designs, cover picture and catalogue",
     "nav.qr": "Free QR generator", "p0.f5": "+ Business card QR generator, no sign-up",
     "apn.t": "🔐 The official app is by subscription", "apn.p": "for agents and teams working with us. Not an agent? You don’t need the app: we set up your card or your shop account for you, or create your free card yourself.", "apn.sub": "Subscribe to the app", "apn.make": "Set up my account", "apn.free": "My free card",
@@ -140,7 +140,7 @@ const T = {
     'ft.privacy': 'Privacy', 'ft.terms': 'Terms', 'ft.contact': 'Contact', 'ft.made': 'Smart cards for every business, everywhere 🌍',
   },
   it: {
-    q0: "Cos’è TapMaroc?", a0: "TapMaroc (tapmaroc.com) è un marchio di tessere smart NFC: biglietti da visita digitali con NFC e QR code, tessere NFC programmabili per le recensioni Google e i social, e tessere fedeltà digitali per i negozi con Google Wallet. Disponibile in tutto il mondo, in italiano, inglese, francese e arabo.",
+    q0: "Cos’è TapMaroc (Tap Maroc)?", a0: "TapMaroc (tapmaroc.com) è un marchio di tessere smart NFC: biglietti da visita digitali con NFC e QR code, tessere NFC programmabili per le recensioni Google e i social, e tessere fedeltà digitali per i negozi con Google Wallet. Disponibile in tutto il mondo, in italiano, inglese, francese e arabo.",
     "p1.f5": "Design professionali, copertina e catalogo",
     "nav.qr": "Generatore QR gratis", "p0.f5": "+ Generatore QR per biglietti, senza registrazione",
     "apn.t": "🔐 L’app ufficiale è in abbonamento", "apn.p": "per agenti e team che lavorano con noi. Non sei agente? Non ti serve l’app: creiamo noi il tuo biglietto o l’account del tuo negozio, oppure crea da solo il tuo biglietto gratuito.", "apn.sub": "Abbonati all’app", "apn.make": "Create il mio account", "apn.free": "Il mio biglietto gratis",
