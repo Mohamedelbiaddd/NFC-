@@ -258,7 +258,7 @@ function dashView(cardData) {
   const shown = qrCanvas(`${url}?src=qr`, 520); shown.className = 'qr-img';
   const dl = h('button', 'btn btn-ghost btn-sm', `⬇️ ${w('dlQr')}`); dl.type = 'button';
   dl.addEventListener('click', () => {
-    qrCanvas(`${url}?src=qr`, 1200).toBlob((b) => { const u = URL.createObjectURL(b); const l = h('a'); l.href = u; l.download = `tapmaroc-${cardData.slug}-qr.png`; l.click(); setTimeout(() => URL.revokeObjectURL(u), 2000); }, 'image/png');
+    qrCanvas(`${url}?src=qr`, 1200).toBlob((b) => { const u = URL.createObjectURL(b); const l = h('a'); l.href = u; l.download = `tapmaroc-${cardData.slug}-qr.png`; document.body.append(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000); }, 'image/png');
   });
   const qrTxt = h('div'); qrTxt.append(h('h3', '', w('qrTitle')), h('p', 'acct-text', w('qrNote')), dl);
   qrBox.append(shown, qrTxt);

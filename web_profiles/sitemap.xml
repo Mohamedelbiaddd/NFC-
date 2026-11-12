@@ -36,6 +36,8 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://tapmaroc.com/"/>
     <lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.7</priority>
   </url>
+  <url><loc>https://tapmaroc.com/qr</loc><lastmod>2026-11-12</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://tapmaroc.com/start</loc><lastmod>2026-11-12</lastmod><priority>0.6</priority></url>
   <url><loc>https://tapmaroc.com/privacy</loc><priority>0.2</priority></url>
   <url><loc>https://tapmaroc.com/terms</loc><priority>0.2</priority></url>
 </urlset>

@@ -432,3 +432,22 @@ body.acct{background:radial-gradient(800px 500px at 100% 0,#e11d2e30,transparent
 .app-note p{color:#d5dbec;font-size:15px}
 .app-note b{color:#fff}
 .app-note-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+
+/* Free QR generator (/qr) */
+.qr-h1{font-size:clamp(28px,4.5vw,44px);font-weight:900;letter-spacing:-.015em}
+.qr-tool{display:grid;grid-template-columns:1.15fr .85fr;gap:26px;align-items:start}
+.qr-tool .span2{grid-column:span 2}
+.qr-style{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.logo-pick{cursor:pointer}
+.qr-priv{margin-top:16px;color:var(--muted);font-size:13.5px}
+.qr-out{position:sticky;top:90px;display:grid;gap:14px}
+.qr-frame{padding:18px;border-radius:26px;background:#fff;box-shadow:var(--shadow)}
+.qr-frame canvas{display:block;width:100%;height:auto;border-radius:10px}
+.qr-frame canvas.empty{opacity:.15}
+.qr-hint{text-align:center;color:var(--muted);font-weight:700}
+.qr-dl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qr-dl .btn[disabled]{opacity:.45;pointer-events:none}
+.qr-up{margin-top:4px}
+@media (max-width:900px){.qr-tool{grid-template-columns:1fr}.qr-out{position:static}}
+@media (max-width:640px){.qr-tool .span2{grid-column:auto}.qr-dl{grid-template-columns:1fr}}
+[hidden]{display:none!important}

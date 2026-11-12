@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="theme-color" content="#0a0d16">
+<title>مولّد QR مجاني لبطاقة الأعمال — TapMaroc</title>
+<meta name="description" content="أنشئ رمز QR لبطاقة أعمالك مجاناً: يمسحه الزبون فيحفظ اسمك ورقمك وبريدك مباشرة في هاتفه. بدون تسجيل. تحميل PNG وSVG.">
+<link rel="canonical" href="https://tapmaroc.com/qr">
+<meta property="og:title" content="مولّد QR مجاني لبطاقة الأعمال — TapMaroc">
+<meta property="og:image" content="https://tapmaroc.com/icon-512.png">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/home-cairo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/home.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TapMaroc QR Generator","url":"https://tapmaroc.com/qr","applicationCategory":"BusinessApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0"},"inLanguage":["ar","fr","en","it"]}</script>
+<script type="module" src="/qr.js"></script>
+</head>
+<body class="acct">
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="/" aria-label="TapMaroc"><img src="/logo-256.webp" alt="" width="40" height="40"><span>Tap<b>Maroc</b></span></a>
+    <div class="top-end" style="margin-inline-start:auto">
+      <div class="langs" role="group" aria-label="Language">
+        <button type="button" data-lang="ar" aria-pressed="true">ع</button>
+        <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang="it" aria-pressed="false">IT</button>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="acct-main">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow" data-q="eyebrow">مجاني · بدون تسجيل</p>
+      <h1 class="qr-h1" data-q="title">مولّد QR لبطاقة الأعمال</h1>
+      <p data-q="sub">اكتب معلوماتك، فيصنع لك رمز QR يمسحه أي شخص بكاميرا هاتفه فيحفظ اسمك ورقمك وبريدك مباشرة في جهات الاتصال.</p>
+    </header>
+    <div class="qr-tool">
+      <div class="panel">
+        <div class="seg" role="tablist">
+          <button type="button" data-mode="vcard" aria-selected="true" data-q="tabCard">👤 بطاقة أعمال</button>
+          <button type="button" data-mode="link" aria-selected="false" data-q="tabLink">🔗 رابط أو واتساب</button>
+        </div>
+        <div id="fCard" class="grid2">
+          <label><span data-q="first">الاسم</span><input id="first" maxlength="40" autocomplete="given-name"></label>
+          <label><span data-q="last">النسب</span><input id="last" maxlength="40" autocomplete="family-name"></label>
+          <label><span data-q="org">الشركة / المحل</span><input id="org" maxlength="60" autocomplete="organization"></label>
+          <label><span data-q="job">المهنة</span><input id="job" maxlength="60" autocomplete="organization-title"></label>
+          <label><span data-q="phone">الهاتف</span><input id="phone" maxlength="20" inputmode="tel" dir="ltr" autocomplete="tel"></label>
+          <label><span data-q="email">البريد</span><input id="email" maxlength="80" type="email" dir="ltr" autocomplete="email"></label>
+          <label><span data-q="site">الموقع</span><input id="site" maxlength="120" dir="ltr" placeholder="https://"></label>
+          <label><span data-q="addr">العنوان</span><input id="addr" maxlength="120" autocomplete="street-address"></label>
+        </div>
+        <div id="fLink" hidden>
+          <div class="grid2">
+            <label class="span2"><span data-q="url">الرابط</span><input id="url" maxlength="400" dir="ltr" placeholder="https://"></label>
+            <label><span data-q="wa">أو رقم واتساب (مع رمز الدولة)</span><input id="wa" maxlength="20" inputmode="tel" dir="ltr" placeholder="+212 6…"></label>
+            <label><span data-q="waMsg">رسالة جاهزة (اختياري)</span><input id="waMsg" maxlength="200"></label>
+          </div>
+        </div>
+        <p class="lbl" style="margin-top:18px" data-q="style">الشكل</p>
+        <div class="qr-style">
+          <div class="swatches" id="colors"></div>
+          <label class="logo-pick"><input type="file" id="logo" accept="image/*" hidden><span class="btn btn-ghost btn-sm" data-q="logo">＋ شعارك في الوسط</span></label>
+          <button type="button" class="btn btn-ghost btn-sm" id="noLogo" hidden data-q="noLogo">إزالة الشعار</button>
+        </div>
+        <p class="qr-priv" data-q="priv">🔒 كل شيء يُصنع داخل هاتفك. لا نرسل معلوماتك إلى أي مكان.</p>
+      </div>
+      <div class="qr-out">
+        <div class="qr-frame"><canvas id="qr" width="720" height="720"></canvas></div>
+        <p class="qr-hint" id="hint" data-q="hint">اكتب معلوماتك ليظهر الرمز</p>
+        <div class="qr-dl">
+          <button type="button" class="btn btn-red" id="png" data-q="png">⬇️ تحميل PNG</button>
+          <button type="button" class="btn btn-ghost" id="svg" data-q="svg">⬇️ SVG للطباعة</button>
+        </div>
+        <div class="acct-up green qr-up">
+          <span class="acct-up-ic">✨</span>
+          <div><b data-q="upT">تريد أكثر من QR؟</b><p data-q="upP">بطاقة رقمية كاملة بصورتك وروابطك وشبكاتك وتصميم احترافي، ورابط خاص بك — مجاناً.</p></div>
+          <a class="btn btn-green btn-sm" href="/start" data-q="upB">أنشئها مجاناً</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<footer class="foot">
+  <div class="wrap foot-in">
+    <a class="brand" href="/"><img src="/logo-256.webp" alt="" width="32" height="32"><span>Tap<b>Maroc</b></span></a>
+    <nav><a href="/" data-q="home">الرئيسية</a><a href="/start" data-q="free">بطاقة مجانية</a><a href="/privacy" data-q="privacy">الخصوصية</a></nav>
+  </div>
+</footer>
+</body>
+</html>

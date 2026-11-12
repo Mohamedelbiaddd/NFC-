@@ -37,6 +37,10 @@
     {
       "source": "/start",
       "destination": "/start.html"
+    },
+    {
+      "source": "/qr",
+      "destination": "/qr.html"
     }
   ],
   "headers": [
