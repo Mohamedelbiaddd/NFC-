@@ -2,8 +2,13 @@
 // with made-up Moroccan sample data, WhatsApp ordering and small UI touches.
 // Static only: it talks to no database.
 
-// Orders and questions arrive on this WhatsApp number (digits only).
-const WHATSAPP = '393295586046';
+// Orders and questions arrive on this WhatsApp number (digits only). The
+// admin can change it (and every text) from the hidden editor: /#studio.
+const DEFAULT_WHATSAPP = '393295586046';
+let CONTENT = {};      // published overrides {ar:{key:text}, fr:{}, en:{}, settings:{}}
+const DRAFT = {ar: {}, fr: {}, en: {}}; // unsaved edits in the editor
+let CONFIG = null;
+const whatsapp = () => DRAFT.whatsapp ?? CONTENT.settings?.whatsapp ?? DEFAULT_WHATSAPP;
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -48,7 +53,7 @@ const T = {
     'so3.t': 'Paiement en ligne', 'so3.p': 'Commandez et payez directement sur le site.',
     'so4.t': 'Catalogues pour commerces', 'so4.p': 'Présentez vos produits et vos prix sur la page de votre commerce.',
     'pr.eyebrow': 'Commander', 'pr.title': 'Choisissez la formule qui vous convient', 'pr.sub': 'Contactez-nous et nous vous proposerons la meilleure solution pour votre commerce ou votre métier.',
-    'pr.ask': 'Prix sur demande', 'pr.order': 'Commander', 'pr.best': 'La plus demandée',
+    'p1.price': 'Prix sur demande', 'p2.price': 'Prix sur demande', 'p3.price': 'Prix sur demande', 'pr.order': 'Commander', 'pr.best': 'La plus demandée',
     'p1.t': 'Carte de visite', 'p1.who': 'Pour professionnels, artisans et indépendants',
     'p1.f1': 'Carte NFC à votre design', 'p1.f2': 'Page digitale à votre nom', 'p1.f3': 'QR code à imprimer', 'p1.f4': 'Vous modifiez vos infos vous-même',
     'p2.t': 'Formule commerce', 'p2.who': 'Barbiers, cafés, boulangeries et tous les commerces',
@@ -102,7 +107,7 @@ const T = {
     'so3.t': 'Online payment', 'so3.p': 'Order and pay directly on the website.',
     'so4.t': 'Shop catalogues', 'so4.p': 'Show your products and prices on your shop page.',
     'pr.eyebrow': 'Order now', 'pr.title': 'Choose the plan that fits you', 'pr.sub': 'Get in touch and we’ll suggest the best option for your business or trade.',
-    'pr.ask': 'Price on request', 'pr.order': 'Order now', 'pr.best': 'Most popular',
+    'p1.price': 'Price on request', 'p2.price': 'Price on request', 'p3.price': 'Price on request', 'pr.order': 'Order now', 'pr.best': 'Most popular',
     'p1.t': 'Business card', 'p1.who': 'For professionals, craftsmen and freelancers',
     'p1.f1': 'NFC card in your design', 'p1.f2': 'Digital page in your name', 'p1.f3': 'Print-ready QR code', 'p1.f4': 'Edit your details yourself',
     'p2.t': 'Shop plan', 'p2.who': 'For barbers, cafés, bakeries and all shops',
@@ -125,7 +130,8 @@ const AR = {};
 $$('[data-i]').forEach((e) => { AR[e.dataset.i] = e.textContent; });
 const SOON = {ar: 'قريباً', fr: 'Bientôt', en: 'Soon'};
 let lang = 'ar';
-const t = (k) => (lang === 'ar' ? AR[k] : T[lang][k]) ?? AR[k] ?? k;
+const base = (k, l = lang) => (l === 'ar' ? AR[k] : T[l][k]) ?? AR[k] ?? k;
+const t = (k) => DRAFT[lang][k] ?? CONTENT[lang]?.[k] ?? base(k);
 const pick = (o) => o?.[lang] ?? o?.ar ?? '';
 
 // ---------------------------------------------------------------- sample data
@@ -322,7 +328,7 @@ function setMode(m) {
 }
 
 // ---------------------------------------------------------------- WhatsApp
-const waLink = (text) => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`;
+const waLink = (text) => `https://wa.me/${whatsapp()}?text=${encodeURIComponent(text)}`;
 function orderText() {
   if (state.mode === 'vcard') {
     const d = designById(state.design), v = vData();
@@ -421,15 +427,200 @@ function wire() {
 }
 
 async function start() {
-  try {
-    const r = await fetch('/card-themes.json');
-    DESIGNS = r.ok ? (await r.json()).themes ?? [] : [];
-  } catch { DESIGNS = []; }
+  const [designs, config] = await Promise.all([
+    fetch('/card-themes.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
+    fetch('/config.json', {cache: 'no-store'}).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+  ]);
+  DESIGNS = designs.themes ?? [];
+  CONFIG = config;
+  CONTENT = await loadContent();
   buildSwatches();
   wire();
   let saved = null;
   try { saved = localStorage.getItem('tm_lang'); } catch { /* ignore */ }
   const nav = (navigator.language || '').slice(0, 2);
   setLang(saved || (nav === 'fr' ? 'fr' : 'ar'));
+  initStudio();
 }
+
+// ---------------------------------------------------------------- content
+async function loadContent() {
+  if (!CONFIG?.supabaseUrl) return {};
+  try {
+    const r = await fetch(`${CONFIG.supabaseUrl}/rest/v1/rpc/nfc_site_content`, {
+      method: 'POST', headers: {'Content-Type': 'application/json', apikey: CONFIG.publishableKey}, body: '{}', cache: 'no-store',
+    });
+    const doc = r.ok ? await r.json() : {};
+    return doc && typeof doc === 'object' ? doc : {};
+  } catch { return {}; }
+}
+
+// ---------------------------------------------------------------- studio
+// Hidden editor for the site owner: open tapmaroc.com/#studio (or tap the
+// © line 5 times), sign in with the admin account, then click any text on
+// the page to change it, in each language. Only a super admin can save:
+// the database checks it, the hidden address is just a convenience.
+const SESSION_KEY = 'tm_studio';
+const getSession = () => { try { const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); return s && s.exp > Date.now() / 1000 + 30 ? s : null; } catch { return null; } };
+const setSession = (s) => { try { s ? sessionStorage.setItem(SESSION_KEY, JSON.stringify(s)) : sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ } };
+const S = {
+  ar: {title: 'دخول الإدارة', email: 'البريد الإلكتروني', pass: 'كلمة المرور', go: 'دخول', cancel: 'إلغاء', bad: 'البريد أو كلمة المرور غير صحيحة.', notAdmin: 'هذا الحساب ليس حساب إدارة.', net: 'تعذّر الاتصال. حاول مجدداً.',
+    bar: '✏️ وضع التعديل — اضغط على أي نص لتغييره', lang: 'اللغة', wa: 'واتساب', save: 'حفظ ونشر', saved: '✓ تم الحفظ والنشر', discard: 'إلغاء التغييرات', exit: 'خروج', changes: 'تغييرات غير محفوظة', expired: 'انتهت الجلسة، سجّل الدخول مجدداً.', waBad: 'رقم واتساب غير صحيح (أرقام فقط مع رمز الدولة).', reset: 'استرجاع النص الأصلي لهذا العنصر'},
+  fr: {title: 'Accès administrateur', email: 'E-mail', pass: 'Mot de passe', go: 'Connexion', cancel: 'Annuler', bad: 'E-mail ou mot de passe incorrect.', notAdmin: 'Ce compte n’est pas administrateur.', net: 'Connexion impossible. Réessayez.',
+    bar: '✏️ Mode édition — cliquez sur un texte pour le modifier', lang: 'Langue', wa: 'WhatsApp', save: 'Enregistrer et publier', saved: '✓ Enregistré et publié', discard: 'Annuler les modifications', exit: 'Quitter', changes: 'modifications non enregistrées', expired: 'Session expirée, reconnectez-vous.', waBad: 'Numéro WhatsApp invalide (chiffres avec indicatif).', reset: 'Rétablir le texte d’origine'},
+  en: {title: 'Admin sign-in', email: 'Email', pass: 'Password', go: 'Sign in', cancel: 'Cancel', bad: 'Wrong email or password.', notAdmin: 'This account is not an admin.', net: 'Connection failed. Try again.',
+    bar: '✏️ Edit mode — click any text to change it', lang: 'Language', wa: 'WhatsApp', save: 'Save & publish', saved: '✓ Saved and published', discard: 'Discard changes', exit: 'Exit', changes: 'unsaved changes', expired: 'Session expired, sign in again.', waBad: 'Invalid WhatsApp number (digits with country code).', reset: 'Restore the original text'},
+};
+const s_ = (k) => S[lang][k];
+let studioOn = false;
+
+async function api(path, body, token) {
+  const r = await fetch(`${CONFIG.supabaseUrl}${path}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', apikey: CONFIG.publishableKey, ...(token ? {Authorization: `Bearer ${token}`} : {})},
+    body: JSON.stringify(body ?? {}), cache: 'no-store',
+  });
+  const data = await r.json().catch(() => null);
+  return {ok: r.ok, status: r.status, data};
+}
+
+function loginDialog() {
+  const dlg = h('dialog', 'studio-login');
+  const f = h('form');
+  f.method = 'dialog';
+  const title = h('h3', '', s_('title'));
+  const email = h('input'); email.type = 'email'; email.required = true; email.autocomplete = 'username'; email.placeholder = s_('email'); email.dir = 'ltr';
+  const pass = h('input'); pass.type = 'password'; pass.required = true; pass.autocomplete = 'current-password'; pass.placeholder = s_('pass'); pass.dir = 'ltr';
+  const msg = h('p', 'studio-msg');
+  const row = h('div', 'studio-row');
+  const go = h('button', 'btn btn-red btn-sm', s_('go')); go.type = 'submit';
+  const cancel = h('button', 'btn btn-ghost btn-sm', s_('cancel')); cancel.type = 'button';
+  row.append(go, cancel);
+  f.append(title, email, pass, msg, row);
+  dlg.append(f);
+  document.body.append(dlg);
+  cancel.addEventListener('click', () => { dlg.close(); dlg.remove(); history.replaceState(null, '', location.pathname); });
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    go.disabled = true; msg.textContent = '…';
+    try {
+      const auth = await api('/auth/v1/token?grant_type=password', {email: email.value.trim(), password: pass.value});
+      if (!auth.ok || !auth.data?.access_token) { msg.textContent = s_('bad'); return; }
+      const token = auth.data.access_token;
+      const admin = await api('/rest/v1/rpc/nfc_site_is_admin', {}, token);
+      if (admin.data !== true) { msg.textContent = s_('notAdmin'); return; }
+      setSession({token, exp: Math.floor(Date.now() / 1000) + (auth.data.expires_in ?? 3600)});
+      pass.value = '';
+      dlg.close(); dlg.remove();
+      enterStudio();
+    } catch { msg.textContent = s_('net'); } finally { go.disabled = false; }
+  });
+  dlg.showModal();
+  email.focus();
+}
+
+function markEditable() {
+  $$('[data-i]').forEach((e) => {
+    try { e.contentEditable = 'plaintext-only'; } catch { e.contentEditable = 'true'; }
+    if (e.contentEditable !== 'plaintext-only') e.contentEditable = 'true';
+    e.spellcheck = false;
+  });
+}
+function changedCount() { return ['ar', 'fr', 'en'].reduce((n, l) => n + Object.keys(DRAFT[l]).length, 0) + (DRAFT.whatsapp != null ? 1 : 0); }
+
+function studioBar() {
+  const bar = h('div', 'studio-bar');
+  bar.id = 'studioBar';
+  const info = h('b', '', s_('bar'));
+  const count = h('span', 'studio-count');
+  const wa = h('label', 'studio-wa');
+  const waIn = h('input'); waIn.inputMode = 'numeric'; waIn.dir = 'ltr'; waIn.value = whatsapp(); waIn.maxLength = 15;
+  wa.append(h('span', '', s_('wa')), waIn);
+  waIn.addEventListener('input', () => { waIn.value = waIn.value.replace(/\D/g, ''); DRAFT.whatsapp = waIn.value; refreshCount(); updateWaLinks(); renderPreview(); });
+  const save = h('button', 'btn btn-green btn-sm', s_('save'));
+  const discard = h('button', 'btn btn-ghost btn-sm', s_('discard'));
+  const exit = h('button', 'btn btn-ghost btn-sm', s_('exit'));
+  const msg = h('span', 'studio-msg');
+  bar.append(info, count, wa, save, discard, exit, msg);
+  document.body.append(bar);
+  function refreshCount() { const n = changedCount(); count.textContent = n ? `• ${n} ${s_('changes')}` : ''; save.disabled = !n; }
+  refreshCount();
+  bar.refresh = refreshCount;
+
+  save.addEventListener('click', async () => {
+    const ses = getSession();
+    if (!ses) { msg.textContent = s_('expired'); exitStudio(); loginDialog(); return; }
+    if (DRAFT.whatsapp != null && !/^[0-9]{8,15}$/.test(DRAFT.whatsapp)) { msg.textContent = s_('waBad'); return; }
+    const doc = {ar: {...CONTENT.ar}, fr: {...CONTENT.fr}, en: {...CONTENT.en}, settings: {...CONTENT.settings}};
+    for (const l of ['ar', 'fr', 'en']) {
+      for (const [k, v] of Object.entries(DRAFT[l])) {
+        const text = v.replace(/\s+/g, ' ').trim();
+        if (!text || text === base(k, l)) delete doc[l][k]; else doc[l][k] = text.slice(0, 2000);
+      }
+    }
+    if (DRAFT.whatsapp != null) { if (DRAFT.whatsapp === DEFAULT_WHATSAPP) delete doc.settings.whatsapp; else doc.settings.whatsapp = DRAFT.whatsapp; }
+    save.disabled = true; msg.textContent = '…';
+    try {
+      const r = await api('/rest/v1/rpc/nfc_site_save', {new_doc: doc}, ses.token);
+      if (r.status === 401) { msg.textContent = s_('expired'); setSession(null); return; }
+      if (!r.ok) { msg.textContent = r.data?.message || s_('net'); save.disabled = false; return; }
+      CONTENT = r.data;
+      for (const l of ['ar', 'fr', 'en']) DRAFT[l] = {};
+      delete DRAFT.whatsapp;
+      msg.textContent = s_('saved');
+      setLang(lang);
+      refreshCount();
+    } catch { msg.textContent = s_('net'); save.disabled = false; }
+  });
+  discard.addEventListener('click', () => { for (const l of ['ar', 'fr', 'en']) DRAFT[l] = {}; delete DRAFT.whatsapp; waIn.value = whatsapp(); msg.textContent = ''; setLang(lang); refreshCount(); });
+  exit.addEventListener('click', () => { setSession(null); exitStudio(); history.replaceState(null, '', location.pathname); });
+}
+
+function onEdit(e) {
+  const el = e.target.closest?.('[data-i]');
+  if (!studioOn || !el) return;
+  DRAFT[lang][el.dataset.i] = el.textContent;
+  // Same key used in several places (e.g. the "Soon" badges): keep them in step.
+  $$(`[data-i="${CSS.escape(el.dataset.i)}"]`).forEach((o) => { if (o !== el) o.textContent = el.textContent; });
+  $('#studioBar')?.refresh();
+}
+function blockClicks(e) {
+  if (!studioOn) return;
+  if (e.target.closest('#studioBar, .langs, .studio-login')) return;
+  const a = e.target.closest('a, button, summary');
+  if (a && (a.matches('[data-i]') || a.querySelector('[data-i]') || a.closest('[data-i]'))) e.preventDefault();
+}
+function blockKeys(e) {
+  if (studioOn && e.key === 'Enter' && e.target.closest?.('[data-i]')) e.preventDefault();
+}
+
+function enterStudio() {
+  studioOn = true;
+  document.body.classList.add('studio');
+  markEditable();
+  studioBar();
+}
+function exitStudio() {
+  studioOn = false;
+  document.body.classList.remove('studio');
+  $$('[data-i]').forEach((e) => e.removeAttribute('contenteditable'));
+  $('#studioBar')?.remove();
+  for (const l of ['ar', 'fr', 'en']) DRAFT[l] = {};
+  delete DRAFT.whatsapp;
+  setLang(lang);
+}
+function openStudio() {
+  if (studioOn || !CONFIG?.supabaseUrl) return;
+  if (getSession()) enterStudio(); else if (!$('.studio-login')) loginDialog();
+}
+function initStudio() {
+  document.addEventListener('input', onEdit, true);
+  document.addEventListener('click', blockClicks, true);
+  document.addEventListener('keydown', blockKeys, true);
+  window.addEventListener('hashchange', () => { if (location.hash === '#studio') openStudio(); });
+  let taps = 0, timer;
+  $('.foot p')?.addEventListener('click', () => { taps++; clearTimeout(timer); timer = setTimeout(() => { taps = 0; }, 1500); if (taps >= 5) { taps = 0; openStudio(); } });
+  if (location.hash === '#studio') openStudio();
+}
+
 start();

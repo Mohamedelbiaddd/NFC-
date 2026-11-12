@@ -70,15 +70,9 @@ button,input{font:inherit;color:inherit}
 .phone .notch{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:84px;height:22px;border-radius:20px;background:#05070d;z-index:5}
 .screen{position:relative;width:100%;height:100%;border-radius:34px;overflow:hidden;background:#111}
 .hero .phone{transform:rotate(-4deg);animation:bob 7s ease-in-out infinite}
-.nfc-card{position:absolute;z-index:3;inset-inline-start:2%;bottom:70px;width:220px;height:136px;border-radius:18px;padding:16px;background:linear-gradient(135deg,#c3000b,#7d0610 45%,#0b6e2a);box-shadow:0 30px 60px -20px #000,inset 0 1px 0 #ffffff40;transform:rotate(9deg);display:flex;flex-direction:column;justify-content:space-between;color:#fff;animation:bob 6s ease-in-out -2s infinite}
-.nfc-card img{width:40px;height:40px;border-radius:10px}
-.nfc-card b{font-size:18px;direction:ltr;text-align:start}
-.nfc-card small{position:absolute;bottom:16px;inset-inline-end:16px;opacity:.75;font-weight:700;font-size:11px;letter-spacing:.1em}
-.nfc-waves{position:absolute;top:16px;inset-inline-end:16px;width:30px;height:30px}
-.nfc-waves i{position:absolute;inset:0;border:2.5px solid #fff;border-radius:50%;clip-path:polygon(50% 50%,100% 0,100% 100%);opacity:0;animation:wave 2.4s infinite}
-[dir=rtl] .nfc-waves i{transform:scaleX(-1)}
-.nfc-waves i:nth-child(2){animation-delay:.4s;inset:-7px}
-.nfc-waves i:nth-child(3){animation-delay:.8s;inset:-14px}
+.nfc-card{direction:ltr;position:absolute;z-index:3;inset-inline-start:2%;bottom:70px;width:220px;height:136px;border-radius:18px;padding:16px;background:linear-gradient(135deg,#c3000b,#7d0610 45%,#0b6e2a);box-shadow:0 30px 60px -20px #000,inset 0 1px 0 #ffffff40;transform:rotate(9deg);display:flex;flex-direction:column;justify-content:space-between;color:#fff;animation:bob 6s ease-in-out -2s infinite}
+.nfc-card img{width:46px;height:46px;border-radius:12px;align-self:flex-end;box-shadow:0 6px 14px -4px #0008}
+.nfc-card b{font-size:20px;letter-spacing:.01em;text-shadow:0 2px 8px #0006}
 .float{position:absolute;z-index:4;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:16px;background:color-mix(in srgb,var(--card2) 88%,transparent);border:1px solid var(--line2);backdrop-filter:blur(10px);box-shadow:var(--shadow);font-size:14px;font-weight:700;animation:bob 5s ease-in-out infinite}
 .float span{font-size:18px}
 .f1{top:70px;inset-inline-end:0;animation-delay:-1s}
@@ -315,3 +309,24 @@ button,input{font:inherit;color:inherit}
   .brand{font-size:19px}
   .langs button{min-width:32px}
 }
+
+/* Hidden editor (/#studio) */
+.studio-login{border:1px solid var(--line2);border-radius:22px;background:var(--card);color:var(--text);padding:24px;width:min(380px,92vw)}
+.studio-login::backdrop{background:#000a;backdrop-filter:blur(4px)}
+.studio-login form{display:grid;gap:12px}
+.studio-login h3{font-size:20px}
+.studio-login input{min-height:46px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--bg);color:var(--text);font:inherit}
+.studio-row{display:flex;gap:8px}
+.studio-msg{color:#ffd66b;font-size:13.5px;min-height:1em}
+body.studio [data-i]{outline:1.5px dashed #ffd66b88;outline-offset:3px;border-radius:4px;cursor:text}
+body.studio [data-i]:hover{outline-color:#ffd66b}
+body.studio [data-i]:focus{outline:2px solid #ffd66b;background:#ffd66b14}
+body.studio .reveal{opacity:1;transform:none}
+body.studio{padding-bottom:110px}
+body.studio .wa-float{display:none}
+.studio-bar{position:fixed;inset-inline:12px;bottom:12px;z-index:100;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 16px;border-radius:18px;background:#141a2bf2;border:1px solid #ffd66b66;box-shadow:0 20px 50px -10px #000;backdrop-filter:blur(12px)}
+.studio-bar b{font-size:14px}
+.studio-count{color:#ffd66b;font-size:13px;font-weight:700}
+.studio-wa{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-inline-start:auto}
+.studio-wa input{width:140px;min-height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--line2);background:var(--bg);color:var(--text);font:inherit}
+.studio-bar .btn[disabled]{opacity:.45;cursor:default;transform:none}
