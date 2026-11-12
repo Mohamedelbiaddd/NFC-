@@ -171,3 +171,13 @@ body.vc-page .tools .eyebrow{color:var(--vc-muted)}
 .free-badge{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px auto 6px;padding:10px 16px;width:max-content;max-width:92%;border-radius:999px;background:#0b0f1acc;border:1px solid #ffffff2a;color:#fff;font-size:13px;font-weight:700;text-decoration:none}
 .free-badge img{border-radius:6px}
 .design-row.locked .design-tile{opacity:.55;filter:grayscale(.4)}.design-row.locked .design-tile b{font-size:10px}
+
+/* Mini card thumbnails */
+.design-tile{position:relative}
+.design-tile .mini{position:relative;height:52px}
+.mini{display:block;background:var(--m-bg)}
+.mini i{position:absolute;display:block;border-radius:6px}
+.mini .mi-av{width:30%;aspect-ratio:1;border-radius:50%;top:14%;left:35%;background:var(--m-ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--m-ac) 30%,transparent)}
+.mini .mi-l1{height:7%;width:56%;left:22%;top:50%;background:var(--m-tx);opacity:.85}
+.mini .mi-l2{height:5%;width:40%;left:30%;top:61%;background:var(--m-mu);opacity:.7}
+.mini .mi-bt{height:11%;width:64%;left:18%;top:73%;border-radius:999px;background:var(--m-bt)}

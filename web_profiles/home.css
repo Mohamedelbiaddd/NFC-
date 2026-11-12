@@ -472,3 +472,12 @@ body.acct{background:radial-gradient(800px 500px at 100% 0,#e11d2e30,transparent
 .tag-now b{font-size:18px}
 .tag-now span{color:var(--green2);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tag-done{display:grid;gap:10px}
+
+/* Mini card thumbnails */
+.mini{position:absolute;inset:0;display:block;background:var(--m-bg)}
+.mini i{position:absolute;display:block;border-radius:6px}
+.mini .mi-av{width:30%;aspect-ratio:1;border-radius:50%;top:14%;left:35%;background:var(--m-ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--m-ac) 30%,transparent)}
+.mini .mi-l1{height:7%;width:56%;left:22%;top:50%;background:var(--m-tx);opacity:.85}
+.mini .mi-l2{height:5%;width:40%;left:30%;top:61%;background:var(--m-mu);opacity:.7}
+.mini .mi-bt{height:11%;width:64%;left:18%;top:73%;border-radius:999px;background:var(--m-bt)}
+.design .mini .mi-av{top:9%;width:28%;left:36%}.design .mini .mi-l1{top:43%}.design .mini .mi-l2{top:52%}.design .mini .mi-bt{top:61%;height:10%}

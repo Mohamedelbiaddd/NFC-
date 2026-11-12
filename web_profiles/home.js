@@ -366,13 +366,20 @@ function renderPreview() {
   $$('#swatches button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === state.color)));
   $('#orderDesign').href = waLink(orderText());
 }
+// Thumbnail for designs without a picture: a tiny mock of the card itself.
+function miniCard(p) {
+  const m = h('span', 'mini');
+  m.style.cssText = `--m-bg:${p.surface};--m-tx:${p.text};--m-mu:${p.muted};--m-ac:${p.accent};--m-bt:${p.button}`;
+  m.append(h('i', 'mi-av'), h('i', 'mi-l1'), h('i', 'mi-l2'), h('i', 'mi-bt'));
+  return m;
+}
 function buildDesigns() {
   const box = $('#designs');
   box.replaceChildren();
   for (const d of DESIGNS) {
     const b = h('button', 'design'); b.type = 'button'; b.dataset.id = d.id; b.title = pick(d.name);
     if (d.assets?.cover) { const i = h('img'); i.src = d.assets.cover; i.alt = ''; i.loading = 'lazy'; b.append(i); }
-    else { const s = h('span', 'sw', d.identity ?? '✦'); s.style.background = `linear-gradient(135deg,${d.palette.surface} 50%,${d.palette.accent} 50%)`; s.style.color = d.palette.text; b.append(s); }
+    else b.append(miniCard(d.palette));
     b.append(h('span', 'design-name', pick(d.name)));
     b.addEventListener('click', () => { state.design = d.id; state.job = null; syncInputs(); renderPreview(); });
     box.append(b);

@@ -215,6 +215,13 @@ function imagePicker(label,current,onChange){
 // Ready-made designs (crafts, executives) and simple colours as thumbnails.
 // Free (self-made) cards: only a few plain colours; the ready-made designs
 // are shown locked as an upgrade. The server enforces the same limits.
+// Thumbnail for designs without a picture: a tiny mock of the card itself.
+function miniCard(p){
+ const m=el('span',undefined,'mini');
+ m.style.cssText=`--m-bg:${p.surface};--m-tx:${p.text};--m-mu:${p.muted};--m-ac:${p.accent};--m-bt:${p.button}`;
+ for(const c of ['mi-av','mi-l1','mi-l2','mi-bt'])m.append(el('i',undefined,c));
+ return m;
+}
 function freeDesignChooser(look,allowed){
  const wrap=el('div',undefined,'form-row design-chooser');
  wrap.append(el('span','🎨 لون البطاقة'));
@@ -227,7 +234,7 @@ function freeDesignChooser(look,allowed){
  const pro=el('div',undefined,'design-row locked');
  for(const d of Object.values(DESIGNS).slice(0,8)){
   const b=el('button',undefined,'design-tile');b.type='button';b.style.setProperty('--t-bg',d.palette.surface);b.style.setProperty('--t-ac',d.palette.accent);
-  if(d.assets?.cover){const i=el('img');i.src=d.assets.cover;i.alt='';i.loading='lazy';b.append(i);}else b.append(el('i','TM'));
+  if(d.assets?.cover){const i=el('img');i.src=d.assets.cover;i.alt='';i.loading='lazy';b.append(i);}else b.append(miniCard(d.palette));
   b.append(el('b','🔒 '+(d.name?.ar??'')));
   b.addEventListener('click',()=>toast('التصاميم الاحترافية وصورة الغلاف متاحة مع بطاقة NFC المدفوعة.'));
   pro.append(b);
@@ -246,10 +253,11 @@ function designChooser(look){
  const groups=[['craft','الحرف والمهن'],['executive','مدراء الأعمال']];
  const tiles=[];
  const mark=()=>{for(const t of tiles)t.classList.toggle('on',t.dataset.id===look.theme);};
- const tile=(id,label,bg,accent,img,layout)=>{
+ const tile=(id,label,bg,accent,img,layout,pal)=>{
   const b=el('button',undefined,'design-tile');b.type='button';b.dataset.id=id;
   b.style.setProperty('--t-bg',bg);b.style.setProperty('--t-ac',accent);
   if(img){const i=el('img');i.src=img;i.alt='';i.loading='lazy';i.decoding='async';b.append(i);}
+  else if(pal)b.append(miniCard(pal));
   else b.append(el('i','TM'));
   b.append(el('b',label));
   b.addEventListener('click',()=>{look.theme=id;look.layout=layout??'';look.colorReset=true;mark();});
@@ -257,7 +265,7 @@ function designChooser(look){
  };
  for(const [g,label] of groups){
   const row=el('div',undefined,'design-row');
-  for(const d of Object.values(DESIGNS).filter(x=>x.group===g))row.append(tile(d.id,d.name?.ar??d.id,d.palette.surface,d.palette.accent,d.assets?.cover,DESIGN_LAYOUT[d.layout]));
+  for(const d of Object.values(DESIGNS).filter(x=>x.group===g))row.append(tile(d.id,d.name?.ar??d.id,d.palette.surface,d.palette.accent,d.assets?.cover,DESIGN_LAYOUT[d.layout],d.palette));
   if(row.childElementCount)wrap.append(el('small',label),row);
  }
  const simple=el('div',undefined,'design-row');
