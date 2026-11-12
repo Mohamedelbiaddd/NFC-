@@ -241,75 +241,6 @@ function extraFields() {
   };
 }
 
-// Up to six photos; tap one to see it full screen.
-// The shop's photos and flyers play like an ad: one after another, by
-// themselves, with progress bars on top. Tapping opens them full screen.
-function slider(urls, full = false, start = 0) {
-  const box = el('div', undefined, full ? 'ad ad-full' : 'ad');
-  const track = el('div', undefined, 'ad-track'); track.dir = 'ltr';
-  const bars = el('div', undefined, 'ad-bars'); bars.dir = 'ltr';
-  urls.forEach((url) => {
-    const slide = el('div', undefined, 'ad-slide');
-    const back = el('img', undefined, 'ad-back'); back.src = url; back.alt = ''; back.referrerPolicy = 'no-referrer'; back.loading = 'lazy';
-    const front = el('img', undefined, 'ad-front'); front.src = url; front.alt = ''; front.referrerPolicy = 'no-referrer'; front.loading = 'lazy';
-    slide.append(back, front);
-    track.append(slide);
-    const bar = el('span'); bar.append(el('i'));
-    bars.append(bar);
-  });
-  box.append(track);
-  if (urls.length > 1) box.append(bars);
-  const ms = full ? 5000 : 4000;
-  let i = start, timer = 0, startX = null, moved = false;
-  const show = (n) => {
-    i = (n + urls.length) % urls.length;
-    track.style.transform = `translateX(${-100 * i}%)`;
-    [...bars.children].forEach((b, k) => {
-      b.className = k < i ? 'done' : k === i ? 'run' : '';
-      const fill = b.firstChild; fill.style.animation = 'none'; void fill.offsetWidth; fill.style.animation = '';
-      if (k === i) fill.style.animationDuration = ms + 'ms';
-    });
-    clearTimeout(timer);
-    if (urls.length > 1) timer = setTimeout(() => {
-      if (!box.isConnected) return;               // page was redrawn
-      if (document.hidden) { show(i); return; }    // wait while the tab is hidden
-      show(i + 1);
-    }, ms);
-  };
-  // Swipe with a finger (or drag with the mouse).
-  box.addEventListener('pointerdown', (e) => { startX = e.clientX; moved = false; });
-  box.addEventListener('pointerup', (e) => {
-    if (startX === null) return;
-    const dx = e.clientX - startX; startX = null;
-    if (Math.abs(dx) > 40) { moved = true; show(i + (dx < 0 ? 1 : -1)); }
-  });
-  box.addEventListener('click', (e) => {
-    if (moved) return;
-    if (full) {
-      const r = box.getBoundingClientRect();
-      show(i + (e.clientX > r.left + r.width / 2 ? 1 : -1));
-      return;
-    }
-    clearTimeout(timer);
-    const view = el('div', undefined, 'ad-view');
-    const inner = slider(urls, true, i);
-    const close = el('button', '✕', 'ad-close'); close.type = 'button'; close.setAttribute('aria-label', t('ok'));
-    close.addEventListener('click', (ev) => { ev.stopPropagation(); view.remove(); show(i); });
-    view.append(inner, close);
-    document.body.append(view);
-  });
-  show(start);
-  return box;
-}
-
-function gallery() {
-  const urls = (Array.isArray(shop.banners) ? shop.banners : []).map(u => safeImage(u, config)).filter(Boolean);
-  if (!urls.length) return null;
-  const panel = el('section', undefined, 'panel ad-panel');
-  panel.append(slider(urls));
-  return panel;
-}
-
 function closedBanner() {
   if (!shop.closed) return null;
   const box = el('div', undefined, 'banner red');
@@ -625,7 +556,6 @@ function render() {
     parts.push(b);
   }
   parts.push(bizCard());
-  const pics = gallery(); if (pics) parts.push(pics);
   if (customer && shop.booking_enabled && myBooking) parts.push(myBookingPanel());
   if (customer) {
     parts.push(actions());

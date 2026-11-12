@@ -955,63 +955,6 @@ function settingsView() {
   pp.value = s.phone_policy ?? 'optional';
   ppWrap.append(pp);
   rules.append(modeWrap, goal.wrap, per.wrap, reward.wrap, el('p', t('goalNote'), 'muted small'), ppWrap, bday.wrap, menu.wrap);
-  // Card design
-  let background = s.card_background ?? '';
-  const design = el('div', undefined, 'panel');
-  design.append(el('h2', `🎨 ${t('cardDesign')}`), el('p', t('cardBg'), 'muted small'));
-  const preview = el('div', undefined, 'lcard preview-card');
-  const drawPreview = () => {
-    preview.replaceChildren();
-    const url = safeImage(background, config);
-    if (url) { const bg = el('div', undefined, 'bg'); bg.style.backgroundImage = `url("${url}")`; preview.append(bg, el('div', undefined, 'shade')); }
-    const head = el('div', undefined, 'head');
-    const l = el('div'); l.append(el('div', `${industry(s).icon} ${t('yourCard')}`, 'title'), el('div', s.name, 'holder'));
-    const cnt = el('div', undefined, 'count'); cnt.append(document.createTextNode(`2/${s.goal}`), el('small', unit(s)));
-    head.append(l, cnt);
-    const slots = el('div', undefined, 'slots');
-    for (let i = 0; i < Math.min(s.goal, 8); i++) { const x = el('div', i < 2 ? '✓' : String(i + 1), 'slot' + (i < 2 ? ' on' : '')); x.dataset.n = String(i + 1); slots.append(x); }
-    slots.append(el('div', '🎁', 'slot gift'));
-    preview.append(head, slots);
-  };
-  drawPreview();
-  const bgFile = el('input'); bgFile.type = 'file'; bgFile.accept = 'image/jpeg,image/png,image/webp'; bgFile.hidden = true;
-  const bgRow = el('div', undefined, 'btn-row');
-  const pickBg = el('button', t('changeBg'), 'btn ghost'); pickBg.type = 'button'; pickBg.addEventListener('click', () => bgFile.click());
-  const clearBg = el('button', t('removeBg'), 'btn ghost'); clearBg.type = 'button'; clearBg.addEventListener('click', () => { background = ''; drawPreview(); });
-  bgFile.addEventListener('change', async () => {
-    const f = bgFile.files?.[0]; if (!f) return;
-    pickBg.disabled = true;
-    try { background = await upload(f); drawPreview(); } catch { toast(t('uploadError'), true); } finally { pickBg.disabled = false; }
-  });
-  bgRow.append(pickBg, clearBg);
-  design.append(preview, bgRow, bgFile);
-  // Promo pictures
-  const banners = [...(s.banners ?? [])];
-  const promo = el('div', undefined, 'panel');
-  promo.append(el('h2', `📸 ${t('gallery')}`), el('p', t('galleryNote'), 'muted small'));
-  const thumbs = el('div', undefined, 'thumbs');
-  const drawThumbs = () => {
-    thumbs.replaceChildren();
-    banners.forEach((url, i) => {
-      const box = el('div', undefined, 'thumb');
-      const img = el('img'); img.src = safeImage(url, config) ?? ''; img.referrerPolicy = 'no-referrer';
-      const rm = el('button', '✕'); rm.type = 'button'; rm.addEventListener('click', () => { banners.splice(i, 1); drawThumbs(); });
-      box.append(img, rm); thumbs.append(box);
-    });
-    if (banners.length < 6) {
-      const add = el('button', t('addImage'), 'btn small ghost'); add.type = 'button';
-      const file = el('input'); file.type = 'file'; file.accept = 'image/jpeg,image/png,image/webp'; file.hidden = true;
-      add.addEventListener('click', () => file.click());
-      file.addEventListener('change', async () => {
-        const f = file.files?.[0]; if (!f) return;
-        add.disabled = true;
-        try { banners.push(await upload(f)); drawThumbs(); } catch { toast(t('uploadError'), true); } finally { add.disabled = false; }
-      });
-      thumbs.append(add, file);
-    }
-  };
-  drawThumbs();
-  promo.append(thumbs);
   // Location
   let geo = s.latitude != null ? {lat: s.latitude, lng: s.longitude} : null;
   const loc = el('div', undefined, 'panel');
@@ -1046,7 +989,7 @@ function settingsView() {
       const r = await rpc(config, 'nfc_shop_update', {target_slug: slug, session: session(), settings: {
         name: name.input.value, phone: phone.input.value, address: address.input.value, week_hours: weekValue(),
         goal: String(Math.min(maxGoal, Math.max(1, parseInt(goal.input.value, 10) || 5))), reward: reward.input.value,
-        banners, card_background: background, logo_url: logoUrl, cover_url: coverUrl, email: email.input.value, theme, tagline: tagline.input.value,
+        banners: [], card_background: '', logo_url: logoUrl, cover_url: coverUrl, email: email.input.value, theme, tagline: tagline.input.value,
         socials: socials.map(x => ({type: x.type, value: String(x.value ?? '').trim()})).filter(x => x.value),
         radius_m: String(Math.min(1000, Math.max(50, parseInt(radius.input.value, 10) || 200))),
         ...(geo ? {latitude: String(geo.lat), longitude: String(geo.lng)} : {}),
@@ -1077,7 +1020,7 @@ function settingsView() {
   const out = el('button', t('logout'), 'btn red'); out.type = 'button';
   out.addEventListener('click', logout);
   sec.append(oldP.wrap, newP.wrap, change, out);
-  return [themePanel, info, linksPanel, weekPanel, bookPanel, promo, rules, loc, save, sec];
+  return [themePanel, info, linksPanel, weekPanel, bookPanel, rules, loc, save, sec];
 }
 
 function suspendedView() {
