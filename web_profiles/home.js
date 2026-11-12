@@ -18,7 +18,7 @@ const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) 
 // Arabic lives in the HTML; French and English here, keyed by data-i.
 const T = {
   fr: {
-    q0: "Qu’est-ce que TapMaroc ?", a0: "TapMaroc (tapmaroc.com) est une marque de cartes intelligentes NFC : cartes de visite digitales avec NFC et QR code, cartes NFC programmables pour les avis Google et les réseaux sociaux, et cartes de fidélité digitales pour les commerces avec Google Wallet.",
+    q0: "Qu’est-ce que TapMaroc ?", a0: "TapMaroc (tapmaroc.com) est une marque de cartes intelligentes NFC : cartes de visite digitales avec NFC et QR code, cartes NFC programmables pour les avis Google et les réseaux sociaux, et cartes de fidélité digitales pour les commerces avec Google Wallet. Disponible dans le monde entier, en français, anglais, italien et arabe.",
     "p1.f5": "Designs pro, image de couverture et catalogue",
     "nav.qr": "Générateur QR gratuit", "p0.f5": "+ Générateur QR carte de visite sans inscription",
     "apn.t": "🔐 L’application officielle est sur abonnement", "apn.p": "pour les agents et équipes qui travaillent avec nous. Pas agent ? Pas besoin de l’application : nous créons votre carte ou le compte de votre commerce directement, ou créez vous-même votre carte gratuite.", "apn.sub": "S’abonner à l’application", "apn.make": "Créez mon compte", "apn.free": "Ma carte gratuite",
@@ -73,13 +73,13 @@ const T = {
     q2: 'Ça marche avec tous les téléphones ?', a2: 'Avec la plupart des Android et iPhone récents via NFC, et avec tous les téléphones via le QR code.',
     q3: 'Puis-je modifier mes infos après l’impression ?', a3: 'Oui. La carte ne change pas, mais vous modifiez votre page quand vous voulez : photos, numéros, liens et couleurs.',
     q4: 'Comment fonctionne la carte de fidélité ?', a4: 'À chaque visite, le client reçoit un tampon sur sa carte digitale. Une fois complète, il reçoit son cadeau après validation du commerçant.',
-    q6: 'Où sont disponibles vos services ?', a6: 'Nous servons les commerces et professionnels au Maroc — Casablanca, Rabat, Marrakech, Tanger, Fès, Agadir et partout — et dans n’importe quel pays, car tout est digital et livré chez vous.',
+    q6: 'Où sont disponibles vos services ?', a6: 'Partout dans le monde : Europe, Afrique, Moyen-Orient, Amérique… et au Maroc. Tout est digital et fonctionne en français, anglais, italien et arabe.',
     q5: 'Combien de temps pour préparer ma carte ?', a5: 'Après confirmation de la commande et du design, nous préparons votre page et votre carte rapidement et vous contactons pour la livraison.',
     'fin.t': 'Prêt à commencer ?', 'fin.p': 'Écrivez-nous et nous vous aidons à choisir le design et la formule.', 'fin.cta': '💬 Contactez-nous sur WhatsApp',
     'ft.privacy': 'Confidentialité', 'ft.terms': 'Conditions', 'ft.contact': 'Contact', 'ft.made': 'Des cartes intelligentes pour chaque commerce, partout 🌍',
   },
   en: {
-    q0: "What is TapMaroc?", a0: "TapMaroc (tapmaroc.com) is a smart NFC card brand: digital business cards with NFC and QR code, programmable NFC cards for Google reviews and social media, and digital loyalty cards for shops with Google Wallet.",
+    q0: "What is TapMaroc?", a0: "TapMaroc (tapmaroc.com) is a smart NFC card brand: digital business cards with NFC and QR code, programmable NFC cards for Google reviews and social media, and digital loyalty cards for shops with Google Wallet. Available worldwide in English, French, Italian and Arabic.",
     "p1.f5": "Pro designs, cover picture and catalogue",
     "nav.qr": "Free QR generator", "p0.f5": "+ Business card QR generator, no sign-up",
     "apn.t": "🔐 The official app is by subscription", "apn.p": "for agents and teams working with us. Not an agent? You don’t need the app: we set up your card or your shop account for you, or create your free card yourself.", "apn.sub": "Subscribe to the app", "apn.make": "Set up my account", "apn.free": "My free card",
@@ -134,13 +134,13 @@ const T = {
     q2: 'Does it work with every phone?', a2: 'With most recent Android phones and iPhones via NFC, and with every phone via the QR code.',
     q3: 'Can I change my details after printing?', a3: 'Yes. The card stays the same, but you edit your page whenever you like: photos, numbers, links and colours.',
     q4: 'How does the loyalty card work?', a4: 'Each visit adds a stamp to the customer’s digital card. When it’s full, they get their reward after the owner confirms it.',
-    q6: 'Where are your services available?', a6: 'We serve shops and professionals in Morocco — Casablanca, Rabat, Marrakesh, Tangier, Fez, Agadir and everywhere — and in any country, since everything is digital and delivered to you.',
+    q6: 'Where are your services available?', a6: 'Everywhere in the world: Europe, Africa, the Middle East, the Americas… and Morocco. Everything is digital and works in English, French, Italian and Arabic.',
     q5: 'How long does it take to prepare my card?', a5: 'Once the order and design are confirmed, we prepare your page and card quickly and contact you for delivery.',
     'fin.t': 'Ready to start?', 'fin.p': 'Message us and we’ll help you choose the right design and plan.', 'fin.cta': '💬 Chat with us on WhatsApp',
     'ft.privacy': 'Privacy', 'ft.terms': 'Terms', 'ft.contact': 'Contact', 'ft.made': 'Smart cards for every business, everywhere 🌍',
   },
   it: {
-    q0: "Cos’è TapMaroc?", a0: "TapMaroc (tapmaroc.com) è un marchio di tessere smart NFC: biglietti da visita digitali con NFC e QR code, tessere NFC programmabili per le recensioni Google e i social, e tessere fedeltà digitali per i negozi con Google Wallet.",
+    q0: "Cos’è TapMaroc?", a0: "TapMaroc (tapmaroc.com) è un marchio di tessere smart NFC: biglietti da visita digitali con NFC e QR code, tessere NFC programmabili per le recensioni Google e i social, e tessere fedeltà digitali per i negozi con Google Wallet. Disponibile in tutto il mondo, in italiano, inglese, francese e arabo.",
     "p1.f5": "Design professionali, copertina e catalogo",
     "nav.qr": "Generatore QR gratis", "p0.f5": "+ Generatore QR per biglietti, senza registrazione",
     "apn.t": "🔐 L’app ufficiale è in abbonamento", "apn.p": "per agenti e team che lavorano con noi. Non sei agente? Non ti serve l’app: creiamo noi il tuo biglietto o l’account del tuo negozio, oppure crea da solo il tuo biglietto gratuito.", "apn.sub": "Abbonati all’app", "apn.make": "Create il mio account", "apn.free": "Il mio biglietto gratis",
@@ -195,7 +195,7 @@ const T = {
     q2: 'Funziona con tutti i telefoni?', a2: 'Con la maggior parte degli Android e iPhone recenti tramite NFC, e con tutti i telefoni tramite QR code.',
     q3: 'Posso cambiare i miei dati dopo la stampa?', a3: 'Sì. La tessera resta la stessa, ma la tua pagina la modifichi quando vuoi: foto, numeri, link e colori.',
     q4: 'Come funziona la tessera fedeltà?', a4: 'A ogni visita il cliente riceve un timbro sulla tessera digitale. Quando è completa riceve il premio, dopo la conferma del negoziante.',
-    q6: 'Dove sono disponibili i vostri servizi?', a6: 'Serviamo negozi e professionisti in Marocco — Casablanca, Rabat, Marrakech, Tangeri, Fès, Agadir e ovunque — e in qualsiasi paese, perché tutto è digitale e ti viene consegnato.',
+    q6: 'Dove sono disponibili i vostri servizi?', a6: 'In tutto il mondo: Europa, Africa, Medio Oriente, Americhe… e Marocco. Tutto è digitale e funziona in italiano, inglese, francese e arabo.',
     q5: 'Quanto tempo serve per preparare la mia tessera?', a5: 'Dopo la conferma dell’ordine e del design, prepariamo pagina e tessera in poco tempo e ti contattiamo per la consegna.',
     'fin.t': 'Pronto a iniziare?', 'fin.p': 'Scrivici e ti aiutiamo a scegliere design e pacchetto.', 'fin.cta': '💬 Scrivici su WhatsApp',
     'ft.privacy': 'Privacy', 'ft.terms': 'Termini', 'ft.contact': 'Contatti', 'ft.made': 'Tessere smart per ogni negozio, ovunque 🌍',
@@ -493,7 +493,7 @@ function setLang(l) {
   const path = lang === 'ar' ? '/' : `/${lang}`;
   if (location.pathname !== path) history.replaceState(null, '', path + location.hash);
   $('link[rel=canonical]')?.setAttribute('href', `https://tapmaroc.com${path}`);
-  const desc = {ar: AR_DESC, fr: 'Carte de visite NFC, carte de fidélité digitale avec Google Wallet et file d’attente pour barbiers, cafés et commerces. Au Maroc et partout. Sans application.', en: 'NFC business cards, digital loyalty cards with Google Wallet and queue booking for barbers, cafés and shops. In Morocco and worldwide. No app needed.', it: 'Biglietti da visita NFC, tessere fedeltà digitali con Google Wallet e coda prenotabile per barbieri, bar e negozi. In Marocco e nel mondo. Nessuna app.'}[lang];
+  const desc = {ar: AR_DESC, fr: 'Plateforme internationale de cartes NFC : cartes de visite digitales, cartes de fidélité Google Wallet et QR codes programmables. Partout dans le monde, en français, anglais, italien et arabe. Sans application.', en: 'Global smart NFC platform: digital business cards, Google Wallet loyalty cards and programmable QR codes. Works worldwide in English, French, Italian and Arabic. No app needed.', it: 'Piattaforma internazionale di tessere NFC: biglietti da visita digitali, tessere fedeltà con Google Wallet e QR code programmabili. In tutto il mondo, in italiano, inglese, francese e arabo. Nessuna app.'}[lang];
   $('meta[name=description]')?.setAttribute('content', desc);
   state.phone = demo().phone; state.city = demo().city;
   buildDesigns(); buildShopTypes(); buildSectors(); syncInputs(); renderPreview(); renderHero(); updateWaLinks();
