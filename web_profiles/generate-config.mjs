@@ -23,6 +23,8 @@ const STATIC_FILES = [
   'legal.css',
   'index.html',
   'profile.html',
+  'robots.txt',
+  'sitemap.xml',
   'home.css',
   'home.js',
   'home-cairo.woff2',

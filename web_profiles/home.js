@@ -67,6 +67,7 @@ const T = {
     q2: 'Ça marche avec tous les téléphones ?', a2: 'Avec la plupart des Android et iPhone récents via NFC, et avec tous les téléphones via le QR code.',
     q3: 'Puis-je modifier mes infos après l’impression ?', a3: 'Oui. La carte ne change pas, mais vous modifiez votre page quand vous voulez : photos, numéros, liens et couleurs.',
     q4: 'Comment fonctionne la carte de fidélité ?', a4: 'À chaque visite, le client reçoit un tampon sur sa carte digitale. Une fois complète, il reçoit son cadeau après validation du commerçant.',
+    q6: 'Où sont disponibles vos services ?', a6: 'Nous servons les commerces et professionnels au Maroc — Casablanca, Rabat, Marrakech, Tanger, Fès, Agadir et partout — et dans n’importe quel pays, car tout est digital et livré chez vous.',
     q5: 'Combien de temps pour préparer ma carte ?', a5: 'Après confirmation de la commande et du design, nous préparons votre page et votre carte rapidement et vous contactons pour la livraison.',
     'fin.t': 'Prêt à commencer ?', 'fin.p': 'Écrivez-nous et nous vous aidons à choisir le design et la formule.', 'fin.cta': '💬 Contactez-nous sur WhatsApp',
     'ft.privacy': 'Confidentialité', 'ft.terms': 'Conditions', 'ft.contact': 'Contact', 'ft.made': 'Des cartes intelligentes pour chaque commerce, partout 🌍',
@@ -121,6 +122,7 @@ const T = {
     q2: 'Does it work with every phone?', a2: 'With most recent Android phones and iPhones via NFC, and with every phone via the QR code.',
     q3: 'Can I change my details after printing?', a3: 'Yes. The card stays the same, but you edit your page whenever you like: photos, numbers, links and colours.',
     q4: 'How does the loyalty card work?', a4: 'Each visit adds a stamp to the customer’s digital card. When it’s full, they get their reward after the owner confirms it.',
+    q6: 'Where are your services available?', a6: 'We serve shops and professionals in Morocco — Casablanca, Rabat, Marrakesh, Tangier, Fez, Agadir and everywhere — and in any country, since everything is digital and delivered to you.',
     q5: 'How long does it take to prepare my card?', a5: 'Once the order and design are confirmed, we prepare your page and card quickly and contact you for delivery.',
     'fin.t': 'Ready to start?', 'fin.p': 'Message us and we’ll help you choose the right design and plan.', 'fin.cta': '💬 Chat with us on WhatsApp',
     'ft.privacy': 'Privacy', 'ft.terms': 'Terms', 'ft.contact': 'Contact', 'ft.made': 'Smart cards for every business, everywhere 🌍',
@@ -129,6 +131,7 @@ const T = {
 const AR = {};
 $$('[data-i]').forEach((e) => { AR[e.dataset.i] = e.textContent; });
 const SOON = {ar: 'قريباً', fr: 'Bientôt', en: 'Soon'};
+const AR_DESC = document.querySelector('meta[name=description]')?.content ?? '';
 let lang = 'ar';
 const base = (k, l = lang) => (l === 'ar' ? AR[k] : T[l][k]) ?? AR[k] ?? k;
 const t = (k) => DRAFT[lang][k] ?? CONTENT[lang]?.[k] ?? base(k);
@@ -392,10 +395,16 @@ function setLang(l) {
   $$('.langs button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
   $$('.pay-methods .off').forEach((e) => { e.dataset.soon = SOON[lang]; });
   document.title = lang === 'fr'
-    ? 'TapMaroc — Cartes NFC intelligentes et cartes de fidélité pour tous les commerces'
-    : lang === 'en' ? 'TapMaroc — Smart NFC cards and loyalty cards for every business'
+    ? 'TapMaroc — Carte de visite NFC & carte de fidélité digitale'
+    : lang === 'en' ? 'TapMaroc — NFC business cards & digital loyalty cards'
       : 'TapMaroc — بطاقات ذكية NFC وبطاقات ولاء لكل المحلات';
   try { localStorage.setItem('tm_lang', lang); } catch { /* private mode */ }
+  // One address per language (/, /fr, /en) so search engines index each.
+  const path = lang === 'ar' ? '/' : `/${lang}`;
+  if (location.pathname !== path) history.replaceState(null, '', path + location.hash);
+  $('link[rel=canonical]')?.setAttribute('href', `https://tapmaroc.com${path}`);
+  const desc = {ar: AR_DESC, fr: 'Carte de visite NFC, carte de fidélité digitale avec Google Wallet et file d’attente pour barbiers, cafés et commerces. Au Maroc et partout. Sans application.', en: 'NFC business cards, digital loyalty cards with Google Wallet and queue booking for barbers, cafés and shops. In Morocco and worldwide. No app needed.'}[lang];
+  $('meta[name=description]')?.setAttribute('content', desc);
   buildDesigns(); buildShopTypes(); buildSectors(); syncInputs(); renderPreview(); renderHero(); updateWaLinks();
 }
 
@@ -441,7 +450,8 @@ async function start() {
   let saved = null;
   try { saved = localStorage.getItem('tm_lang'); } catch { /* ignore */ }
   const nav = (navigator.language || '').slice(0, 2);
-  setLang(saved || (nav === 'fr' ? 'fr' : 'ar'));
+  const fromPath = /^\/(fr|en)\/?$/.exec(location.pathname)?.[1];
+  setLang(fromPath || saved || (nav === 'fr' ? 'fr' : 'ar'));
   initStudio();
 }
 

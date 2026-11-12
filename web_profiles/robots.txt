@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /s/
+Disallow: /c/
+Disallow: /p/
+
+Sitemap: https://tapmaroc.com/sitemap.xml
