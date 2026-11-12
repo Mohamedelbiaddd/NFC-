@@ -213,6 +213,33 @@ function imagePicker(label,current,onChange){
 }
 
 // Ready-made designs (crafts, executives) and simple colours as thumbnails.
+// Free (self-made) cards: only a few plain colours; the ready-made designs
+// are shown locked as an upgrade. The server enforces the same limits.
+function freeDesignChooser(look,allowed){
+ const wrap=el('div',undefined,'form-row design-chooser');
+ wrap.append(el('span','🎨 لون البطاقة'));
+ const row=el('div',undefined,'design-row');const tiles=[];
+ const mark=()=>{for(const t of tiles)t.classList.toggle('on',t.dataset.id===look.theme);};
+ for(const id of allowed.filter(Boolean)){const t=CARD_THEMES[id];if(!t)continue;
+  const b=el('button',undefined,'design-tile');b.type='button';b.dataset.id=id;b.style.setProperty('--t-bg',t.card);b.style.setProperty('--t-ac',t.accent);b.append(el('i','TM'),el('b',''));
+  b.addEventListener('click',()=>{look.theme=id;look.layout='';mark();});tiles.push(b);row.append(b);}
+ wrap.append(row);
+ const pro=el('div',undefined,'design-row locked');
+ for(const d of Object.values(DESIGNS).slice(0,8)){
+  const b=el('button',undefined,'design-tile');b.type='button';b.style.setProperty('--t-bg',d.palette.surface);b.style.setProperty('--t-ac',d.palette.accent);
+  if(d.assets?.cover){const i=el('img');i.src=d.assets.cover;i.alt='';i.loading='lazy';b.append(i);}else b.append(el('i','TM'));
+  b.append(el('b','🔒 '+(d.name?.ar??'')));
+  b.addEventListener('click',()=>toast('التصاميم الاحترافية وصورة الغلاف متاحة مع بطاقة NFC المدفوعة.'));
+  pro.append(b);
+ }
+ const up=el('a','✨ احصل على التصاميم الاحترافية وبطاقة NFC','button secondary small');
+ up.href='https://wa.me/393295586046?text='+encodeURIComponent('مرحباً TapMaroc 👋\nأريد الترقية إلى بطاقة NFC بتصميم احترافي:\n'+location.origin+'/p/'+state.slug);
+ up.target='_blank';up.rel='noopener';
+ wrap.append(el('small','تصاميم احترافية (مع الباقة المدفوعة)'),pro,up);
+ mark();
+ return wrap;
+}
+
 function designChooser(look){
  const wrap=el('div',undefined,'form-row design-chooser');
  wrap.append(el('span','🎨 تصميم البطاقة'));
@@ -251,14 +278,17 @@ function openEditor(profile,pin){
  let look=null,coverPick={keep:true};
  if(profile.kind==='vcard'){
   look={theme:profile.data?.theme??'',layout:profile.data?.layout??''};
-  panel.append(designChooser(look));
-  panel.append(imagePicker('صورة الغلاف (اختياري، بدل صورة التصميم)',profile.data?.cover_url||'',v=>{coverPick=v;}));
+  if(profile.free){panel.append(freeDesignChooser(look,profile.free_themes??['navy','black','ivory','sky']));}
+  else{
+   panel.append(designChooser(look));
+   panel.append(imagePicker('صورة الغلاف (اختياري، بدل صورة التصميم)',profile.data?.cover_url||'',v=>{coverPick=v;}));
+  }
  }
  const inputs={};
  for(const [key,label] of FIELDS[profile.kind]??[]){const f=textField(label,profile.data?.[key],key==='description'||key==='terms');inputs[key]=f.input;panel.append(f.wrap);}
 
- panel.append(el('h3','الكتالوج'));
- const list=el('div',undefined,'cat-list');panel.append(list);
+ const list=el('div',undefined,'cat-list');
+ if(!profile.free){panel.append(el('h3','الكتالوج'));panel.append(list);}
  const items=(Array.isArray(profile.catalog)?profile.catalog:[]).map(x=>({...x}));
  const drawItems=()=>{
   list.replaceChildren();
@@ -275,7 +305,7 @@ function openEditor(profile,pin){
  drawItems();
  const add=el('button','+ إضافة عنصر','button secondary');add.type='button';
  add.addEventListener('click',()=>{if(items.length>=60){toast('الحد 60 عنصراً',true);return;}items.push({name:'',price:'',description:''});drawItems();});
- panel.append(add);
+ if(!profile.free)panel.append(add);
 
  const save=el('button','حفظ التغييرات','button');save.type='button';
  const close=el('button','إغلاق','button secondary');close.type='button';close.addEventListener('click',()=>box.remove());
