@@ -107,9 +107,9 @@ class _CatalogEditorState extends State<CatalogEditor> {
     try {
       final file = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1600,
-        maxHeight: 1600,
-        imageQuality: 85,
+        maxWidth: 1280,
+        maxHeight: 1280,
+        imageQuality: 80,
       );
       if (file == null) return;
       final payload = decodeImagePayload(await file.readAsBytes());

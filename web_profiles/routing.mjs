@@ -1,3 +1,4 @@
+import {compressImage} from '/image-compress.mjs';
 export const reserved = new Set(['admin','api','assets','auth','login','logout','settings','www','new']);
 export function validSlug(s) {return typeof s==='string'&&s.length>=3&&s.length<=63&&/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s)&&!reserved.has(s);}
 export function slugFromPath(path) {
@@ -60,6 +61,7 @@ export function ownerUpdate(config,slug,pin,{title,data,catalog,imageUrl},fetche
  return rpc(config,'nfc_owner_update',{target_slug:slug,pin,new_title:title,new_data:data,new_catalog:catalog,new_image_url:imageUrl},fetcher);
 }
 export async function ownerUpload(config,slug,pin,file,fetcher=fetch){
+ file=await compressImage(file);
  const form=new FormData();form.append('slug',slug);form.append('pin',pin);form.append('file',file);
  const response=await fetcher(`${config.supabaseUrl}/functions/v1/owner-upload`,{
   method:'POST',headers:{apikey:config.publishableKey},body:form});

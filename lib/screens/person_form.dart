@@ -224,9 +224,9 @@ class _PersonFormState extends State<PersonForm> {
     try {
       final file = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1800,
-        maxHeight: 1800,
-        imageQuality: 88,
+        maxWidth: 1280,
+        maxHeight: 1280,
+        imageQuality: 80,
       );
       if (file == null) return;
       final payload = decodeImagePayload(await file.readAsBytes());
@@ -776,7 +776,7 @@ class _PersonFormState extends State<PersonForm> {
   Future<void> chooseCover() async {
     if (locked) return;
     try {
-      final file = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, maxHeight: 1600, imageQuality: 85);
+      final file = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1280, maxHeight: 1280, imageQuality: 80);
       if (file == null) return;
       final payload = decodeImagePayload(await file.readAsBytes());
       if (payload == null) {
