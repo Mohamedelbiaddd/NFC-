@@ -162,6 +162,7 @@ const SHOP_TYPES = [
   {id: 'bakery', e: '🥐', name: {ar: 'مخبزة وحلويات', fr: 'Boulangerie', en: 'Bakery'}, shop: {ar: 'مخبزة السعادة', fr: 'Boulangerie Saâda', en: 'Saada Bakery'}, reward: {ar: 'علبة حلويات مجانية', fr: 'Une boîte de pâtisseries', en: 'A free box of pastries'}},
   {id: 'carwash', e: '🚗', name: {ar: 'غسل السيارات', fr: 'Lavage auto', en: 'Car wash'}, shop: {ar: 'لافاج النجمة', fr: 'Lavage Najma', en: 'Najma Car Wash'}, reward: {ar: 'غسلة كاملة مجانية', fr: 'Un lavage complet offert', en: 'A free full wash'}},
   {id: 'beauty', e: '💅', name: {ar: 'صالون تجميل', fr: 'Institut de beauté', en: 'Beauty salon'}, shop: {ar: 'صالون ياسمين', fr: 'Institut Yasmine', en: 'Yasmine Beauty'}, reward: {ar: 'جلسة عناية مجانية', fr: 'Un soin offert', en: 'A free treatment'}, turn: true},
+  {id: 'snack', e: '🍕', name: {ar: 'سناك / بيتزاريا', fr: 'Snack / Pizzeria', en: 'Snack / Pizzeria'}, shop: {ar: 'بيتزا الريف', fr: 'Pizza Rif', en: 'Rif Pizza'}, reward: {ar: 'بيتزا مجانية', fr: 'Une pizza offerte', en: 'A free pizza'}},
   {id: 'gym', e: '🏋️', name: {ar: 'قاعة رياضة', fr: 'Salle de sport', en: 'Gym'}, shop: {ar: 'نادي القوة', fr: 'Club Force', en: 'Force Gym'}, reward: {ar: 'أسبوع مجاني', fr: 'Une semaine offerte', en: 'A free week'}},
 ];
 const COLORS = ['#c81e2c', '#138a45', '#1e3a8a', '#b7791f', '#6d28d9', '#1f2937', '#0e7490'];
@@ -236,7 +237,7 @@ function loyaltyScreen(data) {
   const n = data.stamps, got = Math.max(1, Math.round(n * 0.6));
   const grid = h('div', 'stamps');
   grid.style.gridTemplateColumns = `repeat(${n > 10 ? 6 : 5},1fr)`;
-  for (let i = 0; i < n; i++) grid.append(h('div', `stamp${i < got ? ' on' : ''}${i === n - 1 ? ' gift' : ''}`, i < got ? '★' : i === n - 1 ? '🎁' : ''));
+  for (let i = 0; i < n; i++) grid.append(h('div', `stamp${i < got ? ' on' : ''}${i === n - 1 ? ' gift' : ''}`, i === n - 1 ? '🎁' : type.e));
   const bar = h('div', 'ly-bar'); const fill = h('i'); fill.style.width = `${(got / n) * 100}%`; bar.append(fill);
   const rw = h('div', 'ly-reward');
   rw.append(h('span', '', `🎁 ${data.reward}`), h('span', '', `${got}/${n}`));

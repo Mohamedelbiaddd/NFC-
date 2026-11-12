@@ -174,8 +174,9 @@ button,input{font:inherit;color:inherit}
 .ly-name{margin:14px 0 10px;font-size:12px;opacity:.85}
 .ly-name b{font-size:15px;opacity:1;display:block}
 .stamps{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:8px 0 12px}
-.stamp{aspect-ratio:1;border-radius:50%;border:1.6px dashed #ffffff70;display:grid;place-items:center;font-size:13px}
-.stamp.on{border:0;background:#fff;color:var(--lc);box-shadow:0 3px 10px -3px #0008}
+.stamp{aspect-ratio:1;border-radius:50%;border:1.6px dashed #ffffff70;display:grid;place-items:center;font-size:15px;line-height:1}
+.stamp:not(.on):not(.gift){filter:grayscale(1);opacity:.45}
+.stamp.on{border:0;background:#fff;box-shadow:0 3px 10px -3px #0008}
 .stamp.gift{border-style:solid;border-color:#ffd66b;background:#ffd66b22}
 .ly-bar{height:7px;border-radius:9px;background:#ffffff30;overflow:hidden}
 .ly-bar i{display:block;height:100%;background:#fff;border-radius:9px}

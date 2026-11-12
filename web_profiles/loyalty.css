@@ -122,6 +122,9 @@ label.row > span { font-size: 12.5px; color: var(--muted); font-weight: 600; }
   background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--accent) 90%, #fff), var(--accent) 55%, color-mix(in srgb, var(--accent) 50%, #000));
   box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 55%, transparent), inset 0 2px 0 #ffffff66;
 }
+.slot .ico { line-height: 1; font-size: 24px; opacity: .4; filter: grayscale(1); }
+.slot.on .ico { opacity: 1; filter: drop-shadow(0 2px 3px #0006); }
+.slot:not(.on):not(.gift)::after { content: attr(data-n); position: absolute; bottom: -4px; inset-inline-end: -4px; width: 20px; height: 20px; border-radius: 50%; background: #0b1020; border: 1.5px dashed #ffffff66; color: #ffffffb3; font-size: 10.5px; display: grid; place-items: center; }
 .slot.on::after { content: attr(data-n); position: absolute; bottom: -4px; inset-inline-end: -4px; width: 20px; height: 20px; border-radius: 50%; background: #0b1020; border: 1.5px solid #fff; font-size: 10.5px; display: grid; place-items: center; }
 .slot.new { animation: pop .7s cubic-bezier(.2, 1.6, .4, 1); }
 @keyframes pop { 0% { transform: scale(.2) rotate(-40deg); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }

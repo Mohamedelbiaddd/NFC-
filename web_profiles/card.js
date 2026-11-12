@@ -270,7 +270,7 @@ function loyaltyCard() {
   const count = el('div', undefined, 'count');
   count.append(document.createTextNode(`${stamps}/${goal}`), el('small', unit(shop)));
   head.append(left, count);
-  card.append(head, slotsGrid(goal, stamps, nextFree, fresh));
+  card.append(head, slotsGrid(goal, stamps, nextFree, fresh, industry(shop).icon));
   const bar = el('div', undefined, 'progress');
   const fill = el('i'); fill.style.width = `${Math.min(100, Math.round((stamps / goal) * 100))}%`;
   bar.append(fill);
