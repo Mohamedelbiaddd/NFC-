@@ -168,3 +168,5 @@ body.vc-page .tools .eyebrow{color:var(--vc-muted)}
 .design-row:last-child .design-tile{width:44px}.design-row:last-child .design-tile i{height:44px;border:0;background:linear-gradient(135deg,var(--t-bg),var(--t-ac));color:transparent}
 .design-row:last-child .design-tile b{display:none}
 .design-tile.on{border-color:#fff;box-shadow:0 0 0 3px var(--t-ac)}
+.free-badge{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px auto 6px;padding:10px 16px;width:max-content;max-width:92%;border-radius:999px;background:#0b0f1acc;border:1px solid #ffffff2a;color:#fff;font-size:13px;font-weight:700;text-decoration:none}
+.free-badge img{border-radius:6px}

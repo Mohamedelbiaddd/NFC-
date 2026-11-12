@@ -54,6 +54,8 @@ function render(p,config){
   renderCatalog(root,p.catalog,config);
   tools.hidden=false;
   if(p.editable){let taps=[];tap.addEventListener('click',()=>{const now=Date.now();taps=taps.filter(t=>now-t<1200);taps.push(now);if(taps.length>=3){taps=[];askPin();}});}
+  if(p.free)root.append(freeBadge());
+  autoEdit();
   return;
  }
  for(const key of ['primary_color','accent_color'])if(/^#[0-9a-f]{6}$/i.test(b[key]??''))document.documentElement.style.setProperty(key==='primary_color'?'--primary':'--accent',b[key]);
@@ -150,6 +152,23 @@ async function saveImage(){
   const url=URL.createObjectURL(blob);const a=el('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
   toast('تم تنزيل صورة البطاقة.');
  },'image/png');
+}
+
+/* ---------- Free cards ---------- */
+// Free self-made cards carry a small "make yours free" link (how they spread).
+function freeBadge(){
+ const a=el('a',undefined,'free-badge');a.href='/start';
+ const img=el('img');img.src='/logo-256.webp';img.alt='';img.width=22;img.height=22;
+ a.append(img,el('span','أنشئ بطاقتك مجاناً مع TapMaroc'));
+ return a;
+}
+// Coming from the account page (tapmaroc.com/start): open the editor directly
+// with the one-time edit code it just issued.
+async function autoEdit(){
+ let code=null;const key='tm_edit_'+state.slug;
+ try{code=sessionStorage.getItem(key);sessionStorage.removeItem(key);}catch{}
+ if(!code||!/^[0-9]{6,12}$/.test(code))return;
+ try{const r=await ownerLogin(state.config,state.slug,code);if(r?.ok)openEditor(r.profile,code);}catch{}
 }
 
 /* ---------- Owner editor ---------- */

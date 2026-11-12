@@ -213,7 +213,7 @@ button,input{font:inherit;color:inherit}
 .mini-menu i{font-style:normal;font-weight:900;color:var(--green2);direction:ltr}
 
 /* Pricing */
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch}
+.plans{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:stretch}
 .plan{position:relative;display:flex;flex-direction:column;padding:30px 26px;border-radius:26px;background:var(--card);border:1px solid var(--line)}
 .plan.best{background:linear-gradient(170deg,#2a0c12,var(--card) 55%);border-color:#e11d2e80;box-shadow:0 30px 70px -30px #e11d2e88;transform:translateY(-10px)}
 .ribbon{position:absolute;top:-13px;inset-inline-start:50%;translate:-50% 0;background:linear-gradient(135deg,var(--red2),var(--red));padding:4px 16px;border-radius:999px;font-size:13px;font-weight:900;white-space:nowrap}
@@ -382,3 +382,49 @@ body.studio .wa-float{display:none}
 @media (max-width:900px){.app-in{grid-template-columns:1fr}.app-art{order:-1}.roles{grid-template-columns:1fr}.trial{flex-direction:column;align-items:flex-start}}
 @media (max-width:640px){.feat,.ag-points{grid-template-columns:1fr}.trial .btn{width:100%}}
 .trial .badge{top:-11px}
+
+/* Account page (/start) */
+body.acct{background:radial-gradient(800px 500px at 100% 0,#e11d2e30,transparent 70%),radial-gradient(700px 500px at 0 100%,#22b45a26,transparent 70%),var(--bg);min-height:100vh}
+.acct-main{padding:40px 0 80px}
+.acct-card{display:grid;gap:14px;padding:28px;border-radius:28px;background:#131828ee;border:1px solid var(--line2);box-shadow:var(--shadow)}
+.acct-card.auth{max-width:460px;margin:0 auto}
+.acct-head{text-align:center;margin-bottom:6px}
+.acct-head h1{font-size:clamp(24px,4vw,32px);font-weight:900}
+.acct-head p,.acct-text{color:var(--muted)}
+.acct-card h2{font-size:24px;font-weight:900}
+.acct-field{display:grid;gap:6px;font-weight:700;font-size:14px;color:#d5dbec}
+.acct-field input{min-height:50px;padding:0 14px;border-radius:14px;border:1px solid var(--line2);background:var(--bg);color:var(--text);font:inherit;outline:none}
+.acct-field input:focus{border-color:var(--green2)}
+.acct-msg{color:#ffd66b;font-size:14px;min-height:1.2em;margin:0}
+.acct-legal{color:var(--muted);font-size:12.5px;text-align:center}
+.link-btn{background:none;border:0;color:var(--green2);font-weight:700;cursor:pointer;justify-self:center;padding:6px}
+.acct-icon{font-size:48px;text-align:center}
+.acct-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--muted);font-size:13.5px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.acct-bar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-who b{display:block;font-size:20px}
+.acct-who small{color:var(--muted)}
+.acct-label{font-weight:800;margin:6px 0 -6px}
+.acct-link{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:16px;background:var(--bg);border:1px solid var(--line2)}
+[dir=rtl] .acct-link{padding:8px 16px 8px 8px}
+.acct-link a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:var(--green2)}
+.acct-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.acct-actions .btn{padding:0 12px;white-space:normal;text-align:center;line-height:1.25}
+.acct-qr{display:flex;align-items:center;gap:20px;padding:18px;border-radius:20px;background:var(--card2);border:1px solid var(--line)}
+.qr-img{width:170px;height:170px;border-radius:14px;flex:none;image-rendering:pixelated}
+.acct-qr h3{font-size:18px;margin-bottom:4px}
+.acct-qr .btn{margin-top:10px}
+.acct-up{display:flex;align-items:center;gap:14px;padding:18px;border-radius:20px;border:1px solid var(--line2)}
+.acct-up.red{background:linear-gradient(110deg,#2a0c12,#141a2b)}
+.acct-up.green{background:linear-gradient(110deg,#0f2a1a,#141a2b)}
+.acct-up-ic{font-size:30px}
+.acct-up div{flex:1}
+.acct-up p{color:var(--muted);font-size:14px}
+.btn.loading{opacity:.6;pointer-events:none}
+.btn[disabled]{opacity:.6}
+@media (max-width:640px){.acct-card{padding:20px}.acct-actions{grid-template-columns:1fr}.acct-qr,.acct-up{flex-direction:column;text-align:center}}
+
+.plan.free{border-color:#22b45a66}
+.plan.free .price{color:var(--green2)}
+@media (max-width:1100px){.plans{grid-template-columns:1fr 1fr}}
+@media (max-width:640px){.plans{grid-template-columns:1fr}}
+.acct-card{grid-template-columns:minmax(0,1fr)}.acct-card>*{min-width:0}

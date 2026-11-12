@@ -59,7 +59,8 @@
         <button type="button" data-lang="en" aria-pressed="false">EN</button>
         <button type="button" data-lang="it" aria-pressed="false">IT</button>
       </div>
-      <a class="btn btn-red btn-sm hide-sm" href="#pricing" data-i="cta.order">اطلب بطاقتك</a>
+      <a class="btn btn-ghost btn-sm hide-sm" href="/start?m=login" data-i="cta.login">دخول</a>
+      <a class="btn btn-red btn-sm hide-sm" href="/start" data-i="cta.free">ابدأ مجاناً</a>
       <button class="menu" id="menu" type="button" aria-expanded="false" aria-controls="nav" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
   </div>
@@ -76,8 +77,9 @@
       <h1><span data-i="hero.t1">لمسة واحدة…</span><br><em data-i="hero.t2">وزبونك يبقى عندك.</em></h1>
       <p class="lead" data-i="hero.lead">بطاقات أعمال ذكية، بطاقات ولاء رقمية للمحلات، وحجز الدور للحلاقين — تعمل بتقنية NFC ورمز QR، وتُحفظ في Google Wallet. بدون تطبيق للزبون وبدون ورق.</p>
       <div class="hero-cta">
-        <a class="btn btn-red" href="#builder" data-i="hero.try">صمّم بطاقتك الآن</a>
-        <a class="btn btn-ghost" href="#services" data-i="hero.more">اكتشف ما نقدّمه</a>
+        <a class="btn btn-red" href="/start" data-i="hero.free">أنشئ بطاقتك مجاناً</a>
+        <a class="btn btn-ghost" href="#builder" data-i="hero.try">صمّم بطاقتك الآن</a>
+        
       </div>
       <ul class="ticks">
         <li data-i="hero.k1">يعمل على أندرويد وآيفون</li>
@@ -306,8 +308,20 @@
       <p data-i="pr.sub">تواصل معنا وسنقترح عليك الأنسب لمحلّك أو لمهنتك.</p>
     </header>
     <div class="plans">
+      <article class="plan free reveal">
+        <h3 data-i="p0.t">البطاقة الرقمية</h3>
+        <p class="who" data-i="p0.who">للجميع، ابدأ في دقيقة</p>
+        <p class="price" data-i="p0.price">مجاناً</p>
+        <ul>
+          <li data-i="p0.f1">صفحة بطاقة باسمك ورابط خاص</li>
+          <li data-i="p0.f2">رمز QR للتحميل والطباعة</li>
+          <li data-i="p0.f3">الصور، الروابط، الشبكات والتصاميم</li>
+          <li data-i="p0.f4">تعدّلها بنفسك متى شئت</li>
+        </ul>
+        <a class="btn btn-green" href="/start" data-i="p0.cta">أنشئ حسابك مجاناً</a>
+      </article>
       <article class="plan reveal">
-        <h3 data-i="p1.t">بطاقة الأعمال</h3>
+        <h3 data-i="p1.t">بطاقة NFC</h3>
         <p class="who" data-i="p1.who">للمهنيين، الحرفيين والمستقلين</p>
         <p class="price" data-i="p1.price">السعر عند الطلب</p>
         <ul>

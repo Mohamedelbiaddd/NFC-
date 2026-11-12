@@ -33,6 +33,10 @@
     {
       "source": "/it",
       "destination": "/index.html"
+    },
+    {
+      "source": "/start",
+      "destination": "/start.html"
     }
   ],
   "headers": [

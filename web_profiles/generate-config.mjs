@@ -23,6 +23,8 @@ const STATIC_FILES = [
   'legal.css',
   'index.html',
   'profile.html',
+  'start.html',
+  'start.js',
   'robots.txt',
   'sitemap.xml',
   'home.css',
