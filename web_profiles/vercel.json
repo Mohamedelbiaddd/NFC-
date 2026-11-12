@@ -29,6 +29,10 @@
     {
       "source": "/en",
       "destination": "/index.html"
+    },
+    {
+      "source": "/it",
+      "destination": "/index.html"
     }
   ],
   "headers": [

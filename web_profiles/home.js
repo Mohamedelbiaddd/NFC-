@@ -6,7 +6,7 @@
 // admin can change it (and every text) from the hidden editor: /#studio.
 const DEFAULT_WHATSAPP = '393295586046';
 let CONTENT = {};      // published overrides {ar:{key:text}, fr:{}, en:{}, settings:{}}
-const DRAFT = {ar: {}, fr: {}, en: {}}; // unsaved edits in the editor
+const DRAFT = {ar: {}, fr: {}, en: {}, it: {}}; // unsaved edits in the editor
 let CONFIG = null;
 const whatsapp = () => DRAFT.whatsapp ?? CONTENT.settings?.whatsapp ?? DEFAULT_WHATSAPP;
 
@@ -39,7 +39,7 @@ const T = {
     'sv6.t': 'Tableau de bord commerçant', 'sv6.p': 'Suivez vos clients et leurs visites, validez les cadeaux et modifiez votre page et vos photos vous-même.',
     'tr1.t': '🔒 Anti-fraude', 'tr1.p': 'Chaque cadeau est validé par le commerçant.',
     'tr2.t': '⚡ Rapide et léger', 'tr2.p': 'Des pages qui s’ouvrent en une seconde, même avec une connexion faible.',
-    'tr3.t': '🌍 En trois langues', 'tr3.p': 'Arabe, français et anglais.',
+    'tr3.t': '🌍 En quatre langues', 'tr3.p': 'Arabe, français, anglais et italien.',
     'b.eyebrow': 'Essayez vous-même', 'b.title': 'Créez votre carte et voyez-la en direct', 'b.sub': 'Changez le design, le nom et les couleurs et voyez le résultat sur le téléphone. Les noms et numéros sont fictifs.',
     'b.vcard': '💳 Carte de visite', 'b.loyalty': '🎁 Carte de fidélité', 'b.design': 'Choisissez le design',
     'b.name': 'Nom complet', 'b.job': 'Métier', 'b.phone': 'Téléphone', 'b.city': 'Ville',
@@ -94,7 +94,7 @@ const T = {
     'sv6.t': 'Owner dashboard', 'sv6.p': 'Follow your customers and visits, approve rewards and edit your page and photos yourself.',
     'tr1.t': '🔒 Fraud-proof', 'tr1.p': 'Every reward is confirmed by the owner.',
     'tr2.t': '⚡ Fast and light', 'tr2.p': 'Pages open in a second, even on a weak connection.',
-    'tr3.t': '🌍 Three languages', 'tr3.p': 'Arabic, French and English.',
+    'tr3.t': '🌍 Four languages', 'tr3.p': 'Arabic, French, English and Italian.',
     'b.eyebrow': 'Try it yourself', 'b.title': 'Design your card and see it live', 'b.sub': 'Change the design, name and colours and see the result on the phone. Names and numbers are just samples.',
     'b.vcard': '💳 Business card', 'b.loyalty': '🎁 Loyalty card', 'b.design': 'Pick a design',
     'b.name': 'Full name', 'b.job': 'Profession', 'b.phone': 'Phone', 'b.city': 'City',
@@ -127,15 +127,71 @@ const T = {
     'fin.t': 'Ready to start?', 'fin.p': 'Message us and we’ll help you choose the right design and plan.', 'fin.cta': '💬 Chat with us on WhatsApp',
     'ft.privacy': 'Privacy', 'ft.terms': 'Terms', 'ft.contact': 'Contact', 'ft.made': 'Smart cards for every business, everywhere 🌍',
   },
+  it: {
+    skip: 'Vai al contenuto',
+    'nav.services': 'Servizi', 'nav.builder': 'Crea la tua tessera', 'nav.sectors': 'Settori', 'nav.soon': 'In arrivo', 'nav.pricing': 'Prezzi', 'nav.faq': 'FAQ',
+    'cta.order': 'Ordina ora',
+    'hero.tag': 'Per ogni negozio e professionista, ovunque',
+    'hero.t1': 'Un solo tocco…', 'hero.t2': 'e il cliente resta tuo.',
+    'hero.lead': 'Biglietti da visita smart, tessere fedeltà digitali per i negozi e coda prenotabile per i barbieri — con NFC e QR code, salvate in Google Wallet. Nessuna app per il cliente, niente carta.',
+    'hero.try': 'Crea la tua tessera ora', 'hero.more': 'Scopri cosa facciamo',
+    'hero.k1': 'Android e iPhone', 'hero.k2': 'Nessuna app per il cliente', 'hero.k3': 'Modificabile in ogni momento',
+    'hero.f1': 'Nuovo timbro +1', 'hero.f2': 'Il tuo turno tra 2',
+    's1.t': 'Scegli il design', 's1.p': 'Tra i nostri modelli o con i colori e il logo del tuo negozio.',
+    's2.t': 'Prepariamo e programmiamo', 's2.p': 'Creiamo la tua pagina e programmiamo la tessera o l’adesivo, pronti all’uso.',
+    's3.t': 'Un tocco… e via', 's3.p': 'Il cliente avvicina il telefono e la tua pagina si apre subito.',
+    'sv.eyebrow': 'Cosa offriamo', 'sv.title': 'Tutto ciò che serve per restare vicino ai tuoi clienti', 'sv.sub': 'Semplice per il negoziante, ancora più semplice per il cliente.',
+    'sv1.t': 'Biglietto da visita smart', 'sv1.p': 'Avvicina la tessera a un telefono e appare la tua pagina: chiamata, WhatsApp, posizione, social e salvataggio del contatto con un tocco.',
+    'sv2.t': 'Tessera fedeltà digitale', 'sv2.p': 'Timbri digitali al posto del cartoncino: ogni visita un timbro, tessera completa = un regalo. Mai più dimenticata a casa.',
+    'sv3.t': 'In Google Wallet', 'sv3.p': 'Il cliente tiene la tessera nel wallet del telefono e riceve avvisi e offerte direttamente sullo schermo.',
+    'sv4.t': 'Coda e prenotazioni', 'sv4.p': 'Per barbieri e centri estetici: il cliente prende il turno dal telefono e viene avvisato quando tocca a lui.',
+    'sv5.t': 'Tag NFC personalizzati e QR code', 'sv5.p': 'Per tavoli, vetrine, banconi e auto — con un QR code pronto da stampare per i telefoni senza NFC.',
+    'sv6.t': 'Pannello per il negoziante', 'sv6.p': 'Segui clienti e visite, conferma i premi e modifica da solo la tua pagina e le foto.',
+    'tr1.t': '🔒 Anti-frode', 'tr1.p': 'Ogni premio è confermato dal negoziante.',
+    'tr2.t': '⚡ Veloce e leggero', 'tr2.p': 'Pagine che si aprono in un secondo, anche con connessione debole.',
+    'tr3.t': '🌍 In quattro lingue', 'tr3.p': 'Arabo, francese, inglese e italiano.',
+    'b.eyebrow': 'Provalo tu', 'b.title': 'Crea la tua tessera e guardala dal vivo', 'b.sub': 'Cambia design, nome e colori e guarda il risultato sul telefono. Nomi e numeri sono di esempio.',
+    'b.vcard': '💳 Biglietto da visita', 'b.loyalty': '🎁 Tessera fedeltà', 'b.design': 'Scegli il design',
+    'b.name': 'Nome completo', 'b.job': 'Professione', 'b.phone': 'Telefono', 'b.city': 'Città',
+    'b.sector': 'Tipo di negozio', 'b.shop': 'Nome del negozio', 'b.reward': 'Premio', 'b.stamps': 'Numero di timbri', 'b.color': 'Colore della tessera',
+    'b.shuffle': '🎲 Altri nomi', 'b.order': 'Ordina questo design', 'b.note': '* Anteprima dimostrativa — la pagina vera si apre toccando la tessera.',
+    'sc.eyebrow': 'Per chi?', 'sc.title': 'Per ogni negozio e ogni mestiere',
+    'so.eyebrow': 'In arrivo', 'so.title': 'A cosa stiamo lavorando', 'so.badge': 'Presto',
+    'so1.t': 'Menu e cataloghi digitali per ristoranti', 'so1.p': 'Un menu con foto e prezzi che si apre con un tocco sul tavolo o con un QR code. Cambi piatti e prezzi in pochi secondi, senza ristampare.',
+    'so1.m1': 'Pizza margherita', 'so1.m2': 'Tajine di verdure', 'so1.m3': 'Cappuccino',
+    'so2.t': 'Apple Wallet', 'so2.p': 'Le tessere fedeltà anche nel wallet dell’iPhone.',
+    'so3.t': 'Pagamento online', 'so3.p': 'Ordina e paga direttamente sul sito.',
+    'so4.t': 'Cataloghi per negozi', 'so4.p': 'Mostra prodotti e prezzi sulla pagina del tuo negozio.',
+    'pr.eyebrow': 'Ordina ora', 'pr.title': 'Scegli il pacchetto giusto per te', 'pr.sub': 'Contattaci e ti proporremo la soluzione migliore per il tuo negozio o mestiere.',
+    'p1.price': 'Prezzo su richiesta', 'p2.price': 'Prezzo su richiesta', 'p3.price': 'Prezzo su richiesta', 'pr.order': 'Ordina ora', 'pr.best': 'Il più richiesto',
+    'p1.t': 'Biglietto da visita', 'p1.who': 'Per professionisti, artigiani e freelance',
+    'p1.f1': 'Tessera NFC con il tuo design', 'p1.f2': 'Pagina digitale a tuo nome', 'p1.f3': 'QR code da stampare', 'p1.f4': 'Modifichi i tuoi dati da solo',
+    'p2.t': 'Pacchetto negozio', 'p2.who': 'Per barbieri, bar, panetterie e tutti i negozi',
+    'p2.f1': 'Tessera fedeltà digitale', 'p2.f2': 'Google Wallet e notifiche', 'p2.f3': 'Coda e prenotazioni', 'p2.f4': 'Adesivi NFC e QR per il negozio', 'p2.f5': 'Pannello completo',
+    'p3.t': 'Pacchetto aziende', 'p3.who': 'Per un intero team con un’identità unica',
+    'p3.f1': 'Tessere per tutti i dipendenti', 'p3.f2': 'Design con logo e colori aziendali', 'p3.f3': 'Gestione centralizzata', 'p3.f4': 'Assistenza e supporto',
+    'pay.t': 'Metodi di pagamento', 'pay.p': 'I metodi di pagamento saranno presto aggiunti al sito. Per ora ordina su WhatsApp e ti contattiamo per confermare ordine e pagamento.',
+    'pay.m1': '💵 Pagamento alla consegna', 'pay.m2': '🏦 Bonifico bancario', 'pay.m3': '💳 Carta bancaria',
+    'fq.eyebrow': 'Domande frequenti', 'fq.title': 'Hai una domanda?',
+    q1: 'Il cliente deve installare un’app?', a1: 'No. Avvicina il telefono alla tessera o scansiona il QR code, e la pagina si apre direttamente nel browser.',
+    q2: 'Funziona con tutti i telefoni?', a2: 'Con la maggior parte degli Android e iPhone recenti tramite NFC, e con tutti i telefoni tramite QR code.',
+    q3: 'Posso cambiare i miei dati dopo la stampa?', a3: 'Sì. La tessera resta la stessa, ma la tua pagina la modifichi quando vuoi: foto, numeri, link e colori.',
+    q4: 'Come funziona la tessera fedeltà?', a4: 'A ogni visita il cliente riceve un timbro sulla tessera digitale. Quando è completa riceve il premio, dopo la conferma del negoziante.',
+    q6: 'Dove sono disponibili i vostri servizi?', a6: 'Serviamo negozi e professionisti in Marocco — Casablanca, Rabat, Marrakech, Tangeri, Fès, Agadir e ovunque — e in qualsiasi paese, perché tutto è digitale e ti viene consegnato.',
+    q5: 'Quanto tempo serve per preparare la mia tessera?', a5: 'Dopo la conferma dell’ordine e del design, prepariamo pagina e tessera in poco tempo e ti contattiamo per la consegna.',
+    'fin.t': 'Pronto a iniziare?', 'fin.p': 'Scrivici e ti aiutiamo a scegliere design e pacchetto.', 'fin.cta': '💬 Scrivici su WhatsApp',
+    'ft.privacy': 'Privacy', 'ft.terms': 'Termini', 'ft.contact': 'Contatti', 'ft.made': 'Tessere smart per ogni negozio, ovunque 🌍',
+  },
 };
 const AR = {};
 $$('[data-i]').forEach((e) => { AR[e.dataset.i] = e.textContent; });
-const SOON = {ar: 'قريباً', fr: 'Bientôt', en: 'Soon'};
+const SOON = {ar: 'قريباً', fr: 'Bientôt', en: 'Soon', it: 'Presto'};
 const AR_DESC = document.querySelector('meta[name=description]')?.content ?? '';
 let lang = 'ar';
 const base = (k, l = lang) => (l === 'ar' ? AR[k] : T[l][k]) ?? AR[k] ?? k;
 const t = (k) => DRAFT[lang][k] ?? CONTENT[lang]?.[k] ?? base(k);
-const pick = (o) => o?.[lang] ?? o?.ar ?? '';
+const pick = (o) => o?.[lang] ?? (lang === 'it' ? o?.en ?? o?.fr : undefined) ?? o?.ar ?? '';
+const L = (ar, fr, en, it) => ({ar, fr, en, it})[lang] ?? en;
 
 // ---------------------------------------------------------------- sample data
 // Made-up people and numbers from around the world, only for the live preview.
@@ -151,37 +207,37 @@ const PEOPLE = [
 ];
 const CITIES = [
   {ar: 'الدار البيضاء', fr: 'Casablanca', en: 'Casablanca', cc: '+212 6'},
-  {ar: 'باريس', fr: 'Paris', en: 'Paris', cc: '+33 6'},
-  {ar: 'دبي', fr: 'Dubaï', en: 'Dubai', cc: '+971 50'},
-  {ar: 'روما', fr: 'Rome', en: 'Rome', cc: '+39 3'},
-  {ar: 'لندن', fr: 'Londres', en: 'London', cc: '+44 7'},
+  {ar: 'باريس', fr: 'Paris', en: 'Paris', it: 'Parigi', cc: '+33 6'},
+  {ar: 'دبي', fr: 'Dubaï', en: 'Dubai', it: 'Dubai', cc: '+971 50'},
+  {ar: 'روما', fr: 'Rome', en: 'Rome', it: 'Roma', cc: '+39 3'},
+  {ar: 'لندن', fr: 'Londres', en: 'London', it: 'Londra', cc: '+44 7'},
   {ar: 'مدريد', fr: 'Madrid', en: 'Madrid', cc: '+34 6'},
   {ar: 'مونتريال', fr: 'Montréal', en: 'Montreal', cc: '+1 514'},
 ];
 const fakePhone = (cc = '+212 6') => `${cc} ${String(10 + Math.floor(Math.random() * 89))} ${String(10 + Math.floor(Math.random() * 89))} ${String(10 + Math.floor(Math.random() * 89))} ${String(10 + Math.floor(Math.random() * 89))}`;
 
 const SHOP_TYPES = [
-  {id: 'barber', e: '✂️', name: {ar: 'حلاق', fr: 'Barbier', en: 'Barber'}, shop: {ar: 'صالون الأناقة', fr: 'Salon Élégance', en: 'Elegance Barber'}, reward: {ar: 'حلاقة مجانية', fr: 'Une coupe offerte', en: 'A free haircut'}, turn: true},
-  {id: 'cafe', e: '☕', name: {ar: 'مقهى', fr: 'Café', en: 'Café'}, shop: {ar: 'مقهى الأطلس', fr: 'Café Atlas', en: 'Atlas Café'}, reward: {ar: 'قهوة مجانية', fr: 'Un café offert', en: 'A free coffee'}},
-  {id: 'bakery', e: '🥐', name: {ar: 'مخبزة وحلويات', fr: 'Boulangerie', en: 'Bakery'}, shop: {ar: 'مخبزة السعادة', fr: 'Boulangerie Saâda', en: 'Saada Bakery'}, reward: {ar: 'علبة حلويات مجانية', fr: 'Une boîte de pâtisseries', en: 'A free box of pastries'}},
-  {id: 'carwash', e: '🚗', name: {ar: 'غسل السيارات', fr: 'Lavage auto', en: 'Car wash'}, shop: {ar: 'لافاج النجمة', fr: 'Lavage Najma', en: 'Najma Car Wash'}, reward: {ar: 'غسلة كاملة مجانية', fr: 'Un lavage complet offert', en: 'A free full wash'}},
-  {id: 'beauty', e: '💅', name: {ar: 'صالون تجميل', fr: 'Institut de beauté', en: 'Beauty salon'}, shop: {ar: 'صالون ياسمين', fr: 'Institut Yasmine', en: 'Yasmine Beauty'}, reward: {ar: 'جلسة عناية مجانية', fr: 'Un soin offert', en: 'A free treatment'}, turn: true},
-  {id: 'snack', e: '🍕', name: {ar: 'سناك / بيتزاريا', fr: 'Snack / Pizzeria', en: 'Snack / Pizzeria'}, shop: {ar: 'بيتزا الريف', fr: 'Pizza Rif', en: 'Rif Pizza'}, reward: {ar: 'بيتزا مجانية', fr: 'Une pizza offerte', en: 'A free pizza'}},
-  {id: 'gym', e: '🏋️', name: {ar: 'قاعة رياضة', fr: 'Salle de sport', en: 'Gym'}, shop: {ar: 'نادي القوة', fr: 'Club Force', en: 'Force Gym'}, reward: {ar: 'أسبوع مجاني', fr: 'Une semaine offerte', en: 'A free week'}},
+  {id: 'barber', e: '✂️', name: {ar: 'حلاق', fr: 'Barbier', en: 'Barber', it: 'Barbiere'}, shop: {ar: 'صالون الأناقة', fr: 'Salon Élégance', en: 'Elegance Barber', it: 'Barberia Eleganza'}, reward: {ar: 'حلاقة مجانية', fr: 'Une coupe offerte', en: 'A free haircut', it: 'Un taglio gratis'}, turn: true},
+  {id: 'cafe', e: '☕', name: {ar: 'مقهى', fr: 'Café', en: 'Café', it: 'Bar'}, shop: {ar: 'مقهى الأطلس', fr: 'Café Atlas', en: 'Atlas Café', it: 'Caffè Atlas'}, reward: {ar: 'قهوة مجانية', fr: 'Un café offert', en: 'A free coffee', it: 'Un caffè gratis'}},
+  {id: 'bakery', e: '🥐', name: {ar: 'مخبزة وحلويات', fr: 'Boulangerie', en: 'Bakery', it: 'Panetteria'}, shop: {ar: 'مخبزة السعادة', fr: 'Boulangerie Saâda', en: 'Saada Bakery', it: 'Panetteria Saada'}, reward: {ar: 'علبة حلويات مجانية', fr: 'Une boîte de pâtisseries', en: 'A free box of pastries', it: 'Una scatola di dolci gratis'}},
+  {id: 'carwash', e: '🚗', name: {ar: 'غسل السيارات', fr: 'Lavage auto', en: 'Car wash', it: 'Autolavaggi'}, shop: {ar: 'لافاج النجمة', fr: 'Lavage Najma', en: 'Najma Car Wash', it: 'Autolavaggio Najma'}, reward: {ar: 'غسلة كاملة مجانية', fr: 'Un lavage complet offert', en: 'A free full wash', it: 'Un lavaggio completo gratis'}},
+  {id: 'beauty', e: '💅', name: {ar: 'صالون تجميل', fr: 'Institut de beauté', en: 'Beauty salon', it: 'Centro estetico'}, shop: {ar: 'صالون ياسمين', fr: 'Institut Yasmine', en: 'Yasmine Beauty', it: 'Estetica Yasmine'}, reward: {ar: 'جلسة عناية مجانية', fr: 'Un soin offert', en: 'A free treatment', it: 'Un trattamento gratis'}, turn: true},
+  {id: 'snack', e: '🍕', name: {ar: 'سناك / بيتزاريا', fr: 'Snack / Pizzeria', en: 'Snack / Pizzeria', it: 'Snack / Pizzeria'}, shop: {ar: 'بيتزا الريف', fr: 'Pizza Rif', en: 'Rif Pizza', it: 'Pizzeria Rif'}, reward: {ar: 'بيتزا مجانية', fr: 'Une pizza offerte', en: 'A free pizza', it: 'Una pizza gratis'}},
+  {id: 'gym', e: '🏋️', name: {ar: 'قاعة رياضة', fr: 'Salle de sport', en: 'Gym', it: 'Palestra'}, shop: {ar: 'نادي القوة', fr: 'Club Force', en: 'Force Gym', it: 'Palestra Force'}, reward: {ar: 'أسبوع مجاني', fr: 'Une semaine offerte', en: 'A free week', it: 'Una settimana gratis'}},
 ];
 const COLORS = ['#c81e2c', '#138a45', '#1e3a8a', '#b7791f', '#6d28d9', '#1f2937', '#0e7490'];
 
 const SECTORS = [
-  {e: '✂️', n: {ar: 'الحلاقون', fr: 'Barbiers', en: 'Barbers'}, d: {ar: 'الدور، الحجز والولاء', fr: 'File, réservation, fidélité', en: 'Queue, booking, loyalty'}},
-  {e: '💅', n: {ar: 'صالونات التجميل', fr: 'Instituts de beauté', en: 'Beauty salons'}, d: {ar: 'مواعيد وهدايا للزبونات', fr: 'Rendez-vous et cadeaux', en: 'Appointments and gifts'}},
-  {e: '☕', n: {ar: 'المقاهي', fr: 'Cafés', en: 'Cafés'}, d: {ar: 'القهوة العاشرة مجانية', fr: 'Le 10e café offert', en: 'The 10th coffee is free'}},
-  {e: '🥐', n: {ar: 'المخابز والحلويات', fr: 'Boulangeries', en: 'Bakeries'}, d: {ar: 'زبائن يعودون كل يوم', fr: 'Des clients chaque jour', en: 'Customers every day'}},
-  {e: '🚗', n: {ar: 'غسل السيارات', fr: 'Lavage auto', en: 'Car wash'}, d: {ar: 'غسلات مجانية للأوفياء', fr: 'Lavages offerts', en: 'Free washes for regulars'}},
-  {e: '🏋️', n: {ar: 'القاعات الرياضية', fr: 'Salles de sport', en: 'Gyms'}, d: {ar: 'متابعة الحضور والهدايا', fr: 'Présences et cadeaux', en: 'Attendance and rewards'}},
-  {e: '🛠️', n: {ar: 'الحرفيون', fr: 'Artisans', en: 'Craftsmen'}, d: {ar: 'كهربائي، سباك، نجار، دهّان…', fr: 'Électricien, plombier, peintre…', en: 'Electrician, plumber, painter…'}},
-  {e: '💼', n: {ar: 'المهن الحرة والشركات', fr: 'Professions et entreprises', en: 'Professionals and companies'}, d: {ar: 'بطاقات أعمال أنيقة', fr: 'Cartes de visite élégantes', en: 'Elegant business cards'}},
-  {e: '🛍️', n: {ar: 'المحلات التجارية', fr: 'Boutiques', en: 'Shops'}, d: {ar: 'ولاء وعروض للزبائن', fr: 'Fidélité et offres', en: 'Loyalty and offers'}},
-  {e: '🍽️', n: {ar: 'المطاعم', fr: 'Restaurants', en: 'Restaurants'}, d: {ar: 'القوائم الرقمية', fr: 'Menus digitaux', en: 'Digital menus'}, soon: true},
+  {e: '✂️', n: {ar: 'الحلاقون', fr: 'Barbiers', en: 'Barbers', it: 'Barbieri'}, d: {ar: 'الدور، الحجز والولاء', fr: 'File, réservation, fidélité', en: 'Queue, booking, loyalty', it: 'Coda, prenotazioni, fedeltà'}},
+  {e: '💅', n: {ar: 'صالونات التجميل', fr: 'Instituts de beauté', en: 'Beauty salons', it: 'Centri estetici'}, d: {ar: 'مواعيد وهدايا للزبونات', fr: 'Rendez-vous et cadeaux', en: 'Appointments and gifts', it: 'Appuntamenti e regali'}},
+  {e: '☕', n: {ar: 'المقاهي', fr: 'Cafés', en: 'Cafés', it: 'Bar e caffetterie'}, d: {ar: 'القهوة العاشرة مجانية', fr: 'Le 10e café offert', en: 'The 10th coffee is free', it: 'Il 10° caffè è gratis'}},
+  {e: '🥐', n: {ar: 'المخابز والحلويات', fr: 'Boulangeries', en: 'Bakeries', it: 'Panetterie e pasticcerie'}, d: {ar: 'زبائن يعودون كل يوم', fr: 'Des clients chaque jour', en: 'Customers every day', it: 'Clienti ogni giorno'}},
+  {e: '🚗', n: {ar: 'غسل السيارات', fr: 'Lavage auto', en: 'Car wash', it: 'Autolavaggi'}, d: {ar: 'غسلات مجانية للأوفياء', fr: 'Lavages offerts', en: 'Free washes for regulars', it: 'Lavaggi gratis ai clienti fedeli'}},
+  {e: '🏋️', n: {ar: 'القاعات الرياضية', fr: 'Salles de sport', en: 'Gyms', it: 'Palestre'}, d: {ar: 'متابعة الحضور والهدايا', fr: 'Présences et cadeaux', en: 'Attendance and rewards', it: 'Presenze e premi'}},
+  {e: '🛠️', n: {ar: 'الحرفيون', fr: 'Artisans', en: 'Craftsmen', it: 'Artigiani'}, d: {ar: 'كهربائي، سباك، نجار، دهّان…', fr: 'Électricien, plombier, peintre…', en: 'Electrician, plumber, painter…', it: 'Elettricista, idraulico, imbianchino…'}},
+  {e: '💼', n: {ar: 'المهن الحرة والشركات', fr: 'Professions et entreprises', en: 'Professionals and companies', it: 'Professionisti e aziende'}, d: {ar: 'بطاقات أعمال أنيقة', fr: 'Cartes de visite élégantes', en: 'Elegant business cards', it: 'Biglietti da visita eleganti'}},
+  {e: '🛍️', n: {ar: 'المحلات التجارية', fr: 'Boutiques', en: 'Shops', it: 'Negozi'}, d: {ar: 'ولاء وعروض للزبائن', fr: 'Fidélité et offres', en: 'Loyalty and offers', it: 'Fedeltà e offerte'}},
+  {e: '🍽️', n: {ar: 'المطاعم', fr: 'Restaurants', en: 'Restaurants', it: 'Ristoranti'}, d: {ar: 'القوائم الرقمية', fr: 'Menus digitaux', en: 'Digital menus', it: 'Menu digitali'}, soon: true},
 ];
 
 // ---------------------------------------------------------------- state
@@ -212,8 +268,8 @@ function vcardScreen(d, data) {
   const name = h('h4', '', data.name);
   const job = h('p', 'job', data.job);
   const btns = h('div', 'row-btns');
-  btns.append(h('span', '', lang === 'ar' ? 'تبادل الاتصال' : lang === 'fr' ? 'Échanger le contact' : 'Exchange contact'),
-    h('span', '', lang === 'ar' ? 'حفظ الرقم' : lang === 'fr' ? 'Enregistrer' : 'Save contact'));
+  btns.append(h('span', '', L('تبادل الاتصال', 'Échanger le contact', 'Exchange contact', 'Scambia contatto')),
+    h('span', '', L('حفظ الرقم', 'Enregistrer', 'Save contact', 'Salva contatto')));
   const rows = h('div', 'rows');
   const row = (i, txt, ltr) => { const r = h('div'); const ic = h('i', '', i); const s = h('span', '', txt); if (ltr) s.dir = 'ltr'; r.append(ic, s); rows.append(r); };
   row('📞', data.phone, true);
@@ -237,7 +293,7 @@ function loyaltyScreen(data) {
   const tt = h('div'); tt.append(h('b', '', data.shop), h('small', '', data.city));
   head.append(logo, tt);
   const who = h('div', 'ly-name');
-  who.append(document.createTextNode(lang === 'ar' ? 'بطاقة الزبون' : lang === 'fr' ? 'Carte client' : 'Customer card'), h('b', '', data.customer));
+  who.append(document.createTextNode(L('بطاقة الزبون', 'Carte client', 'Customer card', 'Tessera cliente')), h('b', '', data.customer));
   const n = data.stamps, got = Math.max(1, Math.round(n * 0.6));
   const grid = h('div', 'stamps');
   grid.style.gridTemplateColumns = `repeat(${n > 10 ? 6 : 5},1fr)`;
@@ -250,15 +306,15 @@ function loyaltyScreen(data) {
   const box = h('div');
   if (type.turn) {
     tile.append(h('span', 'big', '#3'));
-    box.append(h('b', '', lang === 'ar' ? 'دورك قريب' : lang === 'fr' ? 'Votre tour approche' : 'Your turn is close'),
-      h('small', '', lang === 'ar' ? 'سننبّهك قبل دورك' : lang === 'fr' ? 'On vous prévient avant' : 'We’ll notify you before'));
+    box.append(h('b', '', L('دورك قريب', 'Votre tour approche', 'Your turn is close', 'Il tuo turno è vicino')),
+      h('small', '', L('سننبّهك قبل دورك', 'On vous prévient avant', 'We’ll notify you before', 'Ti avvisiamo prima')));
   } else {
     tile.append(h('span', 'big', `${n - got}`));
-    box.append(h('b', '', lang === 'ar' ? 'زيارات متبقية للهدية' : lang === 'fr' ? 'visites avant le cadeau' : 'visits to your reward'),
-      h('small', '', lang === 'ar' ? 'آخر زيارة: اليوم' : lang === 'fr' ? 'Dernière visite : aujourd’hui' : 'Last visit: today'));
+    box.append(h('b', '', L('زيارات متبقية للهدية', 'visites avant le cadeau', 'visits to your reward', 'visite al premio')),
+      h('small', '', L('آخر زيارة: اليوم', 'Dernière visite : aujourd’hui', 'Last visit: today', 'Ultima visita: oggi')));
   }
   tile.append(box);
-  const wallet = h('div', 'ly-wallet', lang === 'ar' ? '＋ إضافة إلى Google Wallet' : lang === 'fr' ? '＋ Ajouter à Google Wallet' : '＋ Add to Google Wallet');
+  const wallet = h('div', 'ly-wallet', L('＋ إضافة إلى Google Wallet', '＋ Ajouter à Google Wallet', '＋ Add to Google Wallet', '＋ Aggiungi a Google Wallet'));
   root.append(card, tile, wallet);
   return root;
 }
@@ -341,6 +397,8 @@ function orderText() {
       ? `Bonjour TapMaroc 👋\nJe veux une carte de visite NFC.\nDesign : ${pick(d?.name)}\nNom : ${v.name}\nMétier : ${v.job}\nVille : ${v.city}`
       : lang === 'en'
         ? `Hello TapMaroc 👋\nI’d like an NFC business card.\nDesign: ${pick(d?.name)}\nName: ${v.name}\nProfession: ${v.job}\nCity: ${v.city}`
+        : lang === 'it'
+          ? `Ciao TapMaroc 👋\nVorrei un biglietto da visita NFC.\nDesign: ${pick(d?.name)}\nNome: ${v.name}\nProfessione: ${v.job}\nCittà: ${v.city}`
         : `مرحباً TapMaroc 👋\nأريد بطاقة أعمال NFC.\nالتصميم: ${pick(d?.name)}\nالاسم: ${v.name}\nالمهنة: ${v.job}\nالمدينة: ${v.city}`;
   }
   const l = lData(), type = SHOP_TYPES.find((x) => x.id === state.shopType);
@@ -348,13 +406,15 @@ function orderText() {
     ? `Bonjour TapMaroc 👋\nJe veux une carte de fidélité pour mon commerce.\nType : ${pick(type.name)}\nNom : ${l.shop}\nCadeau : ${l.reward} après ${l.stamps} tampons`
     : lang === 'en'
       ? `Hello TapMaroc 👋\nI’d like a loyalty card for my shop.\nType: ${pick(type.name)}\nName: ${l.shop}\nReward: ${l.reward} after ${l.stamps} stamps`
+      : lang === 'it'
+        ? `Ciao TapMaroc 👋\nVorrei una tessera fedeltà per il mio negozio.\nTipo: ${pick(type.name)}\nNome: ${l.shop}\nPremio: ${l.reward} dopo ${l.stamps} timbri`
       : `مرحباً TapMaroc 👋\nأريد بطاقة ولاء لمحلي.\nالنوع: ${pick(type.name)}\nاسم المحل: ${l.shop}\nالهدية: ${l.reward} بعد ${l.stamps} طوابع`;
 }
 const PLAN_MSG = {
-  p1: {ar: 'مرحباً TapMaroc 👋\nأريد طلب «بطاقة الأعمال».', fr: 'Bonjour TapMaroc 👋\nJe souhaite commander la « Carte de visite ».', en: 'Hello TapMaroc 👋\nI’d like to order the “Business card”.'},
-  p2: {ar: 'مرحباً TapMaroc 👋\nأريد طلب «باقة المحل».', fr: 'Bonjour TapMaroc 👋\nJe souhaite commander la « Formule commerce ».', en: 'Hello TapMaroc 👋\nI’d like to order the “Shop plan”.'},
-  p3: {ar: 'مرحباً TapMaroc 👋\nأريد طلب «باقة الشركات».', fr: 'Bonjour TapMaroc 👋\nJe souhaite commander la « Formule entreprise ».', en: 'Hello TapMaroc 👋\nI’d like to order the “Business plan”.'},
-  contact: {ar: 'مرحباً TapMaroc 👋\nأريد معلومات عن خدماتكم.', fr: 'Bonjour TapMaroc 👋\nJe voudrais des informations sur vos services.', en: 'Hello TapMaroc 👋\nI’d like some information about your services.'},
+  p1: {ar: 'مرحباً TapMaroc 👋\nأريد طلب «بطاقة الأعمال».', fr: 'Bonjour TapMaroc 👋\nJe souhaite commander la « Carte de visite ».', en: 'Hello TapMaroc 👋\nI’d like to order the “Business card”.', it: 'Ciao TapMaroc 👋\nVorrei ordinare il « Biglietto da visita ».'},
+  p2: {ar: 'مرحباً TapMaroc 👋\nأريد طلب «باقة المحل».', fr: 'Bonjour TapMaroc 👋\nJe souhaite commander la « Formule commerce ».', en: 'Hello TapMaroc 👋\nI’d like to order the “Shop plan”.', it: 'Ciao TapMaroc 👋\nVorrei ordinare il « Pacchetto negozio ».'},
+  p3: {ar: 'مرحباً TapMaroc 👋\nأريد طلب «باقة الشركات».', fr: 'Bonjour TapMaroc 👋\nJe souhaite commander la « Formule entreprise ».', en: 'Hello TapMaroc 👋\nI’d like to order the “Business plan”.', it: 'Ciao TapMaroc 👋\nVorrei ordinare il « Pacchetto aziende ».'},
+  contact: {ar: 'مرحباً TapMaroc 👋\nأريد معلومات عن خدماتكم.', fr: 'Bonjour TapMaroc 👋\nJe voudrais des informations sur vos services.', en: 'Hello TapMaroc 👋\nI’d like some information about your services.', it: 'Ciao TapMaroc 👋\nVorrei informazioni sui vostri servizi.'},
 };
 const updateWaLinks = () => $$('a.wa').forEach((a) => { a.href = waLink(pick(PLAN_MSG[a.dataset.plan] ?? PLAN_MSG.contact)); });
 
@@ -397,13 +457,14 @@ function setLang(l) {
   document.title = lang === 'fr'
     ? 'TapMaroc — Carte de visite NFC & carte de fidélité digitale'
     : lang === 'en' ? 'TapMaroc — NFC business cards & digital loyalty cards'
+    : lang === 'it' ? 'TapMaroc — Biglietti da visita NFC e tessere fedeltà digitali'
       : 'TapMaroc — بطاقات ذكية NFC وبطاقات ولاء لكل المحلات';
   try { localStorage.setItem('tm_lang', lang); } catch { /* private mode */ }
   // One address per language (/, /fr, /en) so search engines index each.
   const path = lang === 'ar' ? '/' : `/${lang}`;
   if (location.pathname !== path) history.replaceState(null, '', path + location.hash);
   $('link[rel=canonical]')?.setAttribute('href', `https://tapmaroc.com${path}`);
-  const desc = {ar: AR_DESC, fr: 'Carte de visite NFC, carte de fidélité digitale avec Google Wallet et file d’attente pour barbiers, cafés et commerces. Au Maroc et partout. Sans application.', en: 'NFC business cards, digital loyalty cards with Google Wallet and queue booking for barbers, cafés and shops. In Morocco and worldwide. No app needed.'}[lang];
+  const desc = {ar: AR_DESC, fr: 'Carte de visite NFC, carte de fidélité digitale avec Google Wallet et file d’attente pour barbiers, cafés et commerces. Au Maroc et partout. Sans application.', en: 'NFC business cards, digital loyalty cards with Google Wallet and queue booking for barbers, cafés and shops. In Morocco and worldwide. No app needed.', it: 'Biglietti da visita NFC, tessere fedeltà digitali con Google Wallet e coda prenotabile per barbieri, bar e negozi. In Marocco e nel mondo. Nessuna app.'}[lang];
   $('meta[name=description]')?.setAttribute('content', desc);
   buildDesigns(); buildShopTypes(); buildSectors(); syncInputs(); renderPreview(); renderHero(); updateWaLinks();
 }
@@ -450,8 +511,8 @@ async function start() {
   let saved = null;
   try { saved = localStorage.getItem('tm_lang'); } catch { /* ignore */ }
   const nav = (navigator.language || '').slice(0, 2);
-  const fromPath = /^\/(fr|en)\/?$/.exec(location.pathname)?.[1];
-  setLang(fromPath || saved || (nav === 'fr' ? 'fr' : 'ar'));
+  const fromPath = /^\/(fr|en|it)\/?$/.exec(location.pathname)?.[1];
+  setLang(fromPath || saved || (nav === 'fr' || nav === 'it' ? nav : 'ar'));
   initStudio();
 }
 
@@ -480,6 +541,8 @@ const S = {
     bar: '✏️ وضع التعديل — اضغط على أي نص لتغييره', lang: 'اللغة', wa: 'واتساب', save: 'حفظ ونشر', saved: '✓ تم الحفظ والنشر', discard: 'إلغاء التغييرات', exit: 'خروج', changes: 'تغييرات غير محفوظة', expired: 'انتهت الجلسة، سجّل الدخول مجدداً.', waBad: 'رقم واتساب غير صحيح (أرقام فقط مع رمز الدولة).', reset: 'استرجاع النص الأصلي لهذا العنصر'},
   fr: {title: 'Accès administrateur', email: 'E-mail', pass: 'Mot de passe', go: 'Connexion', cancel: 'Annuler', bad: 'E-mail ou mot de passe incorrect.', notAdmin: 'Ce compte n’est pas administrateur.', net: 'Connexion impossible. Réessayez.',
     bar: '✏️ Mode édition — cliquez sur un texte pour le modifier', lang: 'Langue', wa: 'WhatsApp', save: 'Enregistrer et publier', saved: '✓ Enregistré et publié', discard: 'Annuler les modifications', exit: 'Quitter', changes: 'modifications non enregistrées', expired: 'Session expirée, reconnectez-vous.', waBad: 'Numéro WhatsApp invalide (chiffres avec indicatif).', reset: 'Rétablir le texte d’origine'},
+  it: {title: 'Accesso amministratore', email: 'E-mail', pass: 'Password', go: 'Accedi', cancel: 'Annulla', bad: 'E-mail o password errata.', notAdmin: 'Questo account non è amministratore.', net: 'Connessione non riuscita. Riprova.',
+    bar: '✏️ Modalità modifica — tocca un testo per cambiarlo', lang: 'Lingua', wa: 'WhatsApp', save: 'Salva e pubblica', saved: '✓ Salvato e pubblicato', discard: 'Annulla modifiche', exit: 'Esci', changes: 'modifiche non salvate', expired: 'Sessione scaduta, accedi di nuovo.', waBad: 'Numero WhatsApp non valido (solo cifre con prefisso).', reset: 'Ripristina il testo originale'},
   en: {title: 'Admin sign-in', email: 'Email', pass: 'Password', go: 'Sign in', cancel: 'Cancel', bad: 'Wrong email or password.', notAdmin: 'This account is not an admin.', net: 'Connection failed. Try again.',
     bar: '✏️ Edit mode — click any text to change it', lang: 'Language', wa: 'WhatsApp', save: 'Save & publish', saved: '✓ Saved and published', discard: 'Discard changes', exit: 'Exit', changes: 'unsaved changes', expired: 'Session expired, sign in again.', waBad: 'Invalid WhatsApp number (digits with country code).', reset: 'Restore the original text'},
 };
@@ -538,7 +601,7 @@ function markEditable() {
     e.spellcheck = false;
   });
 }
-function changedCount() { return ['ar', 'fr', 'en'].reduce((n, l) => n + Object.keys(DRAFT[l]).length, 0) + (DRAFT.whatsapp != null ? 1 : 0); }
+function changedCount() { return ['ar', 'fr', 'en', 'it'].reduce((n, l) => n + Object.keys(DRAFT[l]).length, 0) + (DRAFT.whatsapp != null ? 1 : 0); }
 
 function studioBar() {
   const bar = h('div', 'studio-bar');
@@ -563,8 +626,8 @@ function studioBar() {
     const ses = getSession();
     if (!ses) { msg.textContent = s_('expired'); exitStudio(); loginDialog(); return; }
     if (DRAFT.whatsapp != null && !/^[0-9]{8,15}$/.test(DRAFT.whatsapp)) { msg.textContent = s_('waBad'); return; }
-    const doc = {ar: {...CONTENT.ar}, fr: {...CONTENT.fr}, en: {...CONTENT.en}, settings: {...CONTENT.settings}};
-    for (const l of ['ar', 'fr', 'en']) {
+    const doc = {ar: {...CONTENT.ar}, fr: {...CONTENT.fr}, en: {...CONTENT.en}, it: {...CONTENT.it}, settings: {...CONTENT.settings}};
+    for (const l of ['ar', 'fr', 'en', 'it']) {
       for (const [k, v] of Object.entries(DRAFT[l])) {
         const text = v.replace(/\s+/g, ' ').trim();
         if (!text || text === base(k, l)) delete doc[l][k]; else doc[l][k] = text.slice(0, 2000);
@@ -577,14 +640,14 @@ function studioBar() {
       if (r.status === 401) { msg.textContent = s_('expired'); setSession(null); return; }
       if (!r.ok) { msg.textContent = r.data?.message || s_('net'); save.disabled = false; return; }
       CONTENT = r.data;
-      for (const l of ['ar', 'fr', 'en']) DRAFT[l] = {};
+      for (const l of ['ar', 'fr', 'en', 'it']) DRAFT[l] = {};
       delete DRAFT.whatsapp;
       msg.textContent = s_('saved');
       setLang(lang);
       refreshCount();
     } catch { msg.textContent = s_('net'); save.disabled = false; }
   });
-  discard.addEventListener('click', () => { for (const l of ['ar', 'fr', 'en']) DRAFT[l] = {}; delete DRAFT.whatsapp; waIn.value = whatsapp(); msg.textContent = ''; setLang(lang); refreshCount(); });
+  discard.addEventListener('click', () => { for (const l of ['ar', 'fr', 'en', 'it']) DRAFT[l] = {}; delete DRAFT.whatsapp; waIn.value = whatsapp(); msg.textContent = ''; setLang(lang); refreshCount(); });
   exit.addEventListener('click', () => { setSession(null); exitStudio(); history.replaceState(null, '', location.pathname); });
 }
 
@@ -617,7 +680,7 @@ function exitStudio() {
   document.body.classList.remove('studio');
   $$('[data-i]').forEach((e) => e.removeAttribute('contenteditable'));
   $('#studioBar')?.remove();
-  for (const l of ['ar', 'fr', 'en']) DRAFT[l] = {};
+  for (const l of ['ar', 'fr', 'en', 'it']) DRAFT[l] = {};
   delete DRAFT.whatsapp;
   setLang(lang);
 }

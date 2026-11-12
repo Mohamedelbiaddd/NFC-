@@ -595,7 +595,7 @@ async function wallet(action) {
     method: 'POST',
     headers: {'Content-Type': 'application/json', apikey: config.publishableKey,
       Authorization: `Bearer ${config.publishableKey}`},
-    body: JSON.stringify({action, slug, token: storage(tokenKey), lang}),
+    body: JSON.stringify({action, slug, token: storage(tokenKey), lang: lang === 'it' ? 'en' : lang}),
   });
   return res.json().catch(() => ({ok: false}));
 }

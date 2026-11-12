@@ -60,3 +60,11 @@ begin
 end; $$;
 revoke all on function public.nfc_site_save(jsonb) from public, anon;
 grant execute on function public.nfc_site_save(jsonb) to authenticated;
+
+-- Italian added later (2026-11-12): allow an 'it' section.
+do $$ declare d text; begin
+  d := pg_get_functiondef('public.nfc_site_save(jsonb)'::regprocedure);
+  if position($q$('ar', 'fr', 'en', 'settings')$q$ in d) > 0 then
+    execute replace(d, $q$('ar', 'fr', 'en', 'settings')$q$, $q$('ar', 'fr', 'en', 'it', 'settings')$q$);
+  end if;
+end $$;
