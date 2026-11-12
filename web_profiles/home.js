@@ -1,5 +1,5 @@
 // TapMaroc landing page: language switch (ar / fr / en), live card designer
-// with made-up Moroccan sample data, WhatsApp ordering and small UI touches.
+// with made-up sample data, WhatsApp ordering and small UI touches.
 // Static only: it talks to no database.
 
 // Orders and questions arrive on this WhatsApp number (digits only). The
@@ -21,7 +21,7 @@ const T = {
     skip: 'Aller au contenu',
     'nav.services': 'Services', 'nav.builder': 'Créer ma carte', 'nav.sectors': 'Secteurs', 'nav.soon': 'Bientôt', 'nav.pricing': 'Tarifs', 'nav.faq': 'FAQ',
     'cta.order': 'Commander',
-    'hero.tag': 'Fait au Maroc, pour les commerces du Maroc',
+    'hero.tag': 'Pour tous les commerces et professionnels, partout',
     'hero.t1': 'Une seule touche…', 'hero.t2': 'et votre client vous reste fidèle.',
     'hero.lead': 'Cartes de visite intelligentes, cartes de fidélité digitales pour les commerces et file d’attente pour les barbiers — en NFC et QR code, enregistrées dans Google Wallet. Sans application pour le client, sans papier.',
     'hero.try': 'Créer ma carte maintenant', 'hero.more': 'Découvrir nos services',
@@ -48,7 +48,7 @@ const T = {
     'sc.eyebrow': 'Pour qui ?', 'sc.title': 'Pour chaque commerce et chaque métier',
     'so.eyebrow': 'Bientôt', 'so.title': 'Ce que nous préparons', 'so.badge': 'Bientôt',
     'so1.t': 'Menus et catalogues digitaux pour restaurants', 'so1.p': 'Un menu avec photos et prix qui s’ouvre d’une touche sur la table ou par QR code. Modifiez plats et prix en quelques secondes, sans réimprimer.',
-    'so1.m1': 'Tajine de viande aux pruneaux', 'so1.m2': 'Couscous aux légumes', 'so1.m3': 'Thé à la menthe',
+    'so1.m1': 'Pizza margherita', 'so1.m2': 'Tajine aux légumes', 'so1.m3': 'Cappuccino',
     'so2.t': 'Apple Wallet', 'so2.p': 'Les cartes de fidélité aussi dans le portefeuille de l’iPhone.',
     'so3.t': 'Paiement en ligne', 'so3.p': 'Commandez et payez directement sur le site.',
     'so4.t': 'Catalogues pour commerces', 'so4.p': 'Présentez vos produits et vos prix sur la page de votre commerce.',
@@ -69,13 +69,13 @@ const T = {
     q4: 'Comment fonctionne la carte de fidélité ?', a4: 'À chaque visite, le client reçoit un tampon sur sa carte digitale. Une fois complète, il reçoit son cadeau après validation du commerçant.',
     q5: 'Combien de temps pour préparer ma carte ?', a5: 'Après confirmation de la commande et du design, nous préparons votre page et votre carte rapidement et vous contactons pour la livraison.',
     'fin.t': 'Prêt à commencer ?', 'fin.p': 'Écrivez-nous et nous vous aidons à choisir le design et la formule.', 'fin.cta': '💬 Contactez-nous sur WhatsApp',
-    'ft.privacy': 'Confidentialité', 'ft.terms': 'Conditions', 'ft.contact': 'Contact', 'ft.made': 'Fait avec amour au Maroc 🇲🇦',
+    'ft.privacy': 'Confidentialité', 'ft.terms': 'Conditions', 'ft.contact': 'Contact', 'ft.made': 'Des cartes intelligentes pour chaque commerce, partout 🌍',
   },
   en: {
     skip: 'Skip to content',
     'nav.services': 'Services', 'nav.builder': 'Design your card', 'nav.sectors': 'Sectors', 'nav.soon': 'Coming soon', 'nav.pricing': 'Pricing', 'nav.faq': 'FAQ',
     'cta.order': 'Order now',
-    'hero.tag': 'Made in Morocco, for Moroccan businesses',
+    'hero.tag': 'For every shop and professional, everywhere',
     'hero.t1': 'One tap…', 'hero.t2': 'and your customer stays yours.',
     'hero.lead': 'Smart business cards, digital loyalty cards for shops and queue booking for barbers — with NFC and QR code, saved in Google Wallet. No app for the customer, no paper.',
     'hero.try': 'Design your card now', 'hero.more': 'See what we do',
@@ -102,7 +102,7 @@ const T = {
     'sc.eyebrow': 'Who is it for?', 'sc.title': 'For every shop and every trade',
     'so.eyebrow': 'Coming soon', 'so.title': 'What we’re building now', 'so.badge': 'Soon',
     'so1.t': 'Digital menus and catalogues for restaurants', 'so1.p': 'A menu with photos and prices that opens with a tap on the table or a QR code. Change dishes and prices in seconds, no reprinting.',
-    'so1.m1': 'Beef tagine with prunes', 'so1.m2': 'Vegetable couscous', 'so1.m3': 'Mint tea',
+    'so1.m1': 'Margherita pizza', 'so1.m2': 'Vegetable tagine', 'so1.m3': 'Cappuccino',
     'so2.t': 'Apple Wallet', 'so2.p': 'Loyalty cards in the iPhone wallet too.',
     'so3.t': 'Online payment', 'so3.p': 'Order and pay directly on the website.',
     'so4.t': 'Shop catalogues', 'so4.p': 'Show your products and prices on your shop page.',
@@ -123,7 +123,7 @@ const T = {
     q4: 'How does the loyalty card work?', a4: 'Each visit adds a stamp to the customer’s digital card. When it’s full, they get their reward after the owner confirms it.',
     q5: 'How long does it take to prepare my card?', a5: 'Once the order and design are confirmed, we prepare your page and card quickly and contact you for delivery.',
     'fin.t': 'Ready to start?', 'fin.p': 'Message us and we’ll help you choose the right design and plan.', 'fin.cta': '💬 Chat with us on WhatsApp',
-    'ft.privacy': 'Privacy', 'ft.terms': 'Terms', 'ft.contact': 'Contact', 'ft.made': 'Made with love in Morocco 🇲🇦',
+    'ft.privacy': 'Privacy', 'ft.terms': 'Terms', 'ft.contact': 'Contact', 'ft.made': 'Smart cards for every business, everywhere 🌍',
   },
 };
 const AR = {};
@@ -135,26 +135,27 @@ const t = (k) => DRAFT[lang][k] ?? CONTENT[lang]?.[k] ?? base(k);
 const pick = (o) => o?.[lang] ?? o?.ar ?? '';
 
 // ---------------------------------------------------------------- sample data
-// Made-up Moroccan people and numbers, only for the live preview.
+// Made-up people and numbers from around the world, only for the live preview.
 const PEOPLE = [
   {ar: 'يوسف العلوي', fr: 'Youssef Alaoui', en: 'Youssef Alaoui'},
-  {ar: 'سلمى بناني', fr: 'Salma Bennani', en: 'Salma Bennani'},
-  {ar: 'حمزة التازي', fr: 'Hamza Tazi', en: 'Hamza Tazi'},
+  {ar: 'سارة مارتان', fr: 'Sarah Martin', en: 'Sarah Martin'},
+  {ar: 'عمر حداد', fr: 'Omar Haddad', en: 'Omar Haddad'},
+  {ar: 'لينا روسي', fr: 'Lina Rossi', en: 'Lina Rossi'},
+  {ar: 'دانيال كارتر', fr: 'Daniel Carter', en: 'Daniel Carter'},
   {ar: 'خديجة الإدريسي', fr: 'Khadija Idrissi', en: 'Khadija Idrissi'},
-  {ar: 'أمين الفاسي', fr: 'Amine El Fassi', en: 'Amine El Fassi'},
-  {ar: 'نادية الشرقاوي', fr: 'Nadia Cherkaoui', en: 'Nadia Cherkaoui'},
-  {ar: 'عمر برادة', fr: 'Omar Berrada', en: 'Omar Berrada'},
-  {ar: 'إيمان الصقلي', fr: 'Imane Squalli', en: 'Imane Squalli'},
+  {ar: 'كارلوس غارسيا', fr: 'Carlos García', en: 'Carlos García'},
+  {ar: 'إيمان بن علي', fr: 'Imane Ben Ali', en: 'Imane Ben Ali'},
 ];
 const CITIES = [
-  {ar: 'الدار البيضاء', fr: 'Casablanca', en: 'Casablanca'},
-  {ar: 'الرباط', fr: 'Rabat', en: 'Rabat'},
-  {ar: 'مراكش', fr: 'Marrakech', en: 'Marrakesh'},
-  {ar: 'فاس', fr: 'Fès', en: 'Fez'},
-  {ar: 'طنجة', fr: 'Tanger', en: 'Tangier'},
-  {ar: 'أكادير', fr: 'Agadir', en: 'Agadir'},
+  {ar: 'الدار البيضاء', fr: 'Casablanca', en: 'Casablanca', cc: '+212 6'},
+  {ar: 'باريس', fr: 'Paris', en: 'Paris', cc: '+33 6'},
+  {ar: 'دبي', fr: 'Dubaï', en: 'Dubai', cc: '+971 50'},
+  {ar: 'روما', fr: 'Rome', en: 'Rome', cc: '+39 3'},
+  {ar: 'لندن', fr: 'Londres', en: 'London', cc: '+44 7'},
+  {ar: 'مدريد', fr: 'Madrid', en: 'Madrid', cc: '+34 6'},
+  {ar: 'مونتريال', fr: 'Montréal', en: 'Montreal', cc: '+1 514'},
 ];
-const fakePhone = () => `+212 6 ${String(10 + Math.floor(Math.random() * 89))} ${String(10 + Math.floor(Math.random() * 89))} ${String(10 + Math.floor(Math.random() * 89))} ${String(10 + Math.floor(Math.random() * 89))}`;
+const fakePhone = (cc = '+212 6') => `${cc} ${String(10 + Math.floor(Math.random() * 89))} ${String(10 + Math.floor(Math.random() * 89))} ${String(10 + Math.floor(Math.random() * 89))} ${String(10 + Math.floor(Math.random() * 89))}`;
 
 const SHOP_TYPES = [
   {id: 'barber', e: '✂️', name: {ar: 'حلاق', fr: 'Barbier', en: 'Barber'}, shop: {ar: 'صالون الأناقة', fr: 'Salon Élégance', en: 'Elegance Barber'}, reward: {ar: 'حلاقة مجانية', fr: 'Une coupe offerte', en: 'A free haircut'}, turn: true},
@@ -174,7 +175,7 @@ const SECTORS = [
   {e: '🥐', n: {ar: 'المخابز والحلويات', fr: 'Boulangeries', en: 'Bakeries'}, d: {ar: 'زبائن يعودون كل يوم', fr: 'Des clients chaque jour', en: 'Customers every day'}},
   {e: '🚗', n: {ar: 'غسل السيارات', fr: 'Lavage auto', en: 'Car wash'}, d: {ar: 'غسلات مجانية للأوفياء', fr: 'Lavages offerts', en: 'Free washes for regulars'}},
   {e: '🏋️', n: {ar: 'القاعات الرياضية', fr: 'Salles de sport', en: 'Gyms'}, d: {ar: 'متابعة الحضور والهدايا', fr: 'Présences et cadeaux', en: 'Attendance and rewards'}},
-  {e: '🛠️', n: {ar: 'الحرفيون', fr: 'Artisans', en: 'Craftsmen'}, d: {ar: 'كهربائي، سباك، نجار، زليج…', fr: 'Électricien, plombier, zellige…', en: 'Electrician, plumber, zellige…'}},
+  {e: '🛠️', n: {ar: 'الحرفيون', fr: 'Artisans', en: 'Craftsmen'}, d: {ar: 'كهربائي، سباك، نجار، دهّان…', fr: 'Électricien, plombier, peintre…', en: 'Electrician, plumber, painter…'}},
   {e: '💼', n: {ar: 'المهن الحرة والشركات', fr: 'Professions et entreprises', en: 'Professionals and companies'}, d: {ar: 'بطاقات أعمال أنيقة', fr: 'Cartes de visite élégantes', en: 'Elegant business cards'}},
   {e: '🛍️', n: {ar: 'المحلات التجارية', fr: 'Boutiques', en: 'Shops'}, d: {ar: 'ولاء وعروض للزبائن', fr: 'Fidélité et offres', en: 'Loyalty and offers'}},
   {e: '🍽️', n: {ar: 'المطاعم', fr: 'Restaurants', en: 'Restaurants'}, d: {ar: 'القوائم الرقمية', fr: 'Menus digitaux', en: 'Digital menus'}, soon: true},
@@ -391,9 +392,9 @@ function setLang(l) {
   $$('.langs button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
   $$('.pay-methods .off').forEach((e) => { e.dataset.soon = SOON[lang]; });
   document.title = lang === 'fr'
-    ? 'TapMaroc — Cartes NFC intelligentes et cartes de fidélité au Maroc'
-    : lang === 'en' ? 'TapMaroc — Smart NFC cards and loyalty cards in Morocco'
-      : 'TapMaroc — بطاقات ذكية NFC وبطاقات ولاء للمحلات في المغرب';
+    ? 'TapMaroc — Cartes NFC intelligentes et cartes de fidélité pour tous les commerces'
+    : lang === 'en' ? 'TapMaroc — Smart NFC cards and loyalty cards for every business'
+      : 'TapMaroc — بطاقات ذكية NFC وبطاقات ولاء لكل المحلات';
   try { localStorage.setItem('tm_lang', lang); } catch { /* private mode */ }
   buildDesigns(); buildShopTypes(); buildSectors(); syncInputs(); renderPreview(); renderHero(); updateWaLinks();
 }
@@ -410,7 +411,7 @@ function wire() {
   $('#shuffle').addEventListener('click', () => {
     state.person = (state.person + 1 + Math.floor(Math.random() * (PEOPLE.length - 1))) % PEOPLE.length;
     state.city = (state.city + 1) % CITIES.length;
-    state.phone = fakePhone();
+    state.phone = fakePhone(CITIES[state.city].cc);
     state.name = state.cityText = state.phoneText = null;
     syncInputs(); renderPreview();
   });

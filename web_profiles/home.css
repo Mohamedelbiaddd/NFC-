@@ -57,7 +57,7 @@ button,input{font:inherit;color:inherit}
 .zellige{position:absolute;inset:0;z-index:-1;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23fff' stroke-width='1.2'%3E%3Cpath d='M40 6l9 25h26l-21 15 8 25-22-15-22 15 8-25L5 31h26z'/%3E%3Ccircle cx='40' cy='40' r='9'/%3E%3C/g%3E%3C/svg%3E");mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%)}
 .hero-in{display:grid;grid-template-columns:1.08fr .92fr;gap:48px;align-items:center}
 .tag{display:inline-flex;align-items:center;gap:10px;padding:6px 14px 6px 8px;border:1px solid var(--line2);border-radius:999px;background:#ffffff0a;font-weight:700;font-size:14px;color:#dfe4f3}
-.flag{width:26px;height:18px;border-radius:4px;background:var(--red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-12 -12 24 24'%3E%3Cpath d='M0-7L4.1 5.7-6.7-2.2H6.7L-4.1 5.7z' fill='none' stroke='%23136f3a' stroke-width='1.6'/%3E%3C/svg%3E") center/14px no-repeat;box-shadow:inset 0 0 0 1px #0003}
+.globe{font-size:18px;line-height:1}
 .hero h1{font-size:clamp(38px,6vw,68px);margin:20px 0 18px;letter-spacing:-.02em;font-weight:900}
 .hero h1 em{font-style:normal;background:linear-gradient(100deg,var(--red2) 10%,#ff8a5c 45%,var(--green2) 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .lead{font-size:clamp(16px,1.9vw,19px);color:var(--muted);max-width:560px}
