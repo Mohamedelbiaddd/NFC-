@@ -41,6 +41,10 @@
     {
       "source": "/qr",
       "destination": "/qr.html"
+    },
+    {
+      "source": "/k/:code",
+      "destination": "/tag.html"
     }
   ],
   "headers": [
@@ -135,7 +139,7 @@
       ]
     },
     {
-      "source": "/(p|c|s)/(.*)",
+      "source": "/(p|c|s|k)/(.*)",
       "headers": [
         {
           "key": "X-Robots-Tag",

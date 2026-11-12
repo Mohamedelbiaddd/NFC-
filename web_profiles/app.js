@@ -167,7 +167,7 @@ function freeBadge(){
 async function autoEdit(){
  let code=null;const key='tm_edit_'+state.slug;
  try{code=sessionStorage.getItem(key);sessionStorage.removeItem(key);}catch{}
- if(!code||!/^[0-9]{6,12}$/.test(code))return;
+ if(!code||code.length<6||code.length>64)return;
  try{const r=await ownerLogin(state.config,state.slug,code);if(r?.ok)openEditor(r.profile,code);}catch{}
 }
 

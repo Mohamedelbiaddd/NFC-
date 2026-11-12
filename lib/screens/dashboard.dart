@@ -19,6 +19,7 @@ import 'link_writer_screen.dart';
 import 'network_tab.dart';
 import 'shops_tab.dart';
 import 'site_users_screen.dart';
+import 'tags_screen.dart';
 import '../core/network_service.dart';
 import '../core/shops_service.dart';
 import 'writer_screen.dart';
@@ -1195,6 +1196,8 @@ class _DashboardState extends State<Dashboard> {
                   load();
                 case 'workspaces':
                   _pickWorkspace();
+                case 'tags':
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => TagsScreen(repo: repo)));
                 case 'site_users':
                   Navigator.of(context).push(MaterialPageRoute(builder: (_) => SiteUsersScreen(client: repo.client)));
                 case 'password':
@@ -1207,6 +1210,8 @@ class _DashboardState extends State<Dashboard> {
               PopupMenuItem(value: 'refresh', child: ListTile(leading: const Icon(Icons.sync_rounded), title: Text(tr('تحديث')))),
               if (tenants.length > 1 || isSuper)
                 PopupMenuItem(value: 'workspaces', child: ListTile(leading: const Icon(Icons.workspaces_outline), title: Text(tr('مساحات العمل')))),
+              if (isSuper)
+                PopupMenuItem(value: 'tags', child: ListTile(leading: const Icon(Icons.qr_code_2_rounded), title: Text(tr('بطاقات قابلة للبرمجة')))),
               if (isSuper)
                 PopupMenuItem(value: 'site_users', child: ListTile(leading: const Icon(Icons.public_rounded), title: Text(tr('مسجّلو الموقع')))),
               PopupMenuItem(value: 'password', child: ListTile(leading: const Icon(Icons.key_rounded), title: Text(tr('تغيير كلمة المرور')))),

@@ -25,6 +25,8 @@ const STATIC_FILES = [
   'profile.html',
   'start.html',
   'qr.html',
+  'tag.html',
+  'tag.js',
   'qr.js',
   'start.js',
   'robots.txt',

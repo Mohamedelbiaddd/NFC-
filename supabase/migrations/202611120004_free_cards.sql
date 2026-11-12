@@ -52,8 +52,9 @@ begin
   ph := left(regexp_replace(coalesce(phone, ''), '[^0-9+ ]', '', 'g'), 20);
   if length(n) < 2 then raise exception 'Name required'; end if;
   select * into fs from nfc_private.free_space where id = 1;
-  d := jsonb_build_object('full_name', n, 'job_title', j, 'phone', ph, 'whatsapp', regexp_replace(ph, '[^0-9]', '', 'g'),
-    'email', coalesce((select email from auth.users where id = uid), ''));
+  d := jsonb_strip_nulls(jsonb_build_object('full_name', n, 'job_title', j, 'phone', ph,
+    'whatsapp', case when length(regexp_replace(ph, '[^0-9]', '', 'g')) >= 6 then regexp_replace(ph, '[^0-9]', '', 'g') end,
+    'email', coalesce((select email from auth.users where id = uid), '')));
   loop
     s := 'card-' || substr(md5(gen_random_uuid()::text), 1, 12);
     exit when not exists (select 1 from nfc_private.slug_reservations where slug = s);

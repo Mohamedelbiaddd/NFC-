@@ -451,3 +451,24 @@ body.acct{background:radial-gradient(800px 500px at 100% 0,#e11d2e30,transparent
 @media (max-width:900px){.qr-tool{grid-template-columns:1fr}.qr-out{position:static}}
 @media (max-width:640px){.qr-tool .span2{grid-column:auto}.qr-dl{grid-template-columns:1fr}}
 [hidden]{display:none!important}
+
+/* Programmable tags (/k/CODE) */
+.spin{width:34px;height:34px;margin:30px auto;border-radius:50%;border:3px solid #ffffff22;border-top-color:var(--green2);animation:spinr .8s linear infinite}
+@keyframes spinr{to{transform:rotate(360deg)}}
+.tag-code{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-radius:14px;background:var(--bg);border:1px dashed var(--line2)}
+.tag-code small{color:var(--muted)}
+.tag-code b{font-size:20px;letter-spacing:.12em;direction:ltr;font-family:ui-monospace,monospace}
+.tag-types{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.tag-type{display:flex;align-items:center;gap:8px;min-height:52px;padding:8px 12px;border-radius:14px;border:1px solid var(--line2);background:var(--bg);color:var(--text);font:inherit;font-weight:700;cursor:pointer;text-align:start}
+.tag-type span{font-size:20px}
+.tag-type b{font-size:14px}
+.tag-type[aria-pressed=true]{border-color:var(--green2);background:#22b45a1f}
+.tag-fields{display:grid;gap:12px;margin-top:12px}
+.tag-form .lbl{margin-bottom:8px}
+.tag-help{font-size:13px;margin:-4px 0 0}
+.tag-sec{font-size:18px;margin-top:8px}
+.tag-now{display:grid;gap:4px;padding:14px 16px;border-radius:16px;background:var(--card2);border:1px solid var(--line)}
+.tag-now small{color:var(--muted)}
+.tag-now b{font-size:18px}
+.tag-now span{color:var(--green2);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag-done{display:grid;gap:10px}
