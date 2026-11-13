@@ -283,17 +283,78 @@ function buildSectors() {
 
 // ---------------------------------------------------------------- hero phone
 let heroTick = 0;
+// ---------------------------------------------------------------- our own showcase cards
+// Drawn only for the hero: TapMaroc's real details in the brand colours.
+const SVG = {
+  nfc: '<path d="M7 8.5a5 5 0 0 1 0 7"/><path d="M10.5 6a9 9 0 0 1 0 12"/><path d="M14 3.5a13 13 0 0 1 0 17"/>',
+  phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+  wa: '<path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"/><path d="M9 9.5c.3 1.6 2 3.8 4.4 4.7l1.3-1.1 2 .9c-.2 1-1.1 1.7-2.1 1.6-3.2-.3-6.4-3.4-6.7-6.6 0-1 .6-1.9 1.6-2.1l.9 2z"/>',
+  web: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3"/>',
+  ig: '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".9"/>',
+  cup: '<path d="M4 8h13v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+};
+const icon = (k, cls = 'tm-ic') => { const i = h('i', cls); i.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${SVG[k]}</svg>`; return i; };
+const ourPhone = () => { const w = whatsapp(); return `+${w.slice(0, 2)} ${w.slice(2, 5)} ${w.slice(5, 8)} ${w.slice(8)}`; };
+
+function brandHead(sub) {
+  const top = h('div', 'tm-top');
+  top.append(h('span', 'tm-word', 'TAPMAROC'), icon('nfc', 'tm-nfc'));
+  const logo = h('div', 'tm-logo');
+  const im = h('img'); im.src = '/logo-256.webp'; im.alt = ''; logo.append(im);
+  const name = h('div', 'tm-name'); name.dir = 'ltr';
+  name.append('Tap', h('b', '', 'Maroc'));
+  return [top, logo, name, h('p', 'tm-tag', sub)];
+}
+
+function brandCard() {
+  const root = h('div', 'tm');
+  const chips = h('div', 'tm-chips');
+  ['NFC', 'QR', 'Google Wallet'].forEach((x) => chips.append(h('span', '', x)));
+  const acts = h('div', 'tm-acts');
+  [['phone', L('اتصال', 'Appeler', 'Call', 'Chiama')], ['wa', 'WhatsApp'], ['web', L('الموقع', 'Site', 'Website', 'Sito')], ['ig', 'Instagram']]
+    .forEach(([k, t]) => { const a = h('div', 'tm-act'); a.append(icon(k), h('small', '', t)); acts.append(a); });
+  const save = h('div', 'tm-save', L('حفظ في جهات الاتصال', 'Enregistrer le contact', 'Save contact', 'Salva contatto'));
+  const rows = h('div', 'tm-rows');
+  const row = (k, t) => { const r = h('div'); const s = h('span', '', t); s.dir = 'ltr'; r.append(icon(k), s); rows.append(r); };
+  row('phone', ourPhone());
+  row('web', 'tapmaroc.com');
+  root.append(...brandHead(L('بطاقات NFC ذكية وبطاقات ولاء', 'Cartes NFC intelligentes & fidélité', 'Smart NFC & loyalty cards', 'Tessere NFC smart e fedeltà')), chips, acts, save, rows);
+  return root;
+}
+
+function brandLoyalty() {
+  const root = h('div', 'tm tm-ly');
+  const card = h('div', 'tm-mc');
+  const ct = h('div', 'tm-mc-top');
+  const lg = h('img'); lg.src = '/logo-256.webp'; lg.alt = '';
+  ct.append(lg, h('span', '', L('بطاقة الولاء', 'Carte de fidélité', 'Loyalty card', 'Tessera fedeltà')), h('i', 'tm-chip'));
+  const nm = h('div', 'tm-mc-name', 'TapMaroc Café'); nm.dir = 'ltr';
+  const cb = h('div', 'tm-mc-bot');
+  const who = h('div'); who.append(h('small', '', L('العضو', 'MEMBRE', 'MEMBER', 'MEMBRO')), h('b', '', pick(PEOPLE[0])));
+  const pill = h('bdi', 'tm-pill', '6 / 9'); pill.dir = 'ltr';
+  cb.append(who, pill);
+  card.append(ct, nm, cb);
+  const grid = h('div', 'tm-stamps');
+  for (let i = 0; i < 10; i++) {
+    const gift = i === 9;
+    const s = h('div', 'tm-st' + (i < 6 ? ' on' : '') + (gift ? ' gift' : ''));
+    s.append(icon(gift ? 'gift' : 'cup', ''));
+    grid.append(s);
+  }
+  const rw = h('div', 'tm-rw');
+  rw.append(icon('gift'), h('span', '', L('القهوة العاشرة مجاناً', 'Le 10ᵉ café offert', '10th coffee free', 'Il 10° caffè è gratis')));
+  const wallet = h('div', 'tm-wallet', L('＋ إضافة إلى Google Wallet', '＋ Ajouter à Google Wallet', '＋ Add to Google Wallet', '＋ Aggiungi a Google Wallet'));
+  const top = h('div', 'tm-top'); top.append(h('span', 'tm-word', 'TAPMAROC'), icon('nfc', 'tm-nfc'));
+  root.append(top, card, grid, rw, wallet);
+  return root;
+}
+
 function renderHero() {
   const screen = $('#heroScreen');
   if (!screen) return;
-  // Our own card as the example: TapMaroc's logo, name, number and links.
-  const w = whatsapp();
-  const phone = `+${w.slice(0, 2)} ${w.slice(2, 5)} ${w.slice(5, 8)} ${w.slice(8)}`;
-  const brand = {palette: {surface: '#141a2a', text: '#ffffff', muted: '#b9c2d6', accent: '#e11d2e', button: '#138a45', buttonText: '#ffffff'}};
-  const show = heroTick % 2 === 0
-    ? vcardScreen(brand, {name: 'TapMaroc', logo: '/logo-256.webp', phone, site: 'tapmaroc.com', instagram: '@tapmaroc',
-        job: L('بطاقات NFC ذكية وبطاقات ولاء', 'Cartes NFC intelligentes & fidélité', 'Smart NFC & loyalty cards', 'Tessere NFC smart e fedeltà')})
-    : loyaltyScreen({type: 'cafe', color: '#138a45', stamps: 10, shop: 'TapMaroc', logo: '/logo-256.webp', reward: pick(SHOP_TYPES[1].reward), city: 'tapmaroc.com', customer: pick(PEOPLE[0])});
+  // Our own cards as the example: TapMaroc's business card and loyalty card.
+  const show = heroTick % 2 === 0 ? brandCard() : brandLoyalty();
   show.style.animation = 'fadeIn .6s ease';
   screen.replaceChildren(show);
 }
