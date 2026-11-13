@@ -45,6 +45,8 @@ class _AuthScreenState extends State<AuthScreen> {
         final result = await auth.signUp(
           email: login.text.trim(),
           password: password.text,
+          // رابط التأكيد يرجع إلى الموقع وليس localhost
+          emailRedirectTo: 'https://tapmaroc.com/start',
         );
         if (result.session == null && mounted) {
           setState(() {
