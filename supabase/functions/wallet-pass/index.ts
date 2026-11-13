@@ -235,7 +235,7 @@ async function buildPass(db: any, shop: Row, customer: Row, lang: string) {
     // No barcode: the customer scans the shop's live QR, never the other way round.
     heroImage: {
       sourceUri: {
-        uri: `${fn}?s=${shown}&g=${goal}&c=${bg.slice(1)}&a=${gold.slice(1)}&k=${ink.slice(1)}${lang === 'ar' ? '&r=1' : ''}&l=${lang}&n=${name40}&i=${String(shop.industry ?? '')}${points ? '&m=p' : ''}${photo ? `&p=${encodeURIComponent(photo)}` : ''}&v=4`,
+        uri: `${fn}?s=${shown}&g=${goal}&c=${bg.slice(1)}&a=${gold.slice(1)}&k=${ink.slice(1)}${lang === 'ar' ? '&r=1' : ''}&l=${lang}&n=${name40}&i=${String(shop.industry ?? '')}${points ? '&m=p' : ''}${photo ? `&p=${encodeURIComponent(photo)}` : ''}&v=5`,
       },
       contentDescription: {defaultValue: {language: lang, value: points ? `${shown} / ${goal}` : visitsText(lang, shown, goal)}},
     },

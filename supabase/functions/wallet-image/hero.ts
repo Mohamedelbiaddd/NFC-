@@ -25,6 +25,8 @@ const ICON: Record<string, string> = {
   gym: '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
 };
 ICON.bakery = ICON.cafe;
+// Beauty salons: a sparkle (same as the shop page).
+ICON.beauty = '<path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"/>';
 
 // Word for one stamp, by sector: [singular, dual, plural (3-10), feminine?] + fr/en.
 const NOUN: Record<string, {ar: [string, string, string, boolean]; fr: [string, string]; en: [string, string]}> = {
