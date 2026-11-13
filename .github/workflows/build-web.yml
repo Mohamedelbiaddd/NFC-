@@ -67,6 +67,9 @@ jobs:
           }
           JSON
           printf 'User-agent: *\nDisallow: /\n' > build/web/robots.txt
+          # The website project ("nfc", root dir web_profiles) also sees this
+          # branch; an empty folder lets its ignore step skip it cleanly.
+          mkdir -p build/web/web_profiles && touch build/web/web_profiles/.keep
 
       - name: Publish to the webapp branch
         run: |
