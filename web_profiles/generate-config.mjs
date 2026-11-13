@@ -60,6 +60,7 @@ const STATIC_FILES = [
   'loyalty.css',
   'membercard.mjs',
   'home-text.mjs',
+  'analytics.js',
   'card-name.woff2',
 ];
 

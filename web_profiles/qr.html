@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="theme-color" content="#0a0d16">
 <title>مولّد QR مجاني لبطاقة الأعمال — TapMaroc</title>
 <meta name="description" content="أنشئ رمز QR لبطاقة أعمالك مجاناً: يمسحه الزبون فيحفظ اسمك ورقمك وبريدك مباشرة في هاتفه. بدون تسجيل. تحميل PNG وSVG.">
@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="/home.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TapMaroc QR Generator","url":"https://tapmaroc.com/qr","applicationCategory":"BusinessApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0"},"inLanguage":["ar","fr","en","it"]}</script>
 <script type="module" src="/qr.js"></script>
+<script src="/analytics.js" defer></script>
 </head>
 <body class="acct">
 <header class="top">
