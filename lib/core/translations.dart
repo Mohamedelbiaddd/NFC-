@@ -2,6 +2,12 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 const Map<String, String> frStrings = {
+  'اسم الزبون': 'Nom du client',
+  'تصميم بطاقة الولاء': 'Design de la carte de fidélité',
+  'فاخر غامق': 'Luxe sombre',
+  'فاتح وناعم': 'Clair',
+  'بريميوم': 'Premium',
+  'هذا ما يراه الزبائن على هاتفهم وفي Google Wallet. يمكن لصاحب المحل تغييره لاحقاً.': 'C’est ce que voient les clients sur leur téléphone et dans Google Wallet. Le commerçant peut le changer plus tard.',
   '(فارغة)': '(vide)',
   '{0} بايت': '{0} octets',
   '{0} بايت (≈ {1} حرفاً للرابط)': '{0} octets (≈ {1} caractères de lien)',
@@ -796,6 +802,12 @@ const Map<String, String> frStrings = {
 };
 
 const Map<String, String> enStrings = {
+  'اسم الزبون': 'Customer name',
+  'تصميم بطاقة الولاء': 'Loyalty card design',
+  'فاخر غامق': 'Dark luxury',
+  'فاتح وناعم': 'Light',
+  'بريميوم': 'Premium',
+  'هذا ما يراه الزبائن على هاتفهم وفي Google Wallet. يمكن لصاحب المحل تغييره لاحقاً.': 'This is what customers see on their phone and in Google Wallet. The shop owner can change it later.',
   '(فارغة)': '(empty)',
   '{0} بايت': '{0} bytes',
   '{0} بايت (≈ {1} حرفاً للرابط)': '{0} bytes (≈ {1} link characters)',

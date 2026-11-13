@@ -10,6 +10,7 @@ import '../core/network_service.dart';
 import '../core/repository.dart';
 import '../core/shops_service.dart';
 import '../core/theme.dart';
+import 'design_catalog.dart';
 import 'link_writer_screen.dart';
 import 'pay_months.dart';
 import 'network_tab.dart' show statusColor, editNotice;
@@ -575,8 +576,21 @@ class _ShopFormState extends State<ShopForm> {
   );
   bool saving = false;
   String? error;
+  String theme = 'navy';
+  bool themeKnown = false; // never overwrite a design we could not read
 
   bool get editing => widget.shop != null;
+
+  @override
+  void initState() {
+    super.initState();
+    // Show the shop's current card design when editing.
+    if (editing) {
+      widget.service.theme('${widget.shop!['id']}').then((t) {
+        if (t != null && mounted) setState(() { theme = t; themeKnown = true; });
+      }).catchError((_) {});
+    }
+  }
 
   @override
   void dispose() {
@@ -615,6 +629,7 @@ class _ShopFormState extends State<ShopForm> {
           hours: hours.text,
           location: ShopsService.parseLocation(location.text),
           radius: radius,
+          theme: themeKnown ? theme : null,
         );
         await widget.service.setup(
           businessId: id,
@@ -636,6 +651,7 @@ class _ShopFormState extends State<ShopForm> {
         hours: hours.text,
         location: ShopsService.parseLocation(location.text),
         radius: radius,
+        theme: theme,
       );
       if (!mounted) return;
       final password = created.password;
@@ -725,6 +741,19 @@ class _ShopFormState extends State<ShopForm> {
                     }),
                   ),
               ],
+            ),
+            const SizedBox(height: 18),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: name,
+              builder: (context, v, _) => DesignPicker(
+                value: theme,
+                shopName: v.text.trim(),
+                industry: industry,
+                onChanged: (k) => setState(() {
+                  theme = k;
+                  themeKnown = true;
+                }),
+              ),
             ),
             const SizedBox(height: 16),
             TextFormField(

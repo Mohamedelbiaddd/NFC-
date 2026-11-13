@@ -77,6 +77,7 @@ class ShopsService {
     String? hours,
     (double, double)? location,
     int radius = 200,
+    String theme = 'navy',
   }) async {
     final row = await client
         .from('nfc_businesses')
@@ -90,6 +91,7 @@ class ShopsService {
           'latitude': location?.$1,
           'longitude': location?.$2,
           'geofence_radius_m': radius,
+          'theme': theme,
         })
         .select('id')
         .single();
@@ -116,6 +118,7 @@ class ShopsService {
     String? hours,
     (double, double)? location,
     int radius = 200,
+    String? theme,
   }) async {
     await client.rpc(
       'nfc_shop_edit',
@@ -128,11 +131,18 @@ class ShopsService {
           'address': address ?? '',
           'hours': hours ?? '',
           'radius_m': '$radius',
+          if (theme != null) 'theme': theme,
           if (location != null) 'latitude': '${location.$1}',
           if (location != null) 'longitude': '${location.$2}',
         },
       },
     );
+  }
+
+  /// The shop's loyalty card design (null if this user may not edit it).
+  Future<String?> theme(String businessId) async {
+    final r = await client.rpc('nfc_shop_theme', params: {'target': businessId});
+    return r is String ? r : null;
   }
 
   Future<void> setup({

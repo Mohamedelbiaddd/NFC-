@@ -1,7 +1,8 @@
 import {t, lang, applyLang, langSwitcher} from '/i18n.mjs';
 import {applyTheme, ICONS, stampIcon, sectorIcon} from '/themes.mjs';
-import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage, bannerStrip, industry, unit,
-  slotsGrid, safeImage, formatDate, dayName, todayIndex, validWeek, openNow, socialLink, industryLabel, dayText} from '/loyalty.mjs';
+import {memberCard} from '/membercard.mjs';
+import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage,
+  safeImage, formatDate, dayName, todayIndex, validWeek, openNow, socialLink, industryLabel, dayText} from '/loyalty.mjs';
 
 const root = document.getElementById('app');
 const langs = document.getElementById('langs');
@@ -152,6 +153,8 @@ function points() {
   const reward = customer?.reward ?? shop.reward;
   const stamps = Math.min(goal, customer?.stamps ?? 0);
   const box = el('section', undefined, 'bc-box bc-points' + (customer?.next_free ? ' ready' : ''));
+  // The member card, as if it were in the customer's wallet.
+  box.append(memberCard({shop, holder: customer?.name, stamps: customer?.stamps ?? 0, goal, lang}));
   const title = el('h3');
   title.append(svg('sparkle', 'bc-spark'), document.createTextNode(t('pointsTitle')));
   box.append(title);
@@ -253,33 +256,6 @@ function closedBanner() {
   return box;
 }
 
-function loyaltyCard() {
-  const goal = customer?.goal ?? shop.goal;
-  const reward = customer?.reward ?? shop.reward;
-  const stamps = customer?.stamps ?? 0;
-  const nextFree = !!customer?.next_free;
-  const card = el('div', undefined, 'lcard' + (nextFree ? ' free' : ''));
-  const bgUrl = safeImage(shop.card_background, config);
-  if (bgUrl) {
-    const bg = el('div', undefined, 'bg');
-    bg.style.backgroundImage = `url("${bgUrl}")`;
-    card.append(bg, el('div', undefined, 'shade'));
-  }
-  const head = el('div', undefined, 'head');
-  const left = el('div');
-  left.append(el('div', `${industry(shop).icon} ${t('yourCard')}`, 'title'));
-  left.append(el('div', customer ? customer.name : shop.name, 'holder'));
-  const count = el('div', undefined, 'count');
-  count.append(document.createTextNode(`${stamps}/${goal}`), el('small', unit(shop)));
-  head.append(left, count);
-  card.append(head, slotsGrid(goal, stamps, nextFree, fresh, industry(shop).icon));
-  const bar = el('div', undefined, 'progress');
-  const fill = el('i'); fill.style.width = `${Math.min(100, Math.round((stamps / goal) * 100))}%`;
-  bar.append(fill);
-  card.append(bar);
-  card.append(el('p', nextFree ? `${t('giftReady')} · ${reward}` : `${t('left', {n: Math.max(0, goal - stamps)})} · 🎁 ${reward}`, 'goal-line'));
-  return card;
-}
 
 // Name (+ phone when the shop's rule asks for it). Booking always needs a way
 // to call, unless the shop asks no phone at all.

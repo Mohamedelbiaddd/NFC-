@@ -115,24 +115,6 @@ export function bannerStrip(shop, config) {
   return strip;
 }
 
-// Customer card: round numbered slots + a gift slot. `fresh` animates the
-// slot that was just stamped.
-// Each sector stamps its own symbol (a cup for a café, scissors for a
-// barber...): earned slots show it in colour, the rest as a faint outline.
-export function slotsGrid(goal, stamps, nextFree, fresh = -1, icon = '⭐') {
-  const grid = el('div', undefined, 'slots');
-  const n = Math.max(1, Number(goal) || 5);
-  for (let i = 0; i < n; i++) {
-    const on = i < stamps;
-    const slot = el('div', undefined, 'slot' + (on ? ' on' : '') + (i === fresh ? ' new' : ''));
-    slot.append(el('span', icon, 'ico'));
-    slot.dataset.n = String(i + 1);
-    grid.append(slot);
-  }
-  grid.append(el('div', '🎁', 'slot gift' + (nextFree ? ' ready' : '')));
-  return grid;
-}
-
 // Owner list: numbered circles 1..goal filled up to `stamps`, then the gift.
 export function numbersRow(goal, stamps, nextFree) {
   const row = el('div', undefined, 'nums');

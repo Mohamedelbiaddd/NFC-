@@ -58,6 +58,8 @@ const STATIC_FILES = [
   'loyalty.mjs',
   'qrcode.mjs',
   'loyalty.css',
+  'membercard.mjs',
+  'card-name.woff2',
 ];
 
 function fail(message) {

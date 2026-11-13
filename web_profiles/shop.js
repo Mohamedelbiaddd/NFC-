@@ -2,6 +2,7 @@ import qrcode from '/qrcode.mjs';
 import {compressImage} from '/image-compress.mjs';
 import {t, lang, applyLang, langSwitcher, ago} from '/i18n.mjs';
 import {THEMES, applyTheme} from '/themes.mjs';
+import {memberCard} from '/membercard.mjs';
 import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage, industry, safeImage,
   numbersRow, initials, formatDate, unit, dayName, validWeek, SOCIAL_TYPES} from '/loyalty.mjs';
 
@@ -775,26 +776,48 @@ function settingsView() {
   const tagline = field(t('tagline'), s.tagline);
   tagline.input.maxLength = 80;
   info.append(pics, name.wrap, tagline.wrap, phone.wrap, email.wrap, address.wrap);
-  // Theme: ten looks for the public page; the dashboard previews it live.
+  // Design catalog: every look drawn as the real member card, with this
+  // shop's name and icon; picking one previews it live, Save keeps it.
   let theme = THEMES[s.theme] ? s.theme : 'navy';
   const themePanel = el('div', undefined, 'panel');
   themePanel.append(el('h2', `🎨 ${t('themeTitle')}`), el('p', t('themeNote'), 'muted small'));
-  const themeGrid = el('div', undefined, 'themes');
+  const CAT = {
+    ar: {all: 'الكل', dark: 'فاخر غامق', light: 'فاتح وناعم', classic: 'كلاسيكي', premium: 'بريميوم', chosen: 'المختار', sample: 'اسم الزبون'},
+    fr: {all: 'Tous', dark: 'Luxe sombre', light: 'Clair', classic: 'Classique', premium: 'Premium', chosen: 'Choisi', sample: 'Nom du client'},
+    en: {all: 'All', dark: 'Dark luxury', light: 'Light', classic: 'Classic', premium: 'Premium', chosen: 'Selected', sample: 'Customer name'},
+    it: {all: 'Tutti', dark: 'Lusso scuro', light: 'Chiari', classic: 'Classici', premium: 'Premium', chosen: 'Scelto', sample: 'Nome cliente'},
+  }[lang] ?? {};
+  const group = (th) => !th.look ? 'classic' : th.light ? 'light' : 'dark';
+  let catFilter = 'all';
+  const chips = el('div', undefined, 'cat-chips');
+  const themeGrid = el('div', undefined, 'cat-grid');
+  const sample = {name: s.name || 'TapMaroc', industry: s.industry, tagline: s.tagline};
   const drawThemes = () => {
+    chips.replaceChildren();
+    for (const k of ['all', 'dark', 'light', 'classic']) {
+      const c = el('button', CAT[k], 'cat-chip' + (k === catFilter ? ' on' : '')); c.type = 'button';
+      c.addEventListener('click', () => { catFilter = k; drawThemes(); });
+      chips.append(c);
+    }
     themeGrid.replaceChildren();
-    for (const [key, th] of Object.entries(THEMES)) {
-      const b = el('button', undefined, 'theme-opt' + (key === theme ? ' on' : '')); b.type = 'button';
-      const sw = el('div', undefined, 'theme-sw');
-      sw.style.background = `linear-gradient(160deg, ${th.card2}, ${th.bg})`;
-      for (const c of [th.gold, th.text, th.line]) { const i = el('i'); i.style.background = c; sw.append(i); }
-      b.append(sw, el('span', th.name[lang] ?? th.name.en));
-      b.addEventListener('click', () => { theme = key; applyTheme(key); drawThemes(); });
+    const entries = Object.entries(THEMES)
+      .filter(([, th]) => catFilter === 'all' || group(th) === catFilter)
+      .sort(([a, x], [b, y]) => (a === theme ? -1 : b === theme ? 1 : (!!y.look) - (!!x.look)));
+    for (const [key, th] of entries) {
+      const b = el('button', undefined, 'cat-item' + (key === theme ? ' on' : '')); b.type = 'button';
+      b.setAttribute('aria-pressed', String(key === theme));
+      b.append(memberCard({shop: sample, theme: key, holder: CAT.sample, stamps: 3, goal: Number(s.goal) || 5, lang, mini: true}));
+      const cap = el('div', undefined, 'cat-cap');
+      cap.append(el('b', th.name[lang] ?? th.name.en));
+      cap.append(el('span', key === theme ? `✓ ${CAT.chosen}` : th.look ? CAT.premium : CAT.classic, key === theme ? 'cat-tag on' : 'cat-tag'));
+      b.append(cap);
+      b.addEventListener('click', () => { theme = key; applyTheme(key); drawThemes(); themePanel.scrollIntoView({block: 'start', behavior: 'smooth'}); });
       themeGrid.append(b);
     }
   };
   drawThemes();
   const view = el('a', `👁 ${t('preview')}`, 'btn ghost small'); view.href = `/c/${slug}`; view.target = '_blank';
-  themePanel.append(themeGrid, view);
+  themePanel.append(chips, themeGrid, view);
   // Social links (Instagram, WhatsApp, TikTok…)
   const socials = (Array.isArray(s.socials) ? s.socials : []).map(x => ({...x}));
   const linksPanel = el('div', undefined, 'panel');
