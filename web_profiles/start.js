@@ -65,7 +65,7 @@ const W = {
     logout: 'Esci', hello: 'Ciao', shareText: 'Ecco il mio biglietto digitale:', orderMsg: 'Ciao TapMaroc 👋\nVorrei una tessera NFC per il mio biglietto:\n{u}', legal: 'Creando l’account accetti i termini e l’informativa privacy.',
   },
 };
-let lang = (() => { try { const s = localStorage.getItem('tm_lang'); if (W[s]) return s; } catch { /* ignore */ } const n = (navigator.language || '').slice(0, 2); return W[n] && n !== 'en' ? n : 'ar'; })();
+let lang = (() => { const asked = new URLSearchParams(location.search).get('lang'); if (W[asked]) return asked; try { const s = localStorage.getItem('tm_lang'); if (W[s]) return s; } catch { /* ignore */ } const n = (navigator.language || '').slice(0, 2); return W[n] ? n : W.en ? 'en' : 'ar'; })();
 const w = (k, vars = {}) => Object.entries(vars).reduce((t, [a, b]) => t.replaceAll(`{${a}}`, b), W[lang][k] ?? W.ar[k] ?? k);
 
 // ---------------------------------------------------------------- api

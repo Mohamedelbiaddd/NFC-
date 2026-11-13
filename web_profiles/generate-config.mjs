@@ -185,6 +185,8 @@ for (const lang of ['fr', 'en', 'it']) {
     .replace(/(<meta property="og:url" content=")[^"]*/, `$1https://tapmaroc.com/${lang}`)
     .replace(/(<link rel="canonical" href=")[^"]*/, `$1https://tapmaroc.com/${lang}`)
     .replace(/(<meta property="og:locale" content=")[^"]*/, `$1${LOCALE[lang]}`);
+  // Links to the QR generator and the account page keep the language.
+  html = html.replace(/href="\/(qr|start)(\?[^"]*)?"/g, (all, page, q) => `href="/${page}${q ? q.replace(/&?lang=[a-z]+/, '') + '&' : '?'}lang=${lang}"`);
   // Every text marked data-i="key" (text only, no tags inside).
   let missing = 0;
   html = html.replace(/(<([a-z0-9]+)\b[^>]*\sdata-i="([^"]+)"[^>]*>)([^<]*)(<\/\2>)/gi, (all, open, tag, key, text, close) => {

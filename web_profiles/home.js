@@ -310,6 +310,12 @@ function setLang(l) {
   if (location.pathname !== path) history.replaceState(null, '', path + location.hash);
   $('link[rel=canonical]')?.setAttribute('href', `https://tapmaroc.com${path}`);
   const desc = lang === 'ar' ? AR_DESC : DESCS[lang];
+  // The QR generator and the account page open in the same language.
+  $$('a[href^="/qr"], a[href^="/start"]').forEach((a) => {
+    const u = new URL(a.getAttribute('href'), location.origin);
+    if (lang === 'ar') u.searchParams.delete('lang'); else u.searchParams.set('lang', lang);
+    a.setAttribute('href', u.pathname + u.search);
+  });
   $('meta[name=description]')?.setAttribute('content', desc);
   state.phone = demo().phone; state.city = demo().city;
   buildDesigns(); buildShopTypes(); buildSectors(); syncInputs(); renderPreview(); renderHero(); updateWaLinks();

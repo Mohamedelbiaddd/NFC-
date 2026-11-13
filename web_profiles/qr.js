@@ -157,6 +157,10 @@ function start() {
   $$('.langs button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
   let saved = null;
   try { saved = localStorage.getItem('tm_lang'); } catch { /* ignore */ }
-  setLang(saved && (Q[saved] || saved === 'ar') ? saved : ((navigator.language || '').slice(0, 2) === 'fr' ? 'fr' : 'ar'));
+  // ?lang= from the home page link, else the saved choice, else the phone's language (English otherwise).
+  const ok = (l) => l && (Q[l] || l === 'ar');
+  const asked = new URLSearchParams(location.search).get('lang');
+  const nav = (navigator.language || '').slice(0, 2);
+  setLang(ok(asked) ? asked : ok(saved) ? saved : ok(nav) ? nav : (Q.en ? 'en' : 'ar'));
 }
 start();
