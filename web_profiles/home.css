@@ -152,7 +152,7 @@ button,input{font:inherit;color:inherit}
 .vc h4{margin:0;text-align:center;font-size:19px;font-weight:900}
 .vc .job{text-align:center;color:var(--vmuted);font-size:12.5px;padding:0 14px}
 .vc .row-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 14px 6px}
-.vc .row-btns span{display:grid;place-items:center;min-height:38px;border-radius:12px;font-weight:800;font-size:12px}
+.vc .row-btns span{display:grid;place-items:center;min-height:38px;border-radius:12px;font-weight:800;font-size:12px;text-align:center;line-height:1.15;padding:4px 6px}
 .vc .row-btns span:first-child{background:var(--vaccent);color:var(--vink)}
 .vc .row-btns span:last-child{border:1.5px solid var(--vaccent);color:var(--vtext)}
 .vc-shape-pill .row-btns span{border-radius:999px}
@@ -481,3 +481,7 @@ body.acct{background:radial-gradient(800px 500px at 100% 0,#e11d2e30,transparent
 .mini .mi-l2{height:5%;width:40%;left:30%;top:61%;background:var(--m-mu);opacity:.7}
 .mini .mi-bt{height:11%;width:64%;left:18%;top:73%;border-radius:999px;background:var(--m-bt)}
 .design .mini .mi-av{top:9%;width:28%;left:36%}.design .mini .mi-l1{top:43%}.design .mini .mi-l2{top:52%}.design .mini .mi-bt{top:61%;height:10%}
+.vc-ava.logo{overflow:hidden;padding:0}
+.vc-ava.logo img{width:100%;height:100%;object-fit:cover;display:block}
+.ly-logo.img{overflow:hidden;background:none}
+.ly-logo.img img{width:100%;height:100%;object-fit:cover;display:block}

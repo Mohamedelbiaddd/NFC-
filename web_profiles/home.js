@@ -103,7 +103,8 @@ function vcardScreen(d, data) {
   const cover = h('div', 'vc-cover');
   if (d?.assets?.cover) cover.style.backgroundImage = `url(${d.assets.cover})`;
   else cover.style.background = `linear-gradient(135deg,${p.accent},${p.button})`;
-  const ava = h('div', 'vc-ava', Array.from(data.name.trim())[0] ?? 'T');
+  const ava = h('div', 'vc-ava' + (data.logo ? ' logo' : ''), data.logo ? undefined : Array.from(data.name.trim())[0] ?? 'T');
+  if (data.logo) { const im = h('img'); im.src = data.logo; im.alt = ''; ava.append(im); }
   const name = h('h4', '', data.name);
   const job = h('p', 'job', data.job);
   const btns = h('div', 'row-btns');
@@ -113,8 +114,8 @@ function vcardScreen(d, data) {
   const row = (i, txt, ltr) => { const r = h('div'); const ic = h('i', '', i); const s = h('span', '', txt); if (ltr) s.dir = 'ltr'; r.append(ic, s); rows.append(r); };
   row('📞', data.phone, true);
   row('💬', 'WhatsApp', true);
-  row('📍', data.city);
-  row('✉️', 'contact@exemple.com', true);
+  row(data.site ? '🌐' : '📍', data.site ?? data.city, !!data.site);
+  row(data.instagram ? '◎' : '✉️', data.instagram ?? 'contact@exemple.com', true);
   const soc = h('div', 'socials');
   ['f', 'in', '◎', '♪'].forEach((x) => soc.append(h('span', '', x)));
   root.append(cover, ava, name, job, btns, rows, soc);
@@ -128,7 +129,8 @@ function loyaltyScreen(data) {
   root.style.setProperty('--lc', data.color);
   const card = h('div', 'ly-card');
   const head = h('div', 'ly-head');
-  const logo = h('div', 'ly-logo', type.e);
+  const logo = h('div', 'ly-logo' + (data.logo ? ' img' : ''), data.logo ? undefined : type.e);
+  if (data.logo) { const im = h('img'); im.src = data.logo; im.alt = ''; logo.append(im); }
   const tt = h('div'); tt.append(h('b', '', data.shop), h('small', '', data.city));
   head.append(logo, tt);
   const who = h('div', 'ly-name');
@@ -284,10 +286,14 @@ let heroTick = 0;
 function renderHero() {
   const screen = $('#heroScreen');
   if (!screen) return;
-  const barber = designById('barber');
+  // Our own card as the example: TapMaroc's logo, name, number and links.
+  const w = whatsapp();
+  const phone = `+${w.slice(0, 2)} ${w.slice(2, 5)} ${w.slice(5, 8)} ${w.slice(8)}`;
+  const brand = {palette: {surface: '#141a2a', text: '#ffffff', muted: '#b9c2d6', accent: '#e11d2e', button: '#138a45', buttonText: '#ffffff'}};
   const show = heroTick % 2 === 0
-    ? vcardScreen(barber, {name: pick(PEOPLE[0]), job: pick(barber?.sampleSubtitleI18n) || '', phone: demo().phone, city: pick(CITIES[demo().city])})
-    : loyaltyScreen({type: 'cafe', color: '#138a45', stamps: 10, shop: pick(SHOP_TYPES[1].shop), reward: pick(SHOP_TYPES[1].reward), city: pick(CITIES[2]), customer: pick(PEOPLE[0])});
+    ? vcardScreen(brand, {name: 'TapMaroc', logo: '/logo-256.webp', phone, site: 'tapmaroc.com', instagram: '@tapmaroc',
+        job: L('بطاقات NFC ذكية وبطاقات ولاء', 'Cartes NFC intelligentes & fidélité', 'Smart NFC & loyalty cards', 'Tessere NFC smart e fedeltà')})
+    : loyaltyScreen({type: 'cafe', color: '#138a45', stamps: 10, shop: 'TapMaroc', logo: '/logo-256.webp', reward: pick(SHOP_TYPES[1].reward), city: 'tapmaroc.com', customer: pick(PEOPLE[0])});
   show.style.animation = 'fadeIn .6s ease';
   screen.replaceChildren(show);
 }
