@@ -782,17 +782,24 @@ function settingsView() {
   const themePanel = el('div', undefined, 'panel');
   themePanel.append(el('h2', `🎨 ${t('themeTitle')}`), el('p', t('themeNote'), 'muted small'));
   const CAT = {
-    ar: {all: 'الكل', dark: 'فاخر غامق', light: 'فاتح وناعم', classic: 'كلاسيكي', premium: 'بريميوم', chosen: 'المختار', sample: 'اسم الزبون'},
-    fr: {all: 'Tous', dark: 'Luxe sombre', light: 'Clair', classic: 'Classique', premium: 'Premium', chosen: 'Choisi', sample: 'Nom du client'},
-    en: {all: 'All', dark: 'Dark luxury', light: 'Light', classic: 'Classic', premium: 'Premium', chosen: 'Selected', sample: 'Customer name'},
-    it: {all: 'Tutti', dark: 'Lusso scuro', light: 'Chiari', classic: 'Classici', premium: 'Premium', chosen: 'Scelto', sample: 'Nome cliente'},
+    ar: {all: 'الكل', dark: 'فاخر غامق', light: 'فاتح وناعم', classic: 'كلاسيكي', premium: 'بريميوم', chosen: 'المختار', sample: 'اسم الزبون', more: 'عرض كل التصاميم ({n})', less: 'إخفاء التصاميم'},
+    fr: {all: 'Tous', dark: 'Luxe sombre', light: 'Clair', classic: 'Classique', premium: 'Premium', chosen: 'Choisi', sample: 'Nom du client', more: 'Voir tous les designs ({n})', less: 'Masquer les designs'},
+    en: {all: 'All', dark: 'Dark luxury', light: 'Light', classic: 'Classic', premium: 'Premium', chosen: 'Selected', sample: 'Customer name', more: 'Show all designs ({n})', less: 'Hide designs'},
+    it: {all: 'Tutti', dark: 'Lusso scuro', light: 'Chiari', classic: 'Classici', premium: 'Premium', chosen: 'Scelto', sample: 'Nome cliente', more: 'Mostra tutti i design ({n})', less: 'Nascondi i design'},
   }[lang] ?? {};
   const group = (th) => !th.look ? 'classic' : th.light ? 'light' : 'dark';
   let catFilter = 'all';
+  // Closed by default: only the chosen card shows, so the page stays short.
+  let catOpen = false;
+  const more = el('button', undefined, 'btn ghost cat-more'); more.type = 'button';
+  more.addEventListener('click', () => { catOpen = !catOpen; drawThemes(); if (!catOpen) themePanel.scrollIntoView({block: 'start', behavior: 'smooth'}); });
   const chips = el('div', undefined, 'cat-chips');
   const themeGrid = el('div', undefined, 'cat-grid');
   const sample = {name: s.name || 'TapMaroc', industry: s.industry, tagline: s.tagline};
   const drawThemes = () => {
+    chips.hidden = !catOpen;
+    more.textContent = catOpen ? `▲ ${CAT.less}` : `▼ ${CAT.more.replace('{n}', Object.keys(THEMES).length)}`;
+    more.setAttribute('aria-expanded', String(catOpen));
     chips.replaceChildren();
     for (const k of ['all', 'dark', 'light', 'classic']) {
       const c = el('button', CAT[k], 'cat-chip' + (k === catFilter ? ' on' : '')); c.type = 'button';
@@ -801,8 +808,9 @@ function settingsView() {
     }
     themeGrid.replaceChildren();
     const entries = Object.entries(THEMES)
-      .filter(([, th]) => catFilter === 'all' || group(th) === catFilter)
-      .sort(([a, x], [b, y]) => (a === theme ? -1 : b === theme ? 1 : (!!y.look) - (!!x.look)));
+      .filter(([, th]) => !catOpen || catFilter === 'all' || group(th) === catFilter)
+      .sort(([a, x], [b, y]) => (a === theme ? -1 : b === theme ? 1 : (!!y.look) - (!!x.look)))
+      .filter(([key]) => catOpen || key === theme);
     for (const [key, th] of entries) {
       const b = el('button', undefined, 'cat-item' + (key === theme ? ' on' : '')); b.type = 'button';
       b.setAttribute('aria-pressed', String(key === theme));
@@ -811,13 +819,14 @@ function settingsView() {
       cap.append(el('b', th.name[lang] ?? th.name.en));
       cap.append(el('span', key === theme ? `✓ ${CAT.chosen}` : th.look ? CAT.premium : CAT.classic, key === theme ? 'cat-tag on' : 'cat-tag'));
       b.append(cap);
-      b.addEventListener('click', () => { theme = key; applyTheme(key); drawThemes(); themePanel.scrollIntoView({block: 'start', behavior: 'smooth'}); });
+      // Picking a design previews it and folds the catalog back to that card.
+      b.addEventListener('click', () => { theme = key; catOpen = false; applyTheme(key); drawThemes(); themePanel.scrollIntoView({block: 'start', behavior: 'smooth'}); });
       themeGrid.append(b);
     }
   };
   drawThemes();
   const view = el('a', `👁 ${t('preview')}`, 'btn ghost small'); view.href = `/c/${slug}`; view.target = '_blank';
-  themePanel.append(chips, themeGrid, view);
+  themePanel.append(chips, themeGrid, more, view);
   // Social links (Instagram, WhatsApp, TikTok…)
   const socials = (Array.isArray(s.socials) ? s.socials : []).map(x => ({...x}));
   const linksPanel = el('div', undefined, 'panel');

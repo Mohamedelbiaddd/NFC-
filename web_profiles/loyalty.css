@@ -707,3 +707,5 @@ a.bc-phone { color: inherit; text-decoration: none; }
 .cat-cap b { font-size: 14px; }
 .cat-tag { font-size: 11.5px; font-weight: 800; color: var(--muted); border: 1px solid var(--line-2); border-radius: 99px; padding: 2px 9px; white-space: nowrap; }
 .cat-tag.on { color: var(--t-ink, #111); background: var(--primary); border-color: var(--primary); }
+.cat-more { width: 100%; margin: 0 0 10px; }
+.cat-grid:has(> .cat-item:only-child) { grid-template-columns: minmax(0, 360px); }
