@@ -252,7 +252,7 @@ button,input{font:inherit;color:inherit}
 /* Footer */
 .foot{border-top:1px solid var(--line);padding:30px 0 40px;color:var(--muted);font-size:14px}
 .foot-in{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
-.foot nav{display:flex;gap:18px}
+.foot nav{display:flex;flex-wrap:wrap;gap:10px 18px;min-width:0}
 .foot nav a:hover{color:var(--text)}
 .foot .brand{font-size:18px;color:var(--text)}
 .foot .brand img{border-radius:9px}
