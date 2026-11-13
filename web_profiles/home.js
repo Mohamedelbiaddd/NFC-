@@ -495,7 +495,9 @@ function loginDialog() {
   const f = h('form');
   f.method = 'dialog';
   const title = h('h3', '', s_('title'));
-  const email = h('input'); email.type = 'email'; email.required = true; email.autocomplete = 'username'; email.placeholder = s_('email'); email.dir = 'ltr';
+  // Same as the app: a full e-mail or just the user name; phones must not capitalise it.
+  const email = h('input'); email.type = 'text'; email.required = true; email.autocomplete = 'username'; email.placeholder = s_('email'); email.dir = 'ltr';
+  email.setAttribute('autocapitalize', 'none'); email.setAttribute('autocorrect', 'off'); email.spellcheck = false; email.inputMode = 'email';
   const pass = h('input'); pass.type = 'password'; pass.required = true; pass.autocomplete = 'current-password'; pass.placeholder = s_('pass'); pass.dir = 'ltr';
   const msg = h('p', 'studio-msg');
   const row = h('div', 'studio-row');
@@ -510,7 +512,9 @@ function loginDialog() {
     e.preventDefault();
     go.disabled = true; msg.textContent = '…';
     try {
-      const auth = await api('/auth/v1/token?grant_type=password', {email: email.value.trim(), password: pass.value});
+      const id = email.value.trim().toLowerCase();
+      const login = id.includes('@') ? id : `${id}@workers.nfc-studio.internal`;
+      const auth = await api('/auth/v1/token?grant_type=password', {email: login, password: pass.value});
       if (!auth.ok || !auth.data?.access_token) { msg.textContent = s_('bad'); return; }
       const token = auth.data.access_token;
       const admin = await api('/rest/v1/rpc/nfc_site_is_admin', {}, token);
