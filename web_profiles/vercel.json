@@ -24,15 +24,15 @@
     },
     {
       "source": "/fr",
-      "destination": "/index.html"
+      "destination": "/fr.html"
     },
     {
       "source": "/en",
-      "destination": "/index.html"
+      "destination": "/en.html"
     },
     {
       "source": "/it",
-      "destination": "/index.html"
+      "destination": "/it.html"
     },
     {
       "source": "/start",

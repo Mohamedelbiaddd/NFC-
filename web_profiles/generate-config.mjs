@@ -59,6 +59,7 @@ const STATIC_FILES = [
   'qrcode.mjs',
   'loyalty.css',
   'membercard.mjs',
+  'home-text.mjs',
   'card-name.woff2',
 ];
 
@@ -158,3 +159,39 @@ console.log(
   `[config] ✔ Wrote dist/config.json for ${config.supabaseUrl} ` +
     `(key ${config.publishableKey.slice(0, 18)}…)`,
 );
+
+// The landing page in each language, written out in full so search engines
+// show French, English or Italian results to people searching in those
+// languages (index.html itself is the Arabic page).
+const {T, TITLES, DESCS} = await import(new URL('./home-text.mjs', import.meta.url));
+const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const LOCALE = {fr: 'fr_FR', en: 'en_US', it: 'it_IT'};
+const arabic = await readFile(join(root, 'index.html'), 'utf8');
+// The Arabic texts ride along in each page, so switching back to Arabic works.
+const AR = {};
+for (const m of arabic.matchAll(/<([a-z0-9]+)\b[^>]*\sdata-i="([^"]+)"[^>]*>([^<]*)<\/\1>/gi)) {
+  AR[m[2]] ??= m[3].replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+AR.__desc = /<meta name="description" content="([^"]*)/.exec(arabic)?.[1] ?? '';
+const arJson = JSON.stringify(AR).replace(/</g, '\\u003c');
+for (const lang of ['fr', 'en', 'it']) {
+  let html = arabic
+    .replace('<html lang="ar" dir="rtl">', `<html lang="${lang}" dir="ltr">`)
+    .replace(/<title>[^<]*<\/title>/, `<title>${esc(TITLES[lang])}</title>`)
+    .replace(/(<meta name="description" content=")[^"]*/, `$1${esc(DESCS[lang])}`)
+    .replace(/(<meta property="og:title" content=")[^"]*/, `$1${esc(TITLES[lang])}`)
+    .replace(/(<meta property="og:description" content=")[^"]*/, `$1${esc(DESCS[lang])}`)
+    .replace(/(<meta property="og:url" content=")[^"]*/, `$1https://tapmaroc.com/${lang}`)
+    .replace(/(<link rel="canonical" href=")[^"]*/, `$1https://tapmaroc.com/${lang}`)
+    .replace(/(<meta property="og:locale" content=")[^"]*/, `$1${LOCALE[lang]}`);
+  // Every text marked data-i="key" (text only, no tags inside).
+  let missing = 0;
+  html = html.replace(/(<([a-z0-9]+)\b[^>]*\sdata-i="([^"]+)"[^>]*>)([^<]*)(<\/\2>)/gi, (all, open, tag, key, text, close) => {
+    const v = T[lang][key];
+    if (v == null) { missing++; return all; }
+    return open + esc(v) + close;
+  });
+  html = html.replace('</body>', `<script type="application/json" id="ar-text">${arJson}</script>\n</body>`);
+  await writeFile(join(out, `${lang}.html`), html);
+  console.log(`[config] ✔ Wrote dist/${lang}.html${missing ? ` (${missing} texts kept in Arabic)` : ''}`);
+}
