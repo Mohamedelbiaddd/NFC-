@@ -674,8 +674,8 @@ a.bc-phone { color: inherit; text-decoration: none; }
 .mc[data-art="arch"] .mc-art::after { content: ""; position: absolute; width: 24cqw; height: 34cqw; inset-inline-end: 11cqw; bottom: -4cqw;
   border-radius: 12cqw 12cqw 0 0; border: 1px solid color-mix(in srgb, var(--m-gold) 30%, transparent); border-bottom: 0; }
 .mc[data-art="lines"] .mc-art::before, .mc[data-art="lines"] .mc-art::after { content: ""; position: absolute; height: 1.5px; width: 50cqw;
-  background: var(--m-line); inset-inline-end: -16cqw; top: 40%; transform: rotate(-34deg); transform-origin: center; }
-.mc[data-art="lines"] .mc-art::after { top: 54%; inset-inline-end: -22cqw; opacity: .55; }
+  background: var(--m-line); inset-inline-end: -16cqw; top: 58%; transform: rotate(-34deg); transform-origin: center; }
+.mc[data-art="lines"] .mc-art::after { top: 70%; inset-inline-end: -22cqw; opacity: .55; }
 .mc[data-art="frame"] .mc-art::before { content: ""; position: absolute; inset: 2.6cqw; border-radius: 3.4cqw; border: 1px solid var(--m-line); }
 .mc[data-art="frame"] .mc-art::after { content: ""; position: absolute; inset: 3.8cqw; border-radius: 2.6cqw; border: 1px dashed color-mix(in srgb, var(--m-gold) 25%, transparent); }
 .mc[data-art="grid"] .mc-art { background:
