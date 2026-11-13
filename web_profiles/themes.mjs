@@ -18,10 +18,50 @@ export const THEMES = {
   neon:    {name: {ar: 'رياضة: أسود ونيون', fr: 'Sport : noir et néon', en: 'Gym: black & neon'}, bg: '#070807', card: '#101210', card2: '#171a17', line: '#2f3a2c', text: '#f4fff0', muted: '#a7b8a2', gold: '#b6ff3b', ink: '#0d1a00'},
 };
 
+// Premium looks: colours plus a shape ("look") for the photo, the stamps and
+// the points box. Text on the accent colour is picked for contrast.
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, w) => '#' + hex(a).map((x, i) => Math.round(x * w + hex(b)[i] * (1 - w)).toString(16).padStart(2, '0')).join('');
+const lum = (h) => { const [r, g, b] = hex(h).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+const premium = (ar, fr, en, it, bg, accent, text, card, look) => {
+  const light = lum(bg) > 0.5;
+  return {
+    name: {ar, fr, en, it}, bg, card, card2: mix(card, bg, 0.55), line: mix(text, card, light ? 0.16 : 0.18),
+    text, muted: mix(text, bg, light ? 0.78 : 0.66), gold: accent, ink: lum(accent) > 0.36 ? '#111111' : '#ffffff', light, look,
+  };
+};
+Object.assign(THEMES, {
+  onyx:     premium('أونيكس ملكي', 'Onyx royal', 'Royal Onyx', 'Onice reale', '#101114', '#d7b77a', '#ffffff', '#242322', 'luxe'),
+  imperial: premium('ليل إمبراطوري', 'Nuit impériale', 'Imperial Night', 'Notte imperiale', '#151020', '#f1c77e', '#fff5dc', '#272035', 'hex'),
+  amber:    premium('صالون كهرماني', 'Salon ambre', 'Amber Lounge', 'Lounge ambra', '#25190f', '#dba64d', '#fff3d7', '#382919', 'ribbon'),
+  espresso: premium('إسبريسو', 'Espresso', 'Espresso House', 'Espresso', '#2b211d', '#d7a578', '#fff4e9', '#3b302a', 'square'),
+  velvet:   premium('مخملي عنابي', 'Velours bordeaux', 'Velvet Burgundy', 'Velluto bordeaux', '#3d1223', '#e7b2aa', '#fff4ed', '#561d30', 'soft'),
+  midnight: premium('أزرق منتصف الليل', 'Bleu minuit', 'Midnight Blue', 'Blu notte', '#0c1a36', '#b9c9ff', '#f6f8ff', '#182849', 'frame'),
+  drive:    premium('أزرق السيارات', 'Ocean Drive', 'Ocean Drive', 'Ocean Drive', '#092c45', '#35b9e5', '#f0faff', '#16465d', 'square'),
+  pulse:    premium('نبض تقني', 'Pulse tech', 'Future Pulse', 'Pulse tech', '#0e2026', '#25e0bd', '#e4fffa', '#17353a', 'grid'),
+  district: premium('نيون ليلي', 'Néon urbain', 'Neon District', 'Neon urbano', '#0b0c1b', '#d4ff39', '#f8faff', '#1b1d30', 'glow'),
+  redline:  premium('أحمر رياضي', 'Rouge sport', 'Redline Sport', 'Rosso sport', '#191c20', '#f0524d', '#ffffff', '#282b31', 'tilt'),
+  sahara:   premium('تراث الصحراء', 'Héritage Sahara', 'Sahara Heritage', 'Eredità Sahara', '#f3e5cf', '#a75b32', '#4d3328', '#f8efdf', 'arch'),
+  terra:    premium('مخبزة طينية', 'Terre boulangerie', 'Terra Bakery', 'Forno terracotta', '#f9ebd5', '#ad713f', '#4a2f1b', '#fff9ed', 'ticket'),
+  atelier:  premium('وردي أتولييه', 'Atelier rose', 'Rose Atelier', 'Atelier rosa', '#fff1f5', '#be5684', '#432b37', '#fffafd', 'soft'),
+  candy:    premium('حلوى وردية', 'Bonbon', 'Candy Pop', 'Caramella', '#fff0fa', '#e95a9d', '#662c51', '#ffffff', 'square'),
+  coral:    premium('نادي المرجان', 'Club corail', 'Coral Club', 'Club corallo', '#fff0e7', '#e0654e', '#62372e', '#ffffff', 'offset'),
+  street:   premium('شارع حضري', 'Urbain', 'Urban Street', 'Urbano', '#f7f3e9', '#f04a22', '#1c1b1a', '#ffffff', 'offset'),
+  jade:     premium('عيادة اليشم', 'Jade clinique', 'Jade Clinic', 'Giada', '#e7f4f0', '#2b9a7b', '#1b5347', '#ffffff', 'soft'),
+  nordic:   premium('هدوء شمالي', 'Calme nordique', 'Nordic Calm', 'Calma nordica', '#e9eee9', '#5d7a64', '#34463a', '#f8fbf8', 'soft'),
+  platinum: premium('بلاتيني', 'Platine', 'Platinum Edge', 'Platino', '#e7eaed', '#5b6677', '#26313b', '#ffffff', 'frame'),
+  mono:     premium('أبيض وأسود', 'Monochrome', 'Monochrome', 'Monocromo', '#f7f7f7', '#111111', '#111111', '#ffffff', 'square'),
+});
+
 // Icon drawn in a filled loyalty circle, by sector.
 export const STAMP = {barber: 'scissors', cafe: 'cup', bakery: 'cup', carwash: 'car', snack: 'pizza', gym: 'dumbbell', beauty: 'sparkle'};
 export function stampIcon(shop) {
   return ICONS[STAMP[shop?.industry]] ?? ICONS.check;
+}
+
+// The sector's own symbol for the shop photo when there is no logo.
+export function sectorIcon(shop) {
+  return ICONS[STAMP[shop?.industry]] ?? ICONS.sparkle;
 }
 
 export function themeOf(shop) {
@@ -49,7 +89,8 @@ export function applyTheme(key) {
   r.setProperty('--muted', th.muted);
   r.setProperty('--primary', th.gold);
   r.setProperty('--accent', th.gold);
-  const light = ['ivory', 'mint'].includes(key);
+  const light = th.light ?? ['ivory', 'mint'].includes(key);
+  document.documentElement.dataset.look = th.look ?? '';
   document.documentElement.dataset.light = String(light);
   document.documentElement.style.colorScheme = light ? 'light' : 'dark';
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', th.bg);

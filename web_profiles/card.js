@@ -1,5 +1,5 @@
 import {t, lang, applyLang, langSwitcher} from '/i18n.mjs';
-import {applyTheme, ICONS, stampIcon} from '/themes.mjs';
+import {applyTheme, ICONS, stampIcon, sectorIcon} from '/themes.mjs';
 import {loadConfig, rpc, slugFrom, el, applyColors, toast, storage, bannerStrip, industry, unit,
   slotsGrid, safeImage, formatDate, dayName, todayIndex, validWeek, openNow, socialLink, industryLabel, dayText} from '/loyalty.mjs';
 
@@ -32,7 +32,8 @@ const ext = (a, href) => { a.href = href; if (!href.startsWith('tel:') && !href.
 function bizCard() {
   const card = el('article', undefined, 'bc');
   const head = el('div', undefined, 'bc-head');
-  const badge = el('span', industry(shop).icon, 'bc-badge');
+  const badge = el('span', undefined, 'bc-badge');
+  badge.innerHTML = sectorIcon(shop);
   head.append(badge, el('h2', t('bizCard')), langs);
   card.append(head);
 
@@ -40,7 +41,8 @@ function bizCard() {
   const cover = el('div', undefined, 'bc-cover' + (coverUrl ? '' : ' plain'));
   if (coverUrl) cover.style.setProperty('--cover', `url("${coverUrl}")`);
   const logoUrl = safeImage(shop.logo_url, config);
-  const avatar = el('div', logoUrl ? undefined : industry(shop).icon, 'bc-avatar');
+  const avatar = el('div', undefined, 'bc-avatar' + (logoUrl ? '' : ' icon'));
+  if (!logoUrl) avatar.innerHTML = sectorIcon(shop);
   if (logoUrl) { const img = el('img'); img.src = logoUrl; img.alt = ''; img.referrerPolicy = 'no-referrer'; avatar.append(img); }
   let taps = [];
   avatar.addEventListener('click', () => {

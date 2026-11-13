@@ -46,6 +46,8 @@ const THEMES: Record<string, [string, string, string]> = {
   mint: ['#0e2a21', '#0f9f6e', '#ffffff'],
   coffee: ['#21140c', '#d6a15a', '#1e1208'], aqua: ['#122230', '#4cc9f0', '#04202c'],
   pizza: ['#1a0f0c', '#ff7a2f', '#2a0d02'], neon: ['#101210', '#b6ff3b', '#0d1a00'],
+  // Premium looks (light ones: dark text colour as the card, page colour as the accent).
+  onyx: ['#242322', '#d7b77a', '#111111'], imperial: ['#272035', '#f1c77e', '#111111'], amber: ['#382919', '#dba64d', '#111111'], espresso: ['#3b302a', '#d7a578', '#111111'], velvet: ['#561d30', '#e7b2aa', '#111111'], midnight: ['#182849', '#b9c9ff', '#111111'], drive: ['#16465d', '#35b9e5', '#111111'], pulse: ['#17353a', '#25e0bd', '#111111'], district: ['#1b1d30', '#d4ff39', '#111111'], redline: ['#282b31', '#f0524d', '#ffffff'], sahara: ['#4d3328', '#f3e5cf', '#4d3328'], terra: ['#4a2f1b', '#f9ebd5', '#4a2f1b'], atelier: ['#432b37', '#fff1f5', '#432b37'], candy: ['#662c51', '#fff0fa', '#662c51'], coral: ['#62372e', '#fff0e7', '#62372e'], street: ['#1c1b1a', '#f7f3e9', '#1c1b1a'], jade: ['#1b5347', '#e7f4f0', '#1b5347'], nordic: ['#34463a', '#e9eee9', '#34463a'], platinum: ['#26313b', '#e7eaed', '#26313b'], mono: ['#111111', '#f7f7f7', '#111111'],
 };
 // What one stamp is called, by sector (label of the points on the pass).
 const UNITS: Record<string, Record<string, string>> = {
