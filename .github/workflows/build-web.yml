@@ -1,0 +1,79 @@
+name: Build web app (desktop)
+
+# The same Flutter app (admin + team), built for the browser so it can be
+# opened and installed on a computer at https://app.tapmaroc.com.
+# NFC writing stays on Android; everything else works in the browser.
+# The built site is pushed to the `webapp` branch, which the Vercel project
+# "tapmaroc-app" serves as-is (no build on Vercel).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-web
+  cancel-in-progress: true
+
+jobs:
+  build-web:
+    name: Build and publish web app
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web (release)
+        run: >
+          flutter build web --release
+          --dart-define-from-file=config.json
+          --dart-define=APP_BUILD=0
+          --no-source-maps
+
+      - name: Add Vercel settings
+        run: |
+          cat > build/web/vercel.json <<'JSON'
+          {
+            "headers": [
+              { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+              { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+              { "source": "/flutter_bootstrap.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+              { "source": "/flutter_service_worker.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+              { "source": "/main.dart.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+              { "source": "/version.json", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+              { "source": "/manifest.json", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+              { "source": "/(.*)",
+                "headers": [
+                  { "key": "X-Frame-Options", "value": "DENY" },
+                  { "key": "X-Content-Type-Options", "value": "nosniff" },
+                  { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+                  { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+                ] }
+            ]
+          }
+          JSON
+          printf 'User-agent: *\nDisallow: /\n' > build/web/robots.txt
+
+      - name: Publish to the webapp branch
+        run: |
+          cd build/web
+          git init -q -b webapp
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Web app built from ${GITHUB_SHA::7}"
+          git push -q --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" webapp

@@ -1,12 +1,11 @@
 {
-    "name": "nfc_studio",
-    "short_name": "nfc_studio",
-    "start_url": ".",
+    "name": "TapMaroc Studio",
+    "short_name": "TapMaroc",
+    "start_url": "/",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#0A0D16",
+    "theme_color": "#0A0D16",
+    "description": "TapMaroc — لوحة الإدارة والفريق",
     "prefer_related_applications": false,
     "icons": [
         {
@@ -31,5 +30,9 @@
             "type": "image/png",
             "purpose": "maskable"
         }
-    ]
+    ],
+    "scope": "/",
+    "id": "/",
+    "lang": "ar",
+    "dir": "auto"
 }

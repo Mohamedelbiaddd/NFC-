@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -18,7 +19,9 @@ class AppUpdate {
   static const _channel = MethodChannel('tapmaroc/update');
 
   static Future<int?> latestBuild() async {
-    if (!Platform.isAndroid || build == 0) return null;
+    // On the web (desktop browser) there is no APK to update: the page itself
+    // is always the latest version.
+    if (kIsWeb || !Platform.isAndroid || build == 0) return null;
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
     try {
       final req = await client.getUrl(Uri.parse(
