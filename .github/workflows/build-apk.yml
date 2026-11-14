@@ -8,8 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  # write: publish the APK as a direct download on the "latest" release.
-  contents: write
+  contents: read
   # id-token: prove to our signing function that this is our own build.
   id-token: write
 
@@ -64,37 +63,70 @@ jobs:
           echo "TAPMAROC_KEY_ALIAS=$(jq -r .alias "$RUNNER_TEMP/sig.json")" >> "$GITHUB_ENV"
           rm "$RUNNER_TEMP/sig.json"
 
-      # The run number is the build number: the app compares it with
-      # version.json on the release to offer an in-app update.
-      - name: Build release APK (obfuscated)
+      # The signing certificate's fingerprint: the app compares it with its own
+      # signature at start-up, and the server refuses a phone whose app
+      # reports another one (a rebuilt / tampered APK).
+      - name: Certificate fingerprint
+        if: github.ref == 'refs/heads/main'
+        run: |
+          FP=$(keytool -list -v -storetype PKCS12 -keystore "$TAPMAROC_KEYSTORE" \
+            -storepass "$TAPMAROC_KEYSTORE_PASSWORD" -alias "$TAPMAROC_KEY_ALIAS" \
+            | sed -n 's/^.*SHA256: *//p' | head -1 | tr -d ':' | tr 'A-F' 'a-f')
+          test ${#FP} -eq 64
+          echo "CERT_SHA256=$FP" >> "$GITHUB_ENV"
+
+      # The run number is the build number: the app compares it with the
+      # published release to offer an in-app update. One APK per processor
+      # type keeps each file small (the private bucket takes 50 MB at most).
+      - name: Build release APKs (obfuscated, one per ABI)
         run: >
           flutter build apk --release
+          --split-per-abi
           --obfuscate
           --split-debug-info=build/debug-symbols
           --dart-define-from-file=config.json
           --build-number=${{ github.run_number }}
           --dart-define=APP_BUILD=${{ github.run_number }}
+          --dart-define=CERT_SHA256=${{ env.CERT_SHA256 }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: nfc-admin-app-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-*-release.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
-      - name: Publish APK as a direct download (latest release)
+      # The app is not public: the APKs go to a private bucket. Only staff
+      # with a valid invitation link (24 h) or a signed-in approved phone
+      # receive a short-lived download link.
+      - name: Publish to the private release bucket
         if: github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk nfc-studio.apk
-          echo "{\"build\": ${{ github.run_number }}, \"sha\": \"${GITHUB_SHA::7}\"}" > version.json
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest nfc-studio.apk version.json \
-            --title "NFC Studio — latest" \
-            --notes "Built from ${GITHUB_SHA::7}. Download nfc-studio.apk and install it." \
-            --target "$GITHUB_SHA"
+          set -euo pipefail
+          FN=https://ikcaingdfybpqrdzucyd.supabase.co/functions/v1/ci-release
+          TOKEN=$(curl -sf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=tapmaroc-ci-release" | jq -r .value)
+          BUILD=${{ github.run_number }}
+          cd build/app/outputs/flutter-apk
+          NAMES=$(ls app-*-release.apk | jq -R . | jq -sc .)
+          curl -sf -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+            -d "{\"action\":\"upload\",\"build\":$BUILD,\"names\":$NAMES}" "$FN" > "$RUNNER_TEMP/urls.json"
+          FILES='{}'
+          for f in app-*-release.apk; do
+            URL=$(jq -r --arg f "$f" '.urls[$f]' "$RUNNER_TEMP/urls.json")
+            curl -sf -X PUT -H 'Content-Type: application/vnd.android.package-archive' \
+              -H 'x-upsert: true' --data-binary "@$f" "$URL" > /dev/null
+            ABI=${f#app-}; ABI=${ABI%-release.apk}
+            FILES=$(jq -c --arg abi "$ABI" --arg path "android/$BUILD/$f" \
+              --argjson size "$(stat -c %s "$f")" --arg sha "$(sha256sum "$f" | cut -d' ' -f1)" \
+              '. + {($abi): {path: $path, size: $size, sha256: $sha}}' <<< "$FILES")
+          done
+          MANIFEST=$(jq -nc --argjson build "$BUILD" --arg sha "${GITHUB_SHA::7}" \
+            --arg cert "$CERT_SHA256" --argjson files "$FILES" \
+            '{build: $build, sha: $sha, cert_sha256: $cert, files: $files}')
+          curl -sf -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+            -d "{\"action\":\"publish\",\"manifest\":$MANIFEST}" "$FN"
 
       - name: Upload debug symbols
         uses: actions/upload-artifact@v4

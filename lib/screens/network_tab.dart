@@ -2,6 +2,7 @@ import 'dart:async';
 import '../core/i18n.dart';
 import '../core/shops_service.dart';
 import 'member_screen.dart';
+import 'invite_panel.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -115,6 +116,7 @@ class NetworkTab extends StatefulWidget {
 class _NetworkTabState extends State<NetworkTab> {
   List<Json> members = const [];
   List<Json> events = const [];
+  Map<String, Json> devices = const {};
   bool loading = true, showEvents = false;
   String? error;
   String filter = 'all';
@@ -139,10 +141,15 @@ class _NetworkTabState extends State<NetworkTab> {
     if (!quiet) setState(() => loading = true);
     try {
       final results = await Future.wait([widget.service.members(), widget.service.events(max: 150)]);
+      var devs = devices;
+      try {
+        devs = await widget.service.devices();
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         members = results[0];
         events = results[1];
+        devices = devs;
         error = null;
       });
     } catch (e) {
@@ -167,49 +174,6 @@ class _NetworkTabState extends State<NetworkTab> {
     } catch (e) {
       _snack(e is NetworkException ? e.message : userError(e), bad: true);
     }
-  }
-
-  Future<void> _showPassword(String name, String email, String password) async {
-    final message =
-        trf('مرحباً {0} 👋\nحسابك في TapMaroc جاهز.\nالبريد: {1}\nكلمة المرور: {2}\n\nنزّل التطبيق وسجّل الدخول بهذه البيانات.', [name, email, password]);
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(tr('✅ بيانات الدخول')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SelectableText(email, textDirection: TextDirection.ltr),
-            const SizedBox(height: 8),
-            SelectableText(
-              password,
-              textDirection: TextDirection.ltr,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 1),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              tr('أرسلها الآن: كلمة المرور لا تُعرض مرة أخرى (يمكن إنشاء واحدة جديدة).'),
-              style: TextStyle(fontSize: 11.5, color: AppColors.warning),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Clipboard.setData(ClipboardData(text: message)),
-            child: Text(tr('نسخ')),
-          ),
-          TextButton(
-            onPressed: () => launchUrl(
-              Uri.parse('https://wa.me/?text=${Uri.encodeComponent(message)}'),
-              mode: LaunchMode.externalApplication,
-            ),
-            child: Text(tr('واتساب')),
-          ),
-          FilledButton(onPressed: () => Navigator.pop(context), child: Text(tr('تم'))),
-        ],
-      ),
-    );
   }
 
   Future<void> _add() async {
@@ -267,14 +231,14 @@ class _NetworkTabState extends State<NetworkTab> {
                         err = null;
                       });
                       try {
-                        final pass = await widget.service.create(
+                        final result = await widget.service.create(
                           email: email.text.trim(),
                           name: name.text.trim(),
                           role: role,
                         );
                         if (context.mounted) Navigator.pop(context);
                         await load(quiet: true);
-                        await _showPassword(name.text.trim(), email.text.trim().toLowerCase(), pass);
+                        if (mounted) await showInviteResult(this.context, name.text.trim(), result);
                       } catch (e) {
                         setLocal(() {
                           busy = false;
@@ -282,7 +246,7 @@ class _NetworkTabState extends State<NetworkTab> {
                         });
                       }
                     },
-              child: Text(busy ? tr('جارٍ الإنشاء…') : tr('إنشاء وتوليد كلمة مرور')),
+              child: Text(busy ? tr('جارٍ الإنشاء…') : tr('إنشاء وإرسال الدعوة')),
             ),
           ],
         ),
@@ -362,15 +326,21 @@ class _NetworkTabState extends State<NetworkTab> {
     }
   }
 
-  Future<void> _reset(Json m) async {
-    final ok = await _confirm(tr('كلمة مرور جديدة؟'), tr('ستتوقف كلمة المرور القديمة فوراً.'), yes: tr('إنشاء'));
+  Future<void> _invite(Json m) async {
+    final ok = await _confirm(tr('إرسال رابط تفعيل جديد؟'), tr('الرابط القديم يتوقف. الشخص يختار كلمة مرور جديدة عند التفعيل، والحساب ينتقل إلى الهاتف الذي يفعّل منه.'), yes: tr('إرسال'));
     if (!ok) return;
     try {
-      final pass = await widget.service.resetPassword('${m['user_id']}');
-      await _showPassword('${m['name']}', '${m['email']}', pass);
+      final result = await widget.service.invite('${m['user_id']}');
+      await load(quiet: true);
+      if (mounted) await showInviteResult(context, '${m['name']}', result);
     } catch (e) {
       _snack(e is NetworkException ? e.message : userError(e), bad: true);
     }
+  }
+
+  Future<void> _newPhone(Json m) async {
+    final ok = await _confirm(tr('السماح بهاتف جديد؟'), tr('سيُغلق الحساب على الهاتف الحالي فوراً، وأول هاتف يسجّل الدخول بعد ذلك يصبح هاتف الحساب.'));
+    if (ok) await _guard(() => widget.service.resetDevice('${m['user_id']}'), tr('تم. يمكنه الآن الدخول من هاتف جديد.'));
   }
 
   Future<void> _delete(Json m) async {
@@ -473,8 +443,10 @@ class _NetworkTabState extends State<NetworkTab> {
                     switch (v) {
                       case 'notice':
                         _notice(m);
-                      case 'reset':
-                        _reset(m);
+                      case 'invite':
+                        _invite(m);
+                      case 'phone':
+                        _newPhone(m);
                       case 'suspend':
                         _suspend(m);
                       case 'delete':
@@ -483,7 +455,8 @@ class _NetworkTabState extends State<NetworkTab> {
                   },
                   itemBuilder: (_) => [
                     PopupMenuItem(value: 'notice', child: Text(m['notice'] == null ? tr('📩 إرسال تنبيه دفع') : tr('📩 تعديل / إزالة التنبيه'))),
-                    PopupMenuItem(value: 'reset', child: Text(tr('🔑 كلمة مرور جديدة'))),
+                    PopupMenuItem(value: 'invite', child: Text(tr('🔗 إرسال رابط تفعيل جديد'))),
+                    PopupMenuItem(value: 'phone', child: Text(tr('📱 السماح بهاتف جديد'))),
                     PopupMenuItem(value: 'suspend', child: Text(active ? tr('⛔ إيقاف') : tr('✅ تفعيل'))),
                     PopupMenuItem(value: 'delete', child: Text(tr('🗑️ حذف'))),
                   ],
@@ -509,6 +482,7 @@ class _NetworkTabState extends State<NetworkTab> {
                   if ((m['members'] as num? ?? 0) > 0) Pill(trf('{0} عامل', [m['members']]), color: AppColors.accent),
                   if (!active) Pill(tr('موقوف'), color: AppColors.danger, icon: Icons.block),
                   if (m['notice'] != null) Pill(tr('📩 تنبيه مُرسل'), color: AppColors.warning),
+                  ..._security(m),
                   if (widget.isSuper && '${m['parent_name'] ?? ''}'.isNotEmpty) Pill(trf('تابع لـ {0}', [m['parent_name']]), color: AppColors.muted),
                   Pill(trf('آخر دخول: {0}', [relativeTime(DateTime.tryParse('${m['last_sign_in'] ?? ''}'))]), color: AppColors.muted),
                   Pill(tr('اضغط للتفاصيل ›'), color: AppColors.primarySoft),
@@ -522,12 +496,32 @@ class _NetworkTabState extends State<NetworkTab> {
     );
   }
 
+  List<Widget> _security(Json m) {
+    final d = devices['${m['user_id']}'];
+    if (d == null) return const [];
+    final invite = d['invite'] as String?;
+    final device = d['device'] is Map ? d['device'] as Map : null;
+    final pending = (d['pending'] as num?)?.toInt() ?? 0;
+    return [
+      if (device == null && invite != 'activated') Pill(inviteStateLabel(invite), color: inviteStateColor(invite)),
+      if (device != null)
+        Pill('${device['model'] ?? ''}', color: AppColors.success,
+            icon: device['platform'] == 'web' ? Icons.computer_rounded : Icons.smartphone_rounded),
+      if (pending > 0) Pill(tr('📱 هاتف جديد ينتظر الموافقة'), color: AppColors.warning),
+    ];
+  }
+
   static Map<String, String> get _eventNames => {
     'staff_created': tr('أضاف حساباً'),
     'staff_suspended': tr('أوقف حساب'),
     'staff_resumed': tr('فعّل حساب'),
     'staff_deleted': tr('حذف حساب'),
     'password_reset': tr('غيّر كلمة مرور'),
+    'invite_sent': tr('🔗 أرسل رابط تفعيل إلى'),
+    'staff_activated': tr('✅ فعّل حسابه'),
+    'device_approved': tr('📱 وافق على هاتف جديد لـ'),
+    'device_refused': tr('رفض هاتفاً جديداً لـ'),
+    'device_reset': tr('📱 سمح بهاتف جديد لـ'),
     'payment': tr('✓ سجّل دفع'),
     'payment_undone': tr('ألغى دفعة'),
     'shop_created': tr('سجّل محلاً'),

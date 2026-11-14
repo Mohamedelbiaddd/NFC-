@@ -45,6 +45,10 @@
     {
       "source": "/k/:code",
       "destination": "/tag.html"
+    },
+    {
+      "source": "/app/:token",
+      "destination": "/install.html"
     }
   ],
   "headers": [

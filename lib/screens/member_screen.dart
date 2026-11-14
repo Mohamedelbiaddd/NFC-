@@ -9,6 +9,7 @@ import '../core/workers_service.dart';
 import 'network_tab.dart' show statusColor;
 import 'user_detail_screen.dart';
 import 'shops_tab.dart';
+import 'invite_panel.dart';
 
 /// One member of the network (an agent like Saeed or a worker): their details,
 /// the people linked to them (each with their own counts, tappable to go one
@@ -320,6 +321,8 @@ class _MemberScreenState extends State<MemberScreen> {
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 32),
                       children: [
                         _header(),
+                        const SizedBox(height: 12),
+                        SecurityPanel(network: widget.network, userId: id, name: '${_fresh['name']}'),
                         const SizedBox(height: 16),
                         SectionTitle(tr('الأشخاص المرتبطون به')),
                         if (children.isEmpty)

@@ -4,6 +4,8 @@ import '../core/app_config.dart';
 import '../core/repository.dart';
 import '../core/theme.dart';
 import '../core/i18n.dart';
+import 'activation_screen.dart';
+import 'device_gate.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -18,6 +20,13 @@ class _AuthScreenState extends State<AuthScreen> {
   final form = GlobalKey<FormState>();
   bool signup = false, busy = false, verify = false, obscure = true;
   String? message;
+
+  @override
+  void initState() {
+    super.initState();
+    message = authNotice.value;
+    authNotice.value = null;
+  }
 
   @override
   void dispose() {
@@ -266,9 +275,20 @@ class _AuthScreenState extends State<AuthScreen> {
                                       : tr('دخول'),
                                 ),
                         ),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: busy
+                              ? null
+                              : () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(builder: (_) => const ActivationScreen()),
+                                  ),
+                          icon: const Icon(Icons.mark_email_read_outlined),
+                          label: Text(tr('لدي دعوة: تفعيل الحساب')),
+                        ),
                         const SizedBox(height: 12),
                         Text(
-                          tr('الحسابات تُنشأ فقط من طرف الإدارة أو الوكيل المسؤول. اطلب بريدك وكلمة المرور من المسؤول عنك.'),
+                          tr('الحسابات تُنشأ فقط من طرف الإدارة أو الوكيل المسؤول. ستصلك دعوة بالبريد فيها رابط التطبيق ورمز التفعيل.'),
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 11.5, color: AppColors.muted, height: 1.5),
                         ),

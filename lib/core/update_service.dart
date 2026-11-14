@@ -1,50 +1,53 @@
-import 'dart:convert';
 import 'dart:io';
+
+import 'package:crypto/crypto.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'device_guard.dart';
 import 'i18n.dart';
 import 'theme.dart';
 
-/// In-app update. CI publishes `version.json` ({"build": N}) next to the APK
-/// on the "latest" release; this build knows its own number via APP_BUILD.
-/// When a newer build exists a banner appears; one tap downloads it and
-/// opens Android's install prompt.
+/// In-app update. CI publishes the APKs to a private bucket; the
+/// app-download function gives a signed-in, approved phone a 30-minute link
+/// to the newest build for its processor. The file's SHA-256 is checked
+/// before Android is asked to install it.
 class AppUpdate {
   static const build = int.fromEnvironment('APP_BUILD');
-  static const _base =
-      'https://github.com/Mohamedelbiaddd/NFC-/releases/download/latest';
   static const _channel = MethodChannel('tapmaroc/update');
+  static Map<String, dynamic>? _latest;
 
   static Future<int?> latestBuild() async {
     // On the web (desktop browser) there is no APK to update: the page itself
     // is always the latest version.
     if (kIsWeb || !Platform.isAndroid || build == 0) return null;
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
     try {
-      final req = await client.getUrl(Uri.parse(
-          '$_base/version.json?t=${DateTime.now().millisecondsSinceEpoch}'));
-      final res = await req.close().timeout(const Duration(seconds: 15));
-      if (res.statusCode != 200) return null;
-      final body = await res.transform(utf8.decoder).join();
-      final n = (jsonDecode(body) as Map)['build'];
+      final device = await DeviceGuard.info();
+      final res = await Supabase.instance.client.functions
+          .invoke('app-download', body: {'abi': device.abi})
+          .timeout(const Duration(seconds: 15));
+      final data = res.data;
+      if (data is! Map || data['url'] == null) return null;
+      _latest = Map<String, dynamic>.from(data);
+      final n = data['build'];
       return n is int ? n : int.tryParse('$n');
     } catch (_) {
       return null;
-    } finally {
-      client.close(force: true);
     }
   }
 
   /// Downloads the APK, reporting 0..1 progress (or -1 when size is unknown).
   static Future<String> download(void Function(double) onProgress) async {
+    final latest = _latest;
+    if (latest == null) throw const HttpException('no update');
     final path = await _channel.invokeMethod<String>('apkPath');
     final file = File(path!);
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
     try {
-      final req = await client.getUrl(Uri.parse('$_base/nfc-studio.apk'));
+      final req = await client.getUrl(Uri.parse('${latest['url']}'));
       final res = await req.close();
       if (res.statusCode != 200) throw HttpException('HTTP ${res.statusCode}');
       final total = res.contentLength;
@@ -56,6 +59,14 @@ class AppUpdate {
         onProgress(total > 0 ? got / total : -1);
       }
       await sink.close();
+      final expected = '${latest['sha256'] ?? ''}';
+      if (expected.isNotEmpty) {
+        final digest = sha256.convert(await file.readAsBytes()).toString();
+        if (digest != expected) {
+          await file.delete();
+          throw const HttpException('checksum');
+        }
+      }
       return file.path;
     } finally {
       client.close(force: true);

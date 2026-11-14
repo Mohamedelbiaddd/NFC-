@@ -28,6 +28,8 @@ const STATIC_FILES = [
   'image-compress.mjs',
   'tag.html',
   'tag.js',
+  'install.html',
+  'install.js',
   'qr.js',
   'start.js',
   'robots.txt',

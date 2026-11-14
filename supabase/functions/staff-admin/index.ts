@@ -1,15 +1,18 @@
 // Supabase Edge Function: staff-admin
 //
 // Closed registration: staff accounts are only created here.
-//   create         {email, name, role}  super admin -> agent|worker, agent -> worker
-//   reset_password {user_id}            anyone above the target in the tree
+//   create         {email, name, role, lang}  super admin -> agent|worker, agent -> worker
+//   invite         {user_id, lang}      new 24 h invitation link (the old one dies)
 //   delete         {user_id}            only when the account has no shops and
 //                                       no members under it (suspend otherwise)
 //   purge          {user_id, with_children}  deletes the account with everything
 //                                       it created (nfc_admin_purge_user), then the
 //                                       login(s); with_children: its whole team too
-// The generated password is returned once so the creator can send it.
-import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
+// Nobody receives a password: the account gets an invitation link (24 h)
+// that downloads the app and lets the person choose their own password. The
+// link is e-mailed when RESEND_API_KEY is set; the creator can also share it.
+import {createClient, type SupabaseClient} from 'https://esm.sh/@supabase/supabase-js@2';
+import {inviteEmail} from './email.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -26,10 +29,53 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-function password(): string {
-  const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const bytes = crypto.getRandomValues(new Uint8Array(10));
+function randomText(length: number, chars: string): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
   return Array.from(bytes, (b) => chars[b % chars.length]).join('');
+}
+
+// Login password nobody knows until the person sets their own.
+const password = () => randomText(32, 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789');
+
+export async function sha256(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+const LANGS = ['ar', 'fr', 'en', 'it'];
+
+/** New invitation for [userId]: link token + 8-character code (both hashed in the DB). */
+async function invite(admin: SupabaseClient, actor: string, userId: string, email: string, name: string, lang: string) {
+  const token = randomText(40, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789');
+  const code = randomText(8, 'ABCDEFGHJKMNPQRSTUVWXYZ23456789');
+  const {data, error} = await admin.rpc('nfc_invite_new', {
+    p_user: userId, p_email: email, p_lang: lang, p_actor: actor,
+    p_token_hash: await sha256(token), p_code_hash: await sha256(code),
+  });
+  if (error || !data) throw new Error('invite');
+  const link = `https://tapmaroc.com/app/${token}`;
+  const pretty = `${code.slice(0, 4)}-${code.slice(4)}`;
+  let emailed = false;
+  const key = Deno.env.get('RESEND_API_KEY') ?? '';
+  if (key) {
+    const mail = inviteEmail(lang, name, link, pretty);
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {Authorization: `Bearer ${key}`, 'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          from: Deno.env.get('INVITE_FROM') ?? 'TapMaroc <no-reply@tapmaroc.com>',
+          to: [email], subject: mail.subject, html: mail.html, text: mail.text,
+          reply_to: Deno.env.get('INVITE_REPLY_TO') ?? undefined,
+        }),
+      });
+      emailed = res.ok;
+      await admin.rpc('nfc_invite_mark', {p_invite: data.id, p_status: res.ok ? 'sent' : `error ${res.status}`});
+    } catch (_) {
+      await admin.rpc('nfc_invite_mark', {p_invite: data.id, p_status: 'error'});
+    }
+  }
+  return {link, code: pretty, expires_at: data.expires_at, emailed};
 }
 
 Deno.serve(async (req: Request) => {
@@ -70,6 +116,7 @@ Deno.serve(async (req: Request) => {
       const email = String(body.email ?? '').trim().toLowerCase();
       const name = String(body.name ?? '').trim();
       const role = String(body.role ?? 'worker');
+      const lang = LANGS.includes(String(body.lang)) ? String(body.lang) : 'ar';
       if (!EMAIL.test(email)) return json({error: 'البريد الإلكتروني غير صحيح'}, 400);
       if (name.length < 1 || name.length > 80) return json({error: 'اكتب الاسم'}, 400);
       if (role !== 'agent' && role !== 'worker') return json({error: 'نوع الحساب غير صحيح'}, 400);
@@ -99,7 +146,8 @@ Deno.serve(async (req: Request) => {
         await admin.auth.admin.deleteUser(created.user.id);
         return json({error: 'تعذّر تسجيل الحساب في الشبكة'}, 500);
       }
-      return json({user_id: created.user.id, email, password: pass});
+      const sent = await invite(admin, caller.id, created.user.id, email, name, lang);
+      return json({user_id: created.user.id, email, ...sent});
     }
 
     const target = String(body.user_id ?? '');
@@ -128,12 +176,19 @@ Deno.serve(async (req: Request) => {
       .from('nfc_super_admins').select('user_id').eq('user_id', target).maybeSingle();
     if (superTarget) return json({error: 'لا يمكن تعديل حساب المدير العام من هنا'}, 403);
 
-    if (action === 'reset_password') {
-      const pass = password();
-      const {error} = await admin.auth.admin.updateUserById(target, {password: pass});
-      if (error) return json({error: 'تعذّر تغيير كلمة المرور'}, 500);
-      await admin.rpc('nfc_log_staff_password_reset', {actor: caller.id, target});
-      return json({password: pass});
+    if (action === 'invite') {
+      const lang = LANGS.includes(String(body.lang)) ? String(body.lang) : 'ar';
+      const {data: staff} = await admin
+        .from('nfc_staff').select('display_name, email').eq('user_id', target).maybeSingle();
+      const {data: user} = await admin.auth.admin.getUserById(target);
+      const email = user?.user?.email ?? staff?.email ?? '';
+      if (!email) return json({error: 'لا يوجد بريد لهذا الحساب'}, 400);
+      const sent = await invite(admin, caller.id, target, email, staff?.display_name ?? '', lang);
+      await admin.from('nfc_network_events').insert({
+        actor_id: caller.id, action: 'invite_sent', subject_type: 'staff',
+        subject_id: target, subject_name: staff?.display_name ?? '',
+      });
+      return json({email, ...sent});
     }
 
     if (action === 'delete') {

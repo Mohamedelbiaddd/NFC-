@@ -112,6 +112,9 @@ class Repository {
 
 String userError(Object e) {
   if (e is AuthException) return e.message;
+  if (e is PostgrestException && e.message.contains('device_not_approved')) {
+    return tr('هذا الهاتف ليس الهاتف المسموح لهذا الحساب. انتظر الموافقة أو تواصل مع المسؤول.');
+  }
   if (e is PostgrestException && e.code == '23505') {
     return tr('هذا الاسم المخصص مستخدم أو محجوز سابقاً.');
   }

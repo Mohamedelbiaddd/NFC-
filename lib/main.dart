@@ -5,7 +5,19 @@ import 'core/app_config.dart';
 import 'core/theme.dart';
 import 'screens/auth_screen.dart';
 import 'screens/dashboard.dart';
+import 'screens/activation_screen.dart';
+import 'screens/device_gate.dart';
+import 'core/device_guard.dart';
 import 'core/i18n.dart';
+
+final navigatorKey = GlobalKey<NavigatorState>();
+
+/// Opens the activation screen for a tapmaroc://activate?t=... link.
+void _openInvite(String link) {
+  final token = DeviceGuard.tokenOf(link);
+  if (token == null) return;
+  navigatorKey.currentState?.push(MaterialPageRoute<void>(builder: (_) => ActivationScreen(token: token)));
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +42,11 @@ Future<void> main() async {
       publishableKey: AppConfig.publishableKey,
     );
     runApp(const NfcStudio());
+    DeviceGuard.onLink(_openInvite);
+    final link = await DeviceGuard.initialLink();
+    if (link != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openInvite(link));
+    }
   } catch (e) {
     runApp(
       MaterialApp(
@@ -46,18 +63,24 @@ class NfcStudio extends StatelessWidget {
     valueListenable: appLang,
     builder: (context, lang, _) => MaterialApp(
       key: ValueKey(lang),
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'TapMaroc',
       locale: Locale(lang),
       supportedLocales: const [Locale('ar'), Locale('fr'), Locale('en')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: AppTheme.dark(),
-      home: StreamBuilder<AuthState>(
-        stream: Supabase.instance.client.auth.onAuthStateChange,
-        builder: (context, snapshot) =>
-            Supabase.instance.client.auth.currentSession == null
-            ? const AuthScreen()
-            : const Dashboard(),
+      home: IntegrityGate(
+        child: StreamBuilder<AuthState>(
+          stream: Supabase.instance.client.auth.onAuthStateChange,
+          builder: (context, snapshot) {
+            final session = Supabase.instance.client.auth.currentSession;
+            return session == null
+                ? const AuthScreen()
+                // A new key per login: the phone check runs again.
+                : DeviceGate(key: ValueKey(session.user.id), child: const Dashboard());
+          },
+        ),
       ),
     ),
   );

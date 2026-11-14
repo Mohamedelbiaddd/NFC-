@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://ikcaingdfybpqrdzucyd.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a0d16">
+<title>TapMaroc — تثبيت التطبيق</title>
+<link rel="icon" href="/icon-192.png">
+<link rel="preload" href="/home-cairo.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:Cairo;src:url(/home-cairo.woff2) format('woff2');font-weight:400 900;font-display:swap}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(900px 500px at 85% -10%,#e11d2e30,transparent 60%),radial-gradient(900px 500px at 0% 110%,#22b45a26,transparent 60%),#0a0d16;color:#eef1f8;font:16px/1.6 Cairo,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px 16px}
+main{width:100%;max-width:460px;background:#121826;border:1px solid #ffffff1a;border-radius:24px;padding:26px 22px;box-shadow:0 30px 60px -30px #000}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:20px}
+.logo img{width:44px;height:44px;border-radius:12px}
+h1{font-size:22px;line-height:1.35;margin:18px 0 6px}
+p{margin:0 0 12px;color:#c3cadb}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:999px;font-weight:800;text-decoration:none;font-size:16px;margin-top:12px;border:0;width:100%;cursor:pointer;font-family:inherit}
+.primary{background:#22b45a;color:#04150b}
+.ghost{background:transparent;color:#eef1f8;border:1px solid #ffffff40}
+ol{padding-inline-start:20px;color:#c3cadb;margin:16px 0}
+li{margin-bottom:8px}
+.small{font-size:13px;color:#8f9ab3}
+.warn{color:#f5b041;font-size:14px}
+.bad{color:#ff6b6b}
+.hide{display:none}
+.alt{display:block;text-align:center;margin-top:10px;color:#8f9ab3;font-size:13px}
+</style>
+<script type="module" src="/install.js"></script>
+</head>
+<body>
+<main>
+  <div class="logo"><img src="/icon-192.png" alt="">TapMaroc</div>
+  <h1 id="title">…</h1>
+  <p id="lead"></p>
+  <div id="ok" class="hide">
+    <a id="download" class="btn primary" href="#">⬇</a>
+    <ol id="steps"></ol>
+    <a id="activate" class="btn ghost" href="#"></a>
+    <a id="old" class="alt" href="#"></a>
+    <p id="expires" class="warn"></p>
+  </div>
+  <p id="foot" class="small"></p>
+</main>
+</body>
+</html>

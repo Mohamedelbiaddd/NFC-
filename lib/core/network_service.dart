@@ -67,16 +67,33 @@ class NetworkService {
     }
   }
 
-  /// Returns the generated password.
-  Future<String> create({required String email, required String name, required String role}) async {
-    final result = await _call({'action': 'create', 'email': email, 'name': name, 'role': role});
-    return '${result['password']}';
+  /// Creates the account and its invitation (24 h link + code, e-mailed
+  /// when the server can). Nobody sees a password.
+  Future<Json> create({required String email, required String name, required String role}) =>
+      _call({'action': 'create', 'email': email, 'name': name, 'role': role, 'lang': appLang.value});
+
+  /// New invitation link (the previous one stops working).
+  Future<Json> invite(String userId) =>
+      _call({'action': 'invite', 'user_id': userId, 'lang': appLang.value});
+
+  /// Invitation state and phone of every member I manage, by user id.
+  Future<Map<String, Json>> devices() async {
+    final rows = _rows(await client.rpc('nfc_network_devices'));
+    return {for (final r in rows) '${r['user_id']}': r};
   }
 
-  Future<String> resetPassword(String userId) async {
-    final result = await _call({'action': 'reset_password', 'user_id': userId});
-    return '${result['password']}';
+  /// Invitation and phones of one member.
+  Future<Json> security(String userId) async {
+    final value = await client.rpc('nfc_staff_security', params: {'target': userId});
+    return value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
   }
+
+  Future<void> decideDevice(String deviceId, bool approve) async =>
+      _ok(await client.rpc('nfc_device_decide', params: {'p_id': deviceId, 'p_approve': approve}));
+
+  /// Forgets the member's phone: the next phone that logs in becomes it.
+  Future<void> resetDevice(String userId) async =>
+      _ok(await client.rpc('nfc_device_reset', params: {'target': userId}));
 
   Future<void> delete(String userId) async {
     await _call({'action': 'delete', 'user_id': userId});
