@@ -68,6 +68,7 @@ class _DeviceGateState extends State<DeviceGate> with WidgetsBindingObserver {
         error = null;
       });
       _schedule();
+      if (s == 'active' && r['exempt'] != true) _askOwnPassword();
     } catch (e) {
       if (!mounted) return;
       // Offline: keep an approved phone working; the server still checks.
@@ -87,6 +88,95 @@ class _DeviceGateState extends State<DeviceGate> with WidgetsBindingObserver {
       _requests();
       poll = Timer.periodic(const Duration(seconds: 45), (_) => _requests());
     }
+  }
+
+  bool _passwordAsked = false;
+
+  /// Invited staff: on login, offer to set their own password (can be skipped;
+  /// asked again at the next login until they set one).
+  Future<void> _askOwnPassword() async {
+    final user = client.auth.currentUser;
+    if (_passwordAsked || user == null || user.userMetadata?['own_password'] == true) return;
+    _passwordAsked = true;
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    final pass = TextEditingController(), pass2 = TextEditingController();
+    final form = GlobalKey<FormState>();
+    var busy = false, obscure = true;
+    String? err;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocal) => AlertDialog(
+          icon: const Icon(Icons.password_rounded, size: 40),
+          title: Text(tr('أضف كلمة المرور الخاصة بك')),
+          content: Form(
+            key: form,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(tr('اختر كلمة مرور لا يعرفها أحد غيرك، واستعملها في كل دخول.'),
+                  style: const TextStyle(color: AppColors.muted, height: 1.5)),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: pass,
+                obscureText: obscure,
+                decoration: InputDecoration(
+                  labelText: tr('كلمة المرور الجديدة'),
+                  suffixIcon: IconButton(
+                    onPressed: () => setLocal(() => obscure = !obscure),
+                    icon: Icon(obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                  ),
+                ),
+                validator: (v) => (v?.length ?? 0) >= 8 ? null : tr('ثمانية أحرف على الأقل'),
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: pass2,
+                obscureText: obscure,
+                decoration: InputDecoration(labelText: tr('أعد كتابة كلمة المرور')),
+                validator: (v) => v == pass.text ? null : tr('كلمتا المرور غير متطابقتين'),
+              ),
+              if (err != null) ...[
+                const SizedBox(height: 8),
+                Text(err!, style: const TextStyle(color: AppColors.danger)),
+              ],
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: busy ? null : () => Navigator.pop(context), child: Text(tr('تخطي'))),
+            FilledButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      if (!form.currentState!.validate()) return;
+                      setLocal(() {
+                        busy = true;
+                        err = null;
+                      });
+                      try {
+                        await client.auth.updateUser(UserAttributes(password: pass.text, data: {'own_password': true}));
+                        if (context.mounted) Navigator.pop(context);
+                        if (mounted) {
+                          ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(
+                            backgroundColor: AppColors.success,
+                            content: Text(tr('✅ حُفظت كلمة المرور الخاصة بك.')),
+                          ));
+                        }
+                      } catch (e) {
+                        setLocal(() {
+                          busy = false;
+                          err = userError(e);
+                        });
+                      }
+                    },
+              child: Text(tr('حفظ')),
+            ),
+          ],
+        ),
+      ),
+    );
+    pass.dispose();
+    pass2.dispose();
   }
 
   /// On the approved phone: another phone asks to use the account.

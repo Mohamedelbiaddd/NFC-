@@ -104,6 +104,10 @@ class _ActivationScreenState extends State<ActivationScreen> {
         await client.auth.signOut(scope: SignOutScope.local);
       }
       await client.auth.setSession('${r['refresh_token']}');
+      // The password was chosen by the person: no "set your password" prompt.
+      try {
+        await client.auth.updateUser(UserAttributes(data: {'own_password': true}));
+      } catch (_) {}
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         backgroundColor: AppColors.success,

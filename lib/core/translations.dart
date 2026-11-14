@@ -2,6 +2,10 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 const Map<String, String> frStrings = {
+  'أضف كلمة المرور الخاصة بك': 'Ajoutez votre propre mot de passe',
+  'اختر كلمة مرور لا يعرفها أحد غيرك، واستعملها في كل دخول.': 'Choisissez un mot de passe que vous seul connaissez et utilisez-le à chaque connexion.',
+  'تخطي': 'Passer',
+  '✅ حُفظت كلمة المرور الخاصة بك.': '✅ Votre mot de passe a été enregistré.',
   'متصفح الحاسوب': 'Navigateur (ordinateur)',
   'هذه نسخة معدّلة من التطبيق. نزّل التطبيق الأصلي من رابط الدعوة.': 'Cette version de l’application a été modifiée. Téléchargez l’originale depuis le lien d’invitation.',
   'هذه نسخة غير صالحة من التطبيق.': 'Cette version de l’application n’est pas valide.',
@@ -878,6 +882,10 @@ const Map<String, String> frStrings = {
 };
 
 const Map<String, String> enStrings = {
+  'أضف كلمة المرور الخاصة بك': 'Add your own password',
+  'اختر كلمة مرور لا يعرفها أحد غيرك، واستعملها في كل دخول.': 'Choose a password only you know and use it every time you log in.',
+  'تخطي': 'Skip',
+  '✅ حُفظت كلمة المرور الخاصة بك.': '✅ Your password was saved.',
   'متصفح الحاسوب': 'Desktop browser',
   'هذه نسخة معدّلة من التطبيق. نزّل التطبيق الأصلي من رابط الدعوة.': 'This copy of the app was modified. Download the original from your invitation link.',
   'هذه نسخة غير صالحة من التطبيق.': 'This copy of the app is not valid.',
