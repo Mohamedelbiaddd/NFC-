@@ -1,0 +1,21 @@
+name: Remove the old public APK release
+
+# One-off: the app is no longer published on GitHub (see build-apk.yml);
+# this deletes the old public "latest" release and its tag.
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/remove-public-release.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete release "latest"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release delete latest --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
