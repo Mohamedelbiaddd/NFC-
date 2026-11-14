@@ -2,6 +2,10 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 const Map<String, String> frStrings = {
+  'رابط Google Maps أو 33.5731, -7.5898 أو كود مثل HCF6+63': 'Lien Google Maps, 33.5731, -7.5898 ou code comme HCF6+63',
+  '✅ تم تحديد الموقع: {0}': '✅ Emplacement trouvé : {0}',
+  'فتح في الخريطة': 'Ouvrir dans la carte',
+  'لم أجد هذا الموقع. الصق رابط Google Maps أو الإحداثيات أو الكود (مثل HCF6+63 Casablanca).': 'Emplacement introuvable. Collez un lien Google Maps, les coordonnées ou le code (ex. HCF6+63 Casablanca).',
   'أضف كلمة المرور الخاصة بك': 'Ajoutez votre propre mot de passe',
   'اختر كلمة مرور لا يعرفها أحد غيرك، واستعملها في كل دخول.': 'Choisissez un mot de passe que vous seul connaissez et utilisez-le à chaque connexion.',
   'تخطي': 'Passer',
@@ -882,6 +886,10 @@ const Map<String, String> frStrings = {
 };
 
 const Map<String, String> enStrings = {
+  'رابط Google Maps أو 33.5731, -7.5898 أو كود مثل HCF6+63': 'Google Maps link, 33.5731, -7.5898 or a code like HCF6+63',
+  '✅ تم تحديد الموقع: {0}': '✅ Location found: {0}',
+  'فتح في الخريطة': 'Open in maps',
+  'لم أجد هذا الموقع. الصق رابط Google Maps أو الإحداثيات أو الكود (مثل HCF6+63 Casablanca).': 'Location not found. Paste a Google Maps link, the coordinates or the code (e.g. HCF6+63 Casablanca).',
   'أضف كلمة المرور الخاصة بك': 'Add your own password',
   'اختر كلمة مرور لا يعرفها أحد غيرك، واستعملها في كل دخول.': 'Choose a password only you know and use it every time you log in.',
   'تخطي': 'Skip',

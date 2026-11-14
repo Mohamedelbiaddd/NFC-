@@ -576,6 +576,10 @@ class _ShopFormState extends State<ShopForm> {
   );
   bool saving = false;
   String? error;
+  // The shop's location as understood (link, coordinates or Plus Code).
+  late (double, double)? resolved = ShopsService.parseLocation(location.text);
+  bool locating = false;
+  Timer? _locTimer;
   String theme = 'navy';
   bool themeKnown = false; // never overwrite a design we could not read
 
@@ -594,10 +598,38 @@ class _ShopFormState extends State<ShopForm> {
 
   @override
   void dispose() {
+    _locTimer?.cancel();
     for (final c in [name, phone, address, hours, reward, location]) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  /// Understands the pasted location right away (short links and Plus Codes
+  /// through the server).
+  Future<void> _locate() async {
+    final text = location.text.trim();
+    if (text.isEmpty) {
+      setState(() {
+        resolved = null;
+        locating = false;
+      });
+      return;
+    }
+    setState(() => locating = true);
+    final r = await widget.service.resolveLocation(text, near: address.text);
+    if (!mounted || location.text.trim() != text) return;
+    setState(() {
+      resolved = r;
+      locating = false;
+    });
+    formKey.currentState?.validate();
+  }
+
+  void _locationChanged(String _) {
+    _locTimer?.cancel();
+    setState(() => resolved = null);
+    _locTimer = Timer(const Duration(milliseconds: 600), _locate);
   }
 
   String _defaultReward(String kind) => switch (kind) {
@@ -612,7 +644,8 @@ class _ShopFormState extends State<ShopForm> {
   };
 
   Future<void> _save() async {
-    if (!formKey.currentState!.validate()) return;
+    if (location.text.trim().isNotEmpty && (resolved == null || locating)) await _locate();
+    if (!mounted || !formKey.currentState!.validate()) return;
     setState(() {
       saving = true;
       error = null;
@@ -627,7 +660,7 @@ class _ShopFormState extends State<ShopForm> {
           phone: phone.text,
           address: address.text,
           hours: hours.text,
-          location: ShopsService.parseLocation(location.text),
+          location: location.text.trim().isEmpty ? null : resolved,
           radius: radius,
           theme: themeKnown ? theme : null,
         );
@@ -649,7 +682,7 @@ class _ShopFormState extends State<ShopForm> {
         phone: phone.text,
         address: address.text,
         hours: hours.text,
-        location: ShopsService.parseLocation(location.text),
+        location: location.text.trim().isEmpty ? null : resolved,
         radius: radius,
         theme: theme,
       );
@@ -790,13 +823,33 @@ class _ShopFormState extends State<ShopForm> {
             TextFormField(
               controller: location,
               textDirection: TextDirection.ltr,
+              onChanged: _locationChanged,
               decoration: InputDecoration(
                 labelText: tr('📍 موقع المحل (اختياري)'),
-                hintText: tr('الصق رابط Google Maps أو 33.5731, -7.5898'),
+                hintText: tr('رابط Google Maps أو 33.5731, -7.5898 أو كود مثل HCF6+63'),
+                helperText: resolved != null && location.text.trim().isNotEmpty
+                    ? trf('✅ تم تحديد الموقع: {0}', ['${resolved!.$1.toStringAsFixed(5)}, ${resolved!.$2.toStringAsFixed(5)}'])
+                    : null,
+                helperStyle: const TextStyle(color: AppColors.success),
+                suffixIcon: locating
+                    ? const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                      )
+                    : resolved != null && location.text.trim().isNotEmpty
+                        ? IconButton(
+                            tooltip: tr('فتح في الخريطة'),
+                            icon: const Icon(Icons.map_outlined, color: AppColors.success),
+                            onPressed: () => launchUrl(
+                              Uri.parse('https://www.google.com/maps/search/?api=1&query=${resolved!.$1},${resolved!.$2}'),
+                              mode: LaunchMode.externalApplication,
+                            ),
+                          )
+                        : null,
               ),
-              validator: (v) => (v ?? '').trim().isEmpty || ShopsService.parseLocation(v!) != null
+              validator: (v) => (v ?? '').trim().isEmpty || resolved != null || locating
                   ? null
-                  : tr('لم أفهم الموقع: الصق رابط خرائط فيه الإحداثيات'),
+                  : tr('لم أجد هذا الموقع. الصق رابط Google Maps أو الإحداثيات أو الكود (مثل HCF6+63 Casablanca).'),
             ),
             Row(
               children: [

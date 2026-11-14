@@ -172,12 +172,62 @@ class ShopsService {
   }
 
   /// Accepts "33.57, -7.59" or a Google Maps link containing @lat,lng / q=lat,lng.
+  /// Coordinates written in the text itself: "33.57, -7.58", "33.57 -7.58",
+  /// a Google Maps long link (marker !3d..!4d.., q=, ll=, @) or 33°34'23"N 7°35'23"W.
   static (double, double)? parseLocation(String text) {
-    final match = RegExp(r'(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)').firstMatch(text);
-    if (match == null) return null;
-    final lat = double.tryParse(match.group(1)!), lng = double.tryParse(match.group(2)!);
-    if (lat == null || lng == null || lat.abs() > 90 || lng.abs() > 180) return null;
-    return (lat, lng);
+    var t = text.trim();
+    try {
+      t = Uri.decodeFull(t);
+    } catch (_) {}
+    t = t.replaceAll('+', ' ');
+    const n = r'(-?\d{1,3}(?:\.\d+)?)';
+    final patterns = [
+      RegExp('!3d$n!4d$n'),
+      RegExp(r'[?&](?:q|query|ll|sll|daddr|destination|center)=(?:loc:)?\s*' + n + r'\s*,\s*' + n),
+      RegExp('geo:$n,$n'),
+      RegExp('@$n,$n'),
+      RegExp(r'^\s*' + n + r'\s*[,;\s]\s*' + n + r'\s*$'),
+      RegExp(n + r'\s*,\s*' + n),
+    ];
+    for (final re in patterns) {
+      final m = re.firstMatch(t);
+      if (m == null) continue;
+      final lat = double.tryParse(m.group(1)!), lng = double.tryParse(m.group(2)!);
+      if (lat != null && lng != null && lat.abs() <= 90 && lng.abs() <= 180 && !(lat == 0 && lng == 0)) {
+        return (lat, lng);
+      }
+    }
+    final dms = RegExp(
+      r'(\d{1,2})°\s*(\d{1,2})[' "'" r'′]\s*(\d{1,2}(?:\.\d+)?)?["″]?\s*([NS])[\s,]*(\d{1,3})°\s*(\d{1,2})[' "'" r'′]\s*(\d{1,2}(?:\.\d+)?)?["″]?\s*([EW])',
+      caseSensitive: false,
+    ).firstMatch(t);
+    if (dms != null) {
+      double v(String d, String m, String? s) => double.parse(d) + double.parse(m) / 60 + (double.tryParse(s ?? '') ?? 0) / 3600;
+      final lat = v(dms.group(1)!, dms.group(2)!, dms.group(3)) * (dms.group(4)!.toUpperCase() == 'S' ? -1 : 1);
+      final lng = v(dms.group(5)!, dms.group(6)!, dms.group(7)) * (dms.group(8)!.toUpperCase() == 'W' ? -1 : 1);
+      return (lat, lng);
+    }
+    return null;
+  }
+
+  /// Any location the staff pastes: the above, plus short Maps links
+  /// (maps.app.goo.gl…) and Plus Codes (8C5JHCF6+63, or HCF6+63 Casablanca),
+  /// resolved by the geo-resolve function. [near]: the shop's town/address.
+  Future<(double, double)?> resolveLocation(String text, {String near = ''}) async {
+    final local = parseLocation(text);
+    // A link whose coordinates are not in the address itself (short link).
+    final shortLink = RegExp(r'https?://').hasMatch(text) && !RegExp(r'!3d|@-?\d|[?&](q|ll|query)=-?\d').hasMatch(text);
+    if (local != null && !shortLink) return local;
+    try {
+      final res = await client.functions
+          .invoke('geo-resolve', body: {'q': text.trim(), 'near': near.trim()})
+          .timeout(const Duration(seconds: 25));
+      final d = res.data;
+      if (d is Map && d['lat'] is num && d['lng'] is num) {
+        return ((d['lat'] as num).toDouble(), (d['lng'] as num).toDouble());
+      }
+    } catch (_) {}
+    return shortLink ? null : local;
   }
 
   static String? _blank(String? value) {
