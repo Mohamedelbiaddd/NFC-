@@ -1,5 +1,8 @@
 // The invitation e-mail, in the language the admin uses.
-const T: Record<string, {subject: string; hi: string; body: string; button: string; code: string; steps: string[]; expire: string; ignore: string}> = {
+const PHONE = '+39 329 558 6046';
+const MAIL = 'contact@tapmaroc.com';
+
+const T: Record<string, {subject: string; hi: string; body: string; button: string; code: string; steps: string[]; expire: string; ignore: string; alertTitle: string; alert: string; contact: string}> = {
   ar: {
     subject: 'دعوتك إلى تطبيق TapMaroc',
     hi: 'مرحباً {name}،',
@@ -9,6 +12,9 @@ const T: Record<string, {subject: string; hi: string; body: string; button: stri
     steps: ['افتح الرابط من هاتفك الأندرويد ونزّل التطبيق وثبّته.', 'ارجع إلى الصفحة واضغط «تفعيل الحساب»، أو افتح التطبيق واختر «لدي دعوة» واكتب بريدك والرمز.', 'اختر كلمة مرورك. الحساب يعمل على هذا الهاتف فقط.'],
     expire: 'الرابط صالح 24 ساعة ولمرة واحدة فقط.',
     ignore: 'إذا لم تكن تنتظر هذه الدعوة فتجاهل هذه الرسالة.',
+    alertTitle: '⚠️ تنبيه هام',
+    alert: 'إذا دخل أي شخص آخر إلى التطبيق بهذه الدعوة قبلك، فلن تستطيع الدخول، لأن الحساب يعمل على الهاتف الذي دخل أولاً فقط، ويجب أن يوافق ذلك الهاتف على هاتفك. في هذه الحالة تواصل معنا فوراً.',
+    contact: 'للتواصل: واتساب / هاتف {phone} · البريد {mail}',
   },
   fr: {
     subject: 'Votre invitation à l’application TapMaroc',
@@ -19,6 +25,9 @@ const T: Record<string, {subject: string; hi: string; body: string; button: stri
     steps: ['Ouvrez le lien sur votre téléphone Android, téléchargez et installez l’application.', 'Revenez sur la page et touchez « Activer le compte », ou ouvrez l’application, choisissez « J’ai une invitation » et saisissez votre e-mail et le code.', 'Choisissez votre mot de passe. Le compte fonctionne uniquement sur ce téléphone.'],
     expire: 'Le lien est valable 24 heures et une seule fois.',
     ignore: 'Si vous n’attendiez pas cette invitation, ignorez ce message.',
+    alertTitle: '⚠️ Important',
+    alert: 'Si une autre personne entre dans l’application avec cette invitation avant vous, vous ne pourrez pas vous connecter : le compte fonctionne uniquement sur le premier téléphone connecté, qui doit approuver le vôtre. Dans ce cas, contactez-nous immédiatement.',
+    contact: 'Contact : WhatsApp / téléphone {phone} · e-mail {mail}',
   },
   en: {
     subject: 'Your invitation to the TapMaroc app',
@@ -29,6 +38,9 @@ const T: Record<string, {subject: string; hi: string; body: string; button: stri
     steps: ['Open the link on your Android phone, download and install the app.', 'Come back to the page and tap “Activate account”, or open the app, choose “I have an invitation” and type your e-mail and the code.', 'Choose your password. The account works on this phone only.'],
     expire: 'The link is valid for 24 hours and can be used once.',
     ignore: 'If you were not expecting this invitation, ignore this e-mail.',
+    alertTitle: '⚠️ Important',
+    alert: 'If someone else enters the app with this invitation before you, you will not be able to log in: the account only works on the first phone that logged in, and that phone must approve yours. If this happens, contact us right away.',
+    contact: 'Contact: WhatsApp / phone {phone} · e-mail {mail}',
   },
   it: {
     subject: 'Il tuo invito all’app TapMaroc',
@@ -39,6 +51,9 @@ const T: Record<string, {subject: string; hi: string; body: string; button: stri
     steps: ['Apri il link dal tuo telefono Android, scarica e installa l’app.', 'Torna alla pagina e tocca «Attiva account», oppure apri l’app, scegli «Ho un invito» e scrivi la tua e-mail e il codice.', 'Scegli la tua password. L’account funziona solo su questo telefono.'],
     expire: 'Il link è valido 24 ore e una sola volta.',
     ignore: 'Se non aspettavi questo invito, ignora questa e-mail.',
+    alertTitle: '⚠️ Importante',
+    alert: 'Se qualcun altro entra nell’app con questo invito prima di te, non potrai accedere: l’account funziona solo sul primo telefono che ha effettuato l’accesso, che deve approvare il tuo. In questo caso contattaci subito.',
+    contact: 'Contatti: WhatsApp / telefono {phone} · e-mail {mail}',
   },
 };
 
@@ -48,6 +63,8 @@ export function inviteEmail(lang: string, name: string, link: string, code: stri
   const t = T[lang] ?? T.ar;
   const rtl = lang === 'ar';
   const hi = t.hi.replace('{name}', name || '');
+  const contact = t.contact.replace('{phone}', PHONE).replace('{mail}', MAIL);
+  const wa = 'https://wa.me/' + PHONE.replace(/\D/g, '');
   const html = `<!doctype html><html lang="${lang}" dir="${rtl ? 'rtl' : 'ltr'}"><body style="margin:0;background:#0b0f19;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center">
 <table role="presentation" width="100%" style="max-width:520px;background:#121826;border-radius:18px;border:1px solid #23304a" cellspacing="0" cellpadding="0">
@@ -59,11 +76,16 @@ export function inviteEmail(lang: string, name: string, link: string, code: stri
 <p style="color:#8f9ab3;font-size:13px;margin:22px 0 6px">${esc(t.code)}</p>
 <p dir="ltr" style="color:#fff;font-size:26px;font-weight:bold;letter-spacing:4px;margin:0 0 18px;font-family:monospace;text-align:${rtl ? 'right' : 'left'}">${code}</p>
 <ol style="color:#c5cde0;font-size:14px;line-height:1.6;padding-${rtl ? 'right' : 'left'}:18px;margin:0 0 16px">${t.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
-<p style="color:#f5b041;font-size:13px;margin:0 0 6px">⏱ ${esc(t.expire)}</p>
+<p style="color:#f5b041;font-size:13px;margin:0 0 14px">⏱ ${esc(t.expire)}</p>
+<div style="background:#3a1d12;border:1px solid #f5b04166;border-radius:12px;padding:12px 14px;margin:0 0 14px">
+<p style="color:#ffcf7a;font-size:14px;font-weight:bold;margin:0 0 6px">${esc(t.alertTitle)}</p>
+<p style="color:#f3dcc0;font-size:13.5px;line-height:1.6;margin:0 0 8px">${esc(t.alert)}</p>
+<p style="color:#fff;font-size:13.5px;margin:0">📞 <a href="${wa}" style="color:#7fd3a5" dir="ltr">${PHONE}</a> · ✉️ <a href="mailto:${MAIL}" style="color:#7fd3a5">${MAIL}</a></p>
+</div>
 <p style="color:#6f7a93;font-size:12px;margin:0 0 22px">${esc(t.ignore)}</p>
 </td></tr></table>
 <p style="color:#56607a;font-size:11px;margin:14px 0 0">TapMaroc · tapmaroc.com</p>
 </td></tr></table></body></html>`;
-  const text = `${hi}\n\n${t.body}\n\n${link}\n\n${t.code}: ${code}\n\n${t.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\n${t.expire}\n${t.ignore}`;
+  const text = `${hi}\n\n${t.body}\n\n${link}\n\n${t.code}: ${code}\n\n${t.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\n${t.expire}\n\n${t.alertTitle}\n${t.alert}\n${contact}\n\n${t.ignore}`;
   return {subject: t.subject, html, text};
 }
